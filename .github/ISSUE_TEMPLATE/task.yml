@@ -1,0 +1,88 @@
+name: Task
+description: Atomic delivery task for the multi-agent queue
+title: "[TASK-XXX] "
+labels: ["type:task", "state:backlog", "priority:p1", "risk:medium"]
+body:
+  - type: input
+    id: task_id
+    attributes:
+      label: Task ID
+      description: Unique ID, for example TASK-101
+      placeholder: TASK-101
+    validations:
+      required: true
+
+  - type: input
+    id: objective
+    attributes:
+      label: Objective
+      description: Player-visible or system-level outcome
+      placeholder: Implement deterministic Ring 1 encounter templates
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: List required prerequisite task IDs. Use None if independent.
+      placeholder: |
+        None
+    validations:
+      required: true
+
+  - type: textarea
+    id: allowed_files
+    attributes:
+      label: Allowed Files
+      description: List file paths this task may modify
+      placeholder: |
+        game/scripts/systems/ring_director.gd
+        game/data/encounter_templates.json
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Binary criteria. One line per criterion.
+      placeholder: |
+        - [ ] Deterministic encounter selection from template pool
+        - [ ] Ring 1 generation uses configured templates
+    validations:
+      required: true
+
+  - type: textarea
+    id: required_checks
+    attributes:
+      label: Required Checks
+      description: Required CI and local checks for merge readiness
+      value: |
+        - headless-tests
+        - lint
+        - smoke-scene
+        - task-specific-tests
+    validations:
+      required: true
+
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out Of Scope
+      description: Explicitly excluded work
+      placeholder: |
+        - Ring 2 content
+        - UI redesign
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification_notes
+    attributes:
+      label: Verification Plan
+      description: Exact tests and evidence expected in PR
+      placeholder: |
+        Run headless test suite and attach result summary in PR.
+    validations:
+      required: true

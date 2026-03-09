@@ -1,0 +1,14 @@
+name: smoke-scene
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  smoke-scene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run smoke scene check
+        run: scripts/ci/smoke_scene.sh

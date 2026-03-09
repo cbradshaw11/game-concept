@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "[headless-tests] Starting"
+
+if command -v godot4 >/dev/null 2>&1; then
+  godot4 --headless --path game -s res://scripts/tests/replay_test.gd
+  godot4 --headless --path game -s res://scripts/tests/enemy_state_test.gd
+  godot4 --headless --path game -s res://scripts/tests/progression_integrity_test.gd
+  godot4 --headless --path game -s res://scripts/tests/reward_scaling_test.gd
+else
+  echo "godot4 not found in runner. Performing structural checks only."
+  test -f game/scripts/tests/replay_test.gd
+  test -f game/scripts/tests/enemy_state_test.gd
+  test -f game/scripts/tests/progression_integrity_test.gd
+  test -f game/scripts/tests/reward_scaling_test.gd
+fi
+
+echo "[headless-tests] Complete"

@@ -1,0 +1,9 @@
+# Default owner
+* @cbradshaw11
+
+# Shared systems lanes
+/game/autoload/ @cbradshaw11
+/game/scripts/core/ @cbradshaw11
+/game/scripts/systems/ @cbradshaw11
+/game/scripts/tests/ @cbradshaw11
+/.github/ @cbradshaw11

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Delivery Workflow Guide
+    url: https://github.com/cbradshaw11/game-concept/blob/main/.github/CONTRIBUTING.md
+    about: Follow the task lifecycle and verification gates before opening new work.

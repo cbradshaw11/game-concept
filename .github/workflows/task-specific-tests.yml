@@ -1,0 +1,14 @@
+name: task-specific-tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  task-specific-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run task-specific checks
+        run: scripts/ci/task_specific_tests.sh

@@ -1,0 +1,73 @@
+name: Milestone Checkpoint
+description: Gate and sign-off issue for a delivery milestone
+title: "[MILESTONE] "
+labels: ["type:milestone", "state:backlog", "priority:p1", "risk:medium"]
+body:
+  - type: input
+    id: milestone_name
+    attributes:
+      label: Milestone Name
+      placeholder: M1 Foundation
+    validations:
+      required: true
+
+  - type: textarea
+    id: milestone_goal
+    attributes:
+      label: Milestone Goal
+      description: What must be true at completion
+      placeholder: |
+        Stabilize workflow and CI gates for parallel task delivery.
+    validations:
+      required: true
+
+  - type: textarea
+    id: entry_criteria
+    attributes:
+      label: Entry Criteria
+      placeholder: |
+        - [ ] Backlog tasks created
+        - [ ] Dependencies mapped
+    validations:
+      required: true
+
+  - type: textarea
+    id: exit_criteria
+    attributes:
+      label: Exit Criteria
+      placeholder: |
+        - [ ] All milestone tasks in state:done
+        - [ ] No open priority:p0 defects in scope
+        - [ ] Verifier sign-off recorded
+    validations:
+      required: true
+
+  - type: textarea
+    id: demo_scenarios
+    attributes:
+      label: Demo Scenarios
+      placeholder: |
+        1. Start run from Sanctuary
+        2. Resolve Ring 1 encounter
+        3. Extract and bank rewards
+    validations:
+      required: true
+
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks and Mitigations
+      placeholder: |
+        - Risk: Merge conflicts in shared files
+          Mitigation: Limit parallel tasks to 3 and strict allowed-files scope
+    validations:
+      required: true
+
+  - type: textarea
+    id: signoff
+    attributes:
+      label: Verifier Sign-off Evidence
+      placeholder: |
+        Link verifier-approved PRs and final checkpoint notes.
+    validations:
+      required: true
