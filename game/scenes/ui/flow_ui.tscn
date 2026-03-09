@@ -1,0 +1,48 @@
+[gd_scene load_steps=2 format=3 uid="uid://cf8y7jofxslxr"]
+
+[ext_resource type="Script" path="res://scripts/ui/flow_ui.gd" id="1_jn33y"]
+
+[node name="FlowUI" type="CanvasLayer"]
+script = ExtResource("1_jn33y")
+
+[node name="PrepScreen" type="VBoxContainer" parent="."]
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 420.0
+offset_bottom = 220.0
+
+[node name="Title" type="Label" parent="PrepScreen"]
+text = "Sanctuary Prep"
+
+[node name="PrepStatus" type="Label" parent="PrepScreen"]
+text = ""
+
+[node name="StartRunButton" type="Button" parent="PrepScreen"]
+text = "Enter Ring 1"
+
+[node name="RunScreen" type="VBoxContainer" parent="."]
+visible = false
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 520.0
+offset_bottom = 260.0
+
+[node name="RunTitle" type="Label" parent="RunScreen"]
+text = "Expedition"
+
+[node name="RunStatus" type="Label" parent="RunScreen"]
+text = ""
+
+[node name="ResolveEncounterButton" type="Button" parent="RunScreen"]
+text = "Resolve Encounter"
+
+[node name="ExtractButton" type="Button" parent="RunScreen"]
+text = "Extract to Sanctuary"
+
+[node name="DieButton" type="Button" parent="RunScreen"]
+text = "Simulate Death"
+
+[connection signal="pressed" from="PrepScreen/StartRunButton" to="." method="_on_start_run_button_pressed"]
+[connection signal="pressed" from="RunScreen/ResolveEncounterButton" to="." method="_on_resolve_encounter_button_pressed"]
+[connection signal="pressed" from="RunScreen/ExtractButton" to="." method="_on_extract_button_pressed"]
+[connection signal="pressed" from="RunScreen/DieButton" to="." method="_on_die_button_pressed"]

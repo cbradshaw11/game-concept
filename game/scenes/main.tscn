@@ -1,6 +1,9 @@
-[gd_scene load_steps=2 format=3 uid="uid://b6h7k1gtnf8ac"]
+[gd_scene load_steps=3 format=3 uid="uid://b6h7k1gtnf8ac"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_7u1m6"]
+[ext_resource type="PackedScene" path="res://scenes/ui/flow_ui.tscn" id="2_4x0o8"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_7u1m6")
+
+[node name="FlowUI" parent="." instance=ExtResource("2_4x0o8")]
