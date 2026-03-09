@@ -1,0 +1,45 @@
+{
+  "weapons": [
+    {
+      "id": "blade_iron",
+      "family": "blade",
+      "light_damage": 14,
+      "heavy_damage": 24,
+      "light_stamina_cost": 12,
+      "heavy_stamina_cost": 26,
+      "guard_efficiency": 0.7,
+      "poise_damage_light": 8,
+      "poise_damage_heavy": 16
+    },
+    {
+      "id": "polearm_iron",
+      "family": "polearm",
+      "light_damage": 12,
+      "heavy_damage": 28,
+      "light_stamina_cost": 14,
+      "heavy_stamina_cost": 30,
+      "guard_efficiency": 0.78,
+      "poise_damage_light": 12,
+      "poise_damage_heavy": 22
+    },
+    {
+      "id": "bow_iron",
+      "family": "bow",
+      "light_damage": 11,
+      "heavy_damage": 26,
+      "light_stamina_cost": 10,
+      "heavy_stamina_cost": 24,
+      "guard_efficiency": 0.35,
+      "poise_damage_light": 6,
+      "poise_damage_heavy": 14
+    }
+  ],
+  "global_combat": {
+    "max_health": 100,
+    "max_stamina": 100,
+    "max_poise": 100,
+    "dodge_iframe_ms": 220,
+    "stamina_regen_per_sec": 18
+  }
+}
+

@@ -1,0 +1,69 @@
+{
+  "enemies": [
+    {
+      "id": "scavenger_grunt",
+      "role": "grunt",
+      "rings": ["inner", "mid"],
+      "health": 60,
+      "poise": 20,
+      "damage": 8,
+      "behavior_profile": "frontline_basic"
+    },
+    {
+      "id": "shieldbearer",
+      "role": "defender",
+      "rings": ["inner", "mid"],
+      "health": 85,
+      "poise": 40,
+      "damage": 7,
+      "behavior_profile": "guard_counter"
+    },
+    {
+      "id": "ash_flanker",
+      "role": "flanker",
+      "rings": ["mid", "outer"],
+      "health": 70,
+      "poise": 25,
+      "damage": 12,
+      "behavior_profile": "flank_aggressive"
+    },
+    {
+      "id": "ridge_archer",
+      "role": "ranged",
+      "rings": ["mid", "outer"],
+      "health": 55,
+      "poise": 15,
+      "damage": 10,
+      "behavior_profile": "kite_volley"
+    },
+    {
+      "id": "rift_caster",
+      "role": "caster",
+      "rings": ["outer"],
+      "health": 65,
+      "poise": 18,
+      "damage": 14,
+      "behavior_profile": "zone_control"
+    },
+    {
+      "id": "warden_hunter",
+      "role": "elite",
+      "rings": ["outer"],
+      "health": 130,
+      "poise": 70,
+      "damage": 16,
+      "behavior_profile": "elite_pressure"
+    }
+  ],
+  "bosses": [
+    {
+      "id": "outer_warden",
+      "ring": "outer",
+      "phases": 3,
+      "health": 1200,
+      "poise": 250,
+      "damage_profile": "heavy_commitment_punish"
+    }
+  ]
+}
+

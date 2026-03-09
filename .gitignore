@@ -1,0 +1,13 @@
+# Godot
+.game-concept-import/
+.godot/
+.import/
+export_presets.cfg
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
+
+# Logs
+*.log
