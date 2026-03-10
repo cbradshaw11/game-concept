@@ -4,6 +4,7 @@ class_name DataStore
 var rings: Dictionary = {}
 var enemies: Dictionary = {}
 var weapons: Dictionary = {}
+var encounter_templates: Dictionary = {}
 
 func _ready() -> void:
 	load_data()
@@ -12,6 +13,7 @@ func load_data() -> void:
 	rings = _load_json("res://data/rings.json")
 	enemies = _load_json("res://data/enemies.json")
 	weapons = _load_json("res://data/weapons.json")
+	encounter_templates = _load_json("res://data/encounter_templates.json")
 
 func _load_json(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
