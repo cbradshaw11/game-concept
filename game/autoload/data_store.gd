@@ -1,4 +1,5 @@
 extends Node
+class_name DataStore
 
 var rings: Dictionary = {}
 var enemies: Dictionary = {}

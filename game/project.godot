@@ -9,5 +9,9 @@ run/main_scene="res://scenes/main.tscn"
 GameState="*res://autoload/game_state.gd"
 DataStore="*res://autoload/data_store.gd"
 
+[debug]
+
+gdscript/warnings/class_name_hides_autoload=0
+
 [rendering]
 renderer/rendering_method="forward_plus"
