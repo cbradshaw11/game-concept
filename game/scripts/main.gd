@@ -2,6 +2,7 @@ extends Node
 
 const RingDirector = preload("res://scripts/systems/ring_director.gd")
 const RewardSystem = preload("res://scripts/systems/reward_system.gd")
+const SaveSystem = preload("res://scripts/systems/save_system.gd")
 
 @onready var flow_ui: FlowUI = $FlowUI
 
@@ -11,6 +12,7 @@ var active_encounter: Dictionary = {}
 
 func _ready() -> void:
 	print("The Long Walk MVP Slice 1 booted")
+	_load_save_state()
 	_connect_ui()
 	_connect_state()
 	flow_ui.on_idle_ready()
@@ -50,11 +52,20 @@ func _on_extract_pressed() -> void:
 	if GameState.current_ring == "sanctuary":
 		return
 	GameState.extract()
+	_save_state()
 
 func _on_die_pressed() -> void:
 	if GameState.current_ring == "sanctuary":
 		return
 	GameState.die_in_run()
+	_save_state()
 
 func _on_player_died() -> void:
 	flow_ui.on_died(GameState.unbanked_xp, GameState.unbanked_loot)
+
+func _load_save_state() -> void:
+	var state := SaveSystem.load_state(GameState.default_save_state())
+	GameState.apply_save_state(state)
+
+func _save_state() -> void:
+	SaveSystem.save_state(GameState.to_save_state())

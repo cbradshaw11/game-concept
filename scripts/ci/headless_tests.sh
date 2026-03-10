@@ -8,12 +8,14 @@ if command -v godot4 >/dev/null 2>&1; then
   godot4 --headless --path game -s res://scripts/tests/enemy_state_test.gd
   godot4 --headless --path game -s res://scripts/tests/progression_integrity_test.gd
   godot4 --headless --path game -s res://scripts/tests/reward_scaling_test.gd
+  godot4 --headless --path game -s res://scripts/tests/save_load_integrity_test.gd
 else
   echo "godot4 not found in runner. Performing structural checks only."
   test -f game/scripts/tests/replay_test.gd
   test -f game/scripts/tests/enemy_state_test.gd
   test -f game/scripts/tests/progression_integrity_test.gd
   test -f game/scripts/tests/reward_scaling_test.gd
+  test -f game/scripts/tests/save_load_integrity_test.gd
 fi
 
 echo "[headless-tests] Complete"
