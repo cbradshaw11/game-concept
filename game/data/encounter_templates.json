@@ -1,0 +1,29 @@
+{
+  "templates": [
+    {
+      "id": "inner_patrol_a",
+      "ring": "inner",
+      "enemy_ids": ["scavenger_grunt", "shieldbearer"]
+    },
+    {
+      "id": "inner_swarm_a",
+      "ring": "inner",
+      "enemy_ids": ["scavenger_grunt", "scavenger_grunt", "scavenger_grunt"]
+    },
+    {
+      "id": "inner_ranged_mix",
+      "ring": "inner",
+      "enemy_ids": ["scavenger_grunt", "ridge_archer"]
+    },
+    {
+      "id": "mid_patrol_a",
+      "ring": "mid",
+      "enemy_ids": ["ash_flanker", "ridge_archer", "shieldbearer"]
+    },
+    {
+      "id": "outer_elite_a",
+      "ring": "outer",
+      "enemy_ids": ["warden_hunter", "rift_caster"]
+    }
+  ]
+}
