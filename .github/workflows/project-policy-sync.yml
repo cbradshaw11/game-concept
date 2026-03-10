@@ -1,0 +1,89 @@
+name: project-policy-sync
+
+on:
+  issues:
+    types: [opened, edited, labeled, unlabeled, reopened, closed]
+  pull_request:
+    types: [opened, reopened, edited, synchronize, ready_for_review, converted_to_draft, review_requested, closed]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_OWNER: cbradshaw11
+      PROJECT_NUMBER: "1"
+      REPO_OWNER: cbradshaw11
+      REPO_NAME: game-concept
+      GH_TOKEN: ${{ secrets.PROJECT_TOKEN != '' && secrets.PROJECT_TOKEN || github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync issue event
+        if: github.event_name == 'issues'
+        run: |
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          scripts/ci/project_sync.sh --issue "$ISSUE_NUMBER"
+
+      - name: Sync pull request event
+        if: github.event_name == 'pull_request'
+        run: |
+          PR_ACTION="${{ github.event.action }}"
+          PR_DRAFT="${{ github.event.pull_request.draft }}"
+          PR_MERGED="${{ github.event.pull_request.merged }}"
+
+          BODY=$(jq -r '.pull_request.body // ""' "$GITHUB_EVENT_PATH")
+          ISSUE_NUMBERS=$(printf "%s" "$BODY" | grep -Eio '(close[sd]?|fix(e[sd])?|resolve[sd]?)\s*#([0-9]+)' | grep -Eo '#[0-9]+' | tr -d '#' | sort -u || true)
+
+          if [ -z "$ISSUE_NUMBERS" ]; then
+            echo "No linked issue references found in PR body"
+            exit 0
+          fi
+
+          TARGET_WORKFLOW=""
+          TARGET_LABEL=""
+
+          if [ "$PR_ACTION" = "review_requested" ]; then
+            TARGET_WORKFLOW="In Review"
+            TARGET_LABEL="state:in-review"
+          elif [ "$PR_ACTION" = "closed" ] && [ "$PR_MERGED" = "true" ]; then
+            TARGET_WORKFLOW="Done"
+            TARGET_LABEL="state:done"
+          elif [ "$PR_ACTION" = "closed" ] && [ "$PR_MERGED" != "true" ]; then
+            TARGET_WORKFLOW="Ready"
+            TARGET_LABEL="state:ready"
+          else
+            TARGET_WORKFLOW="In Progress"
+            TARGET_LABEL="state:in-progress"
+          fi
+
+          for ISSUE_NUMBER in $ISSUE_NUMBERS; do
+            scripts/ci/project_sync.sh --issue "$ISSUE_NUMBER" --workflow "$TARGET_WORKFLOW" --set-state-label "$TARGET_LABEL"
+          done
+
+      - name: Sync pull request review event
+        if: github.event_name == 'pull_request_review'
+        run: |
+          REVIEW_STATE=$(jq -r '.review.state // ""' "$GITHUB_EVENT_PATH")
+          if [ "$REVIEW_STATE" != "approved" ]; then
+            echo "Review state is not approved; nothing to sync"
+            exit 0
+          fi
+
+          BODY=$(jq -r '.pull_request.body // ""' "$GITHUB_EVENT_PATH")
+          ISSUE_NUMBERS=$(printf "%s" "$BODY" | grep -Eio '(close[sd]?|fix(e[sd])?|resolve[sd]?)\s*#([0-9]+)' | grep -Eo '#[0-9]+' | tr -d '#' | sort -u || true)
+
+          if [ -z "$ISSUE_NUMBERS" ]; then
+            echo "No linked issue references found in PR body"
+            exit 0
+          fi
+
+          for ISSUE_NUMBER in $ISSUE_NUMBERS; do
+            scripts/ci/project_sync.sh --issue "$ISSUE_NUMBER" --workflow "Verified" --set-state-label "state:verified"
+          done

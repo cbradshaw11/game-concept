@@ -48,6 +48,11 @@ Optional labels:
 3. Close issue and set `state:done`.
 4. Update milestone checkpoint issue with evidence links.
 
+## Project Mapping Automation
+1. The `project-policy-sync` workflow maps label state to Project fields.
+2. PRs must include closing keywords in body, for example `Closes #12`, so linked issue state can be advanced.
+3. The workflow uses repository secret `PROJECT_TOKEN` with `project` scope to update GitHub Projects v2 fields.
+
 ## Milestone Gate
 A milestone is complete only when:
 1. All child tasks are `state:done`.
