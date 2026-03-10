@@ -8,11 +8,13 @@ const RewardSystem = preload("res://scripts/systems/reward_system.gd")
 var ring_director := RingDirector.new()
 var reward_system := RewardSystem.new()
 var active_encounter: Dictionary = {}
+var selected_weapon_id: String = "blade_iron"
 
 func _ready() -> void:
 	print("The Long Walk MVP Slice 1 booted")
 	_connect_ui()
 	_connect_state()
+	_initialize_loadouts()
 	flow_ui.on_idle_ready()
 
 func _connect_ui() -> void:
@@ -20,6 +22,7 @@ func _connect_ui() -> void:
 	flow_ui.resolve_encounter_pressed.connect(_on_resolve_encounter_pressed)
 	flow_ui.extract_pressed.connect(_on_extract_pressed)
 	flow_ui.die_pressed.connect(_on_die_pressed)
+	flow_ui.loadout_selected.connect(_on_loadout_selected)
 
 func _connect_state() -> void:
 	GameState.run_started.connect(flow_ui.on_run_started)
@@ -31,6 +34,7 @@ func _on_start_run_pressed() -> void:
 	var seed := Time.get_unix_time_from_system()
 	GameState.start_run(int(seed), "inner")
 	active_encounter = ring_director.generate_encounter(int(seed), "inner", DataStore.enemies)
+	flow_ui.set_current_loadout(selected_weapon_id)
 
 func _on_resolve_encounter_pressed() -> void:
 	if GameState.current_ring == "sanctuary":
@@ -58,3 +62,14 @@ func _on_die_pressed() -> void:
 
 func _on_player_died() -> void:
 	flow_ui.on_died(GameState.unbanked_xp, GameState.unbanked_loot)
+
+func _initialize_loadouts() -> void:
+	var weapons := DataStore.weapons.get("weapons", [])
+	if weapons.size() > 0:
+		selected_weapon_id = str(weapons[0].get("id", selected_weapon_id))
+	flow_ui.set_available_loadouts(weapons)
+	flow_ui.set_current_loadout(selected_weapon_id)
+
+func _on_loadout_selected(weapon_id: String) -> void:
+	selected_weapon_id = weapon_id
+	flow_ui.set_current_loadout(selected_weapon_id)
