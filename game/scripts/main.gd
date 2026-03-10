@@ -3,6 +3,7 @@ extends Node
 const RingDirector = preload("res://scripts/systems/ring_director.gd")
 const RewardSystem = preload("res://scripts/systems/reward_system.gd")
 const SaveSystem = preload("res://scripts/systems/save_system.gd")
+const CombatArenaScene = preload("res://scenes/combat/combat_arena.tscn")
 
 @onready var flow_ui: FlowUI = $FlowUI
 
@@ -10,6 +11,7 @@ var ring_director := RingDirector.new()
 var reward_system := RewardSystem.new()
 var active_encounter: Dictionary = {}
 var selected_weapon_id: String = "blade_iron"
+var combat_arena: CombatArena = null
 
 func _ready() -> void:
 	print("The Long Walk MVP Slice 1 booted")
@@ -41,6 +43,9 @@ func _on_start_run_pressed() -> void:
 		DataStore.enemies,
 		DataStore.encounter_templates
 	)
+	_ensure_combat_arena()
+	combat_arena.set_context("inner", int(seed))
+	combat_arena.set_arena_active(true)
 	flow_ui.set_current_loadout(selected_weapon_id)
 
 func _on_resolve_encounter_pressed() -> void:
@@ -61,16 +66,40 @@ func _on_extract_pressed() -> void:
 	if GameState.current_ring == "sanctuary":
 		return
 	GameState.extract()
+	if combat_arena != null:
+		combat_arena.set_arena_active(false)
 	_save_state()
 
 func _on_die_pressed() -> void:
 	if GameState.current_ring == "sanctuary":
 		return
 	GameState.die_in_run()
+	if combat_arena != null:
+		combat_arena.set_arena_active(false)
 	_save_state()
 
 func _on_player_died() -> void:
+	if combat_arena != null:
+		combat_arena.set_arena_active(false)
 	flow_ui.on_died(GameState.unbanked_xp, GameState.unbanked_loot)
+
+func _ensure_combat_arena() -> void:
+	if combat_arena != null:
+		return
+	combat_arena = CombatArenaScene.instantiate() as CombatArena
+	add_child(combat_arena)
+	combat_arena.attack_hook_triggered.connect(_on_attack_hook_triggered)
+	combat_arena.dodge_hook_triggered.connect(_on_dodge_hook_triggered)
+	combat_arena.guard_hook_changed.connect(_on_guard_hook_changed)
+
+func _on_attack_hook_triggered() -> void:
+	print("Combat hook: attack")
+
+func _on_dodge_hook_triggered() -> void:
+	print("Combat hook: dodge")
+
+func _on_guard_hook_changed(is_guarding: bool) -> void:
+	print("Combat hook: guard=%s" % is_guarding)
 
 func _initialize_loadouts() -> void:
 	var weapons := DataStore.weapons.get("weapons", [])
