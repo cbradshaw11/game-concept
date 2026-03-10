@@ -8,11 +8,18 @@ on:
 jobs:
   headless-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       GODOT_VERSION: "4.2.2"
       GODOT_RELEASE: "stable"
     steps:
       - uses: actions/checkout@v4
+      - name: Cache Godot import cache
+        uses: actions/cache@v4
+        with:
+          path: game/.godot
+          key: godot-import-${{ env.GODOT_VERSION }}-${{ hashFiles('game/**/*.tscn', 'game/**/*.gd', 'game/project.godot') }}
+          restore-keys: godot-import-${{ env.GODOT_VERSION }}-
       - name: Install Godot runtime
         run: |
           set -euo pipefail
@@ -23,5 +30,7 @@ jobs:
           chmod +x "/tmp/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64"
           sudo mv "/tmp/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64" /usr/local/bin/godot4
           godot4 --version
+      - name: Import project assets
+        run: godot4 --headless --display-driver headless --audio-driver Dummy --path game --import || true
       - name: Run headless tests
         run: scripts/ci/headless_tests.sh
