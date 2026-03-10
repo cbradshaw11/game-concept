@@ -119,7 +119,7 @@ func _on_encounter_cleared(enemy_count: int) -> void:
 	_on_resolve_encounter_pressed()
 
 func _initialize_loadouts() -> void:
-	var weapons := DataStore.weapons.get("weapons", [])
+	var weapons: Array = DataStore.weapons.get("weapons", [])
 	if weapons.size() > 0:
 		selected_weapon_id = str(weapons[0].get("id", selected_weapon_id))
 	flow_ui.set_available_loadouts(weapons)

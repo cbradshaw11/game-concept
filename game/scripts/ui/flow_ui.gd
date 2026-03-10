@@ -34,8 +34,8 @@ func _on_die_button_pressed() -> void:
 	die_pressed.emit()
 
 func _on_loadout_select_item_selected(index: int) -> void:
-	var weapon_id := loadout_select.get_item_metadata(index)
-	loadout_selected.emit(str(weapon_id))
+	var weapon_id: String = str(loadout_select.get_item_metadata(index))
+	loadout_selected.emit(weapon_id)
 
 func _show_prep() -> void:
 	prep_screen.visible = true
