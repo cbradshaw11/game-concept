@@ -19,6 +19,7 @@ godot4 --headless --path game -s res://scripts/tests/encounter_templates_test.gd
 godot4 --headless --path game -s res://scripts/tests/enemy_state_test.gd
 godot4 --headless --path game -s res://scripts/tests/progression_integrity_test.gd
 godot4 --headless --path game -s res://scripts/tests/reward_scaling_test.gd
+godot4 --headless --path game -s res://scripts/tests/save_load_integrity_test.gd
 ```
 
 ## Next implementation targets
