@@ -4,11 +4,13 @@ const RingDirector = preload("res://scripts/systems/ring_director.gd")
 const RewardSystem = preload("res://scripts/systems/reward_system.gd")
 const SaveSystem = preload("res://scripts/systems/save_system.gd")
 const CombatArenaScene = preload("res://scenes/combat/combat_arena.tscn")
+const ContractSystem = preload("res://scripts/systems/contract_system.gd")
 
 @onready var flow_ui: FlowUI = $FlowUI
 
 var ring_director := RingDirector.new()
 var reward_system := RewardSystem.new()
+var contract_system := ContractSystem.new()
 var active_encounter: Dictionary = {}
 var selected_weapon_id: String = "blade_iron"
 var combat_arena: CombatArena = null
@@ -37,6 +39,8 @@ func _connect_state() -> void:
 func _on_start_run_pressed() -> void:
 	var seed := Time.get_unix_time_from_system()
 	GameState.start_run(int(seed), "inner")
+	var contract := contract_system.start_contract("ring1_clearance", "inner", 3)
+	flow_ui.on_objective_started(contract)
 	active_encounter = ring_director.generate_encounter(
 		int(seed),
 		"inner",
@@ -60,14 +64,20 @@ func _on_resolve_encounter_pressed() -> void:
 		int(active_encounter.get("enemy_count", 1))
 	)
 	GameState.add_unbanked(int(rewards["xp"]), int(rewards["loot"]))
+	var contract := contract_system.record_encounter_completed()
+	flow_ui.on_objective_progress(contract)
 	active_encounter = {}
 
 func _on_extract_pressed() -> void:
 	if GameState.current_ring == "sanctuary":
 		return
+	if not contract_system.can_extract():
+		flow_ui.on_extract_blocked(contract_system.get_contract())
+		return
 	GameState.extract()
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
+	contract_system.reset()
 	_save_state()
 
 func _on_die_pressed() -> void:
@@ -76,6 +86,8 @@ func _on_die_pressed() -> void:
 	GameState.die_in_run()
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
+	contract_system.fail_active_contract()
+	flow_ui.on_objective_failed(contract_system.get_contract())
 	_save_state()
 
 func _on_player_died() -> void:
