@@ -48,7 +48,7 @@ func _on_start_run_pressed() -> void:
 		DataStore.encounter_templates
 	)
 	_ensure_combat_arena()
-	combat_arena.set_context("inner", int(seed))
+	combat_arena.set_context("inner", int(seed), int(active_encounter.get("enemy_count", 1)))
 	combat_arena.set_arena_active(true)
 	flow_ui.set_current_loadout(selected_weapon_id)
 
@@ -103,6 +103,7 @@ func _ensure_combat_arena() -> void:
 	combat_arena.attack_hook_triggered.connect(_on_attack_hook_triggered)
 	combat_arena.dodge_hook_triggered.connect(_on_dodge_hook_triggered)
 	combat_arena.guard_hook_changed.connect(_on_guard_hook_changed)
+	combat_arena.encounter_cleared.connect(_on_encounter_cleared)
 
 func _on_attack_hook_triggered() -> void:
 	print("Combat hook: attack")
@@ -112,6 +113,10 @@ func _on_dodge_hook_triggered() -> void:
 
 func _on_guard_hook_changed(is_guarding: bool) -> void:
 	print("Combat hook: guard=%s" % is_guarding)
+
+func _on_encounter_cleared(enemy_count: int) -> void:
+	print("Combat hook: encounter cleared (%d enemies)" % enemy_count)
+	_on_resolve_encounter_pressed()
 
 func _initialize_loadouts() -> void:
 	var weapons := DataStore.weapons.get("weapons", [])
