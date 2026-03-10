@@ -15,6 +15,9 @@ signal loadout_selected(weapon_id: String)
 @onready var run_status: Label = $RunScreen/RunStatus
 @onready var run_loadout: Label = $RunScreen/RunLoadout
 
+var run_base_status: String = ""
+var objective_status: String = ""
+
 func _ready() -> void:
 	_show_prep()
 
@@ -44,7 +47,8 @@ func _show_run() -> void:
 
 func on_run_started(seed: int) -> void:
 	_show_run()
-	run_status.text = "Run active (seed %d)" % seed
+	run_base_status = "Run active (seed %d)" % seed
+	_refresh_run_status()
 
 func set_available_loadouts(weapons: Array) -> void:
 	loadout_select.clear()
@@ -61,7 +65,8 @@ func set_current_loadout(weapon_id: String) -> void:
 	run_loadout.text = "Loadout: %s" % weapon_id
 
 func on_encounter_resolved(xp_gain: int, loot_gain: int) -> void:
-	run_status.text = "Encounter won: +%d XP, +%d Loot" % [xp_gain, loot_gain]
+	run_base_status = "Encounter won: +%d XP, +%d Loot" % [xp_gain, loot_gain]
+	_refresh_run_status()
 
 func on_extracted(total_xp: int, total_loot: int) -> void:
 	_show_prep()
@@ -73,4 +78,39 @@ func on_died(unbanked_xp: int, unbanked_loot: int) -> void:
 
 func on_idle_ready() -> void:
 	_show_prep()
+	run_base_status = ""
+	objective_status = ""
 	prep_status.text = "Sanctuary: choose loadout and start run"
+
+func on_objective_started(contract: Dictionary) -> void:
+	var contract_id := str(contract.get("id", "contract"))
+	var target := int(contract.get("target", 1))
+	objective_status = "%s 0/%d (active)" % [contract_id, target]
+	_refresh_run_status()
+
+func on_objective_progress(contract: Dictionary) -> void:
+	var contract_id := str(contract.get("id", "contract"))
+	var progress := int(contract.get("progress", 0))
+	var target := int(contract.get("target", 1))
+	var state := str(contract.get("state", "active"))
+	objective_status = "%s %d/%d (%s)" % [contract_id, progress, target, state]
+	_refresh_run_status()
+
+func on_extract_blocked(contract: Dictionary) -> void:
+	var progress := int(contract.get("progress", 0))
+	var target := int(contract.get("target", 1))
+	run_base_status = "Extraction locked: objective incomplete (%d/%d)" % [progress, target]
+	_refresh_run_status()
+
+func on_objective_failed(contract: Dictionary) -> void:
+	var contract_id := str(contract.get("id", "contract"))
+	objective_status = "%s failed" % contract_id
+	_refresh_run_status()
+
+func _refresh_run_status() -> void:
+	var lines: PackedStringArray = []
+	if run_base_status != "":
+		lines.append(run_base_status)
+	if objective_status != "":
+		lines.append("Objective: %s" % objective_status)
+	run_status.text = "\n".join(lines)
