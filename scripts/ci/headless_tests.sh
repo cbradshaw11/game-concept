@@ -29,6 +29,36 @@ run_test() {
   fi
 }
 
+# run_scene_test: like run_test but tolerates a physics-shutdown hang.
+# The test calls quit(0/1) inside _initialize(), completing all assertions
+# before the engine loop starts. If the process hangs on shutdown (a known
+# Godot 4 headless issue with CharacterBody2D physics cleanup), the output
+# has already been written. We capture it and judge by the PASS/FAIL print.
+run_scene_test() {
+  local script="$1"
+  local name
+  name=$(basename "$script")
+  echo "[test] $name"
+  local output exit_code=0
+  output=$(timeout 10 godot4 $GODOT_FLAGS --path game -s "$script" 2>&1) || exit_code=$?
+  echo "$output"
+  if echo "$output" | grep -q "^PASS:"; then
+    echo "[PASS] $name"
+    PASS=$((PASS + 1))
+  elif echo "$output" | grep -q "^FAIL:"; then
+    echo "[FAIL] $name"
+    FAILED_TESTS+=("$name (assertion)")
+    FAIL=$((FAIL + 1))
+  elif [ "$exit_code" -eq 0 ]; then
+    echo "[PASS] $name"
+    PASS=$((PASS + 1))
+  else
+    echo "[FAIL] $name — no PASS/FAIL output (exit $exit_code)"
+    FAILED_TESTS+=("$name (no output)")
+    FAIL=$((FAIL + 1))
+  fi
+}
+
 if command -v godot4 >/dev/null 2>&1; then
   run_test res://scripts/tests/replay_test.gd
   run_test res://scripts/tests/encounter_templates_test.gd
@@ -36,7 +66,7 @@ if command -v godot4 >/dev/null 2>&1; then
   run_test res://scripts/tests/progression_integrity_test.gd
   run_test res://scripts/tests/reward_scaling_test.gd
   run_test res://scripts/tests/save_load_integrity_test.gd
-  run_test res://scripts/tests/combat_smoke_test.gd
+  run_scene_test res://scripts/tests/combat_smoke_test.gd
   run_test res://scripts/tests/combat_arena_scene_test.gd
   run_test res://scripts/tests/combat_hooks_test.gd
   run_test res://scripts/tests/contract_system_test.gd

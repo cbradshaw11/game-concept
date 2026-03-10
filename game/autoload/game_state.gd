@@ -1,5 +1,4 @@
 extends Node
-class_name GameState
 
 const Telemetry = preload("res://scripts/systems/telemetry.gd")
 

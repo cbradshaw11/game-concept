@@ -59,7 +59,7 @@ func _generate_template_encounter(
 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _combine_seed(seed, ring_id)
-	var template := ring_templates[rng.randi_range(0, ring_templates.size() - 1)]
+	var template: Variant = ring_templates[rng.randi_range(0, ring_templates.size() - 1)]
 
 	var selected: Array = []
 	for enemy_id in template.get("enemy_ids", []):
