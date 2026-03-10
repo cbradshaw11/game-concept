@@ -13,6 +13,31 @@ var banked_loot: int = 0
 var unbanked_xp: int = 0
 var unbanked_loot: int = 0
 
+func default_save_state() -> Dictionary:
+	return {
+		"banked_xp": 0,
+		"banked_loot": 0,
+		"unbanked_xp": 0,
+		"unbanked_loot": 0,
+		"current_ring": "sanctuary",
+	}
+
+func to_save_state() -> Dictionary:
+	return {
+		"banked_xp": banked_xp,
+		"banked_loot": banked_loot,
+		"unbanked_xp": unbanked_xp,
+		"unbanked_loot": unbanked_loot,
+		"current_ring": current_ring,
+	}
+
+func apply_save_state(data: Dictionary) -> void:
+	banked_xp = int(data.get("banked_xp", 0))
+	banked_loot = int(data.get("banked_loot", 0))
+	unbanked_xp = int(data.get("unbanked_xp", 0))
+	unbanked_loot = int(data.get("unbanked_loot", 0))
+	current_ring = str(data.get("current_ring", "sanctuary"))
+
 func start_run(seed: int, ring_id: String) -> void:
 	active_seed = seed
 	current_ring = ring_id

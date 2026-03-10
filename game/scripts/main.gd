@@ -2,6 +2,7 @@ extends Node
 
 const RingDirector = preload("res://scripts/systems/ring_director.gd")
 const RewardSystem = preload("res://scripts/systems/reward_system.gd")
+const SaveSystem = preload("res://scripts/systems/save_system.gd")
 
 @onready var flow_ui: FlowUI = $FlowUI
 
@@ -12,6 +13,7 @@ var selected_weapon_id: String = "blade_iron"
 
 func _ready() -> void:
 	print("The Long Walk MVP Slice 1 booted")
+	_load_save_state()
 	_connect_ui()
 	_connect_state()
 	_initialize_loadouts()
@@ -33,7 +35,12 @@ func _connect_state() -> void:
 func _on_start_run_pressed() -> void:
 	var seed := Time.get_unix_time_from_system()
 	GameState.start_run(int(seed), "inner")
-	active_encounter = ring_director.generate_encounter(int(seed), "inner", DataStore.enemies)
+	active_encounter = ring_director.generate_encounter(
+		int(seed),
+		"inner",
+		DataStore.enemies,
+		DataStore.encounter_templates
+	)
 	flow_ui.set_current_loadout(selected_weapon_id)
 
 func _on_resolve_encounter_pressed() -> void:
@@ -54,11 +61,13 @@ func _on_extract_pressed() -> void:
 	if GameState.current_ring == "sanctuary":
 		return
 	GameState.extract()
+	_save_state()
 
 func _on_die_pressed() -> void:
 	if GameState.current_ring == "sanctuary":
 		return
 	GameState.die_in_run()
+	_save_state()
 
 func _on_player_died() -> void:
 	flow_ui.on_died(GameState.unbanked_xp, GameState.unbanked_loot)
@@ -73,3 +82,10 @@ func _initialize_loadouts() -> void:
 func _on_loadout_selected(weapon_id: String) -> void:
 	selected_weapon_id = weapon_id
 	flow_ui.set_current_loadout(selected_weapon_id)
+
+func _load_save_state() -> void:
+	var state := SaveSystem.load_state(GameState.default_save_state())
+	GameState.apply_save_state(state)
+
+func _save_state() -> void:
+	SaveSystem.save_state(GameState.to_save_state())
