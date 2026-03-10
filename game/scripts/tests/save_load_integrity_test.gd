@@ -22,6 +22,24 @@ func _initialize() -> void:
 	if int(loaded.get("banked_xp", -1)) != 250 or int(loaded.get("banked_loot", -1)) != 99:
 		_fail("Failed to load persisted banked values")
 		return
+	if int(loaded.get("unbanked_xp", -1)) != 40 or int(loaded.get("unbanked_loot", -1)) != 7:
+		_fail("Failed to load persisted unbanked values")
+		return
+	if str(loaded.get("current_ring", "")) != "inner":
+		_fail("Failed to load persisted ring state")
+		return
+
+	# Missing fields should safely fall back to defaults.
+	if not SaveSystem.save_state({"banked_xp": 10}):
+		_fail("Failed to write sparse save state")
+		return
+	loaded = SaveSystem.load_state(defaults)
+	if int(loaded.get("banked_xp", -1)) != 10:
+		_fail("Sparse save should retain explicit fields")
+		return
+	if int(loaded.get("banked_loot", -1)) != int(defaults.get("banked_loot", -2)):
+		_fail("Sparse save should fall back missing fields to defaults")
+		return
 
 	# Corrupt the save and ensure defaults are used safely.
 	var file := FileAccess.open(SaveSystem.SAVE_PATH, FileAccess.WRITE)
