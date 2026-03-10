@@ -51,3 +51,18 @@ func apply_damage(amount: int, poise_break: bool = false) -> EnemyState:
 		state = EnemyState.STAGGER
 		stagger_timer = 0.6
 	return state
+
+static func state_name(value: EnemyState) -> String:
+	match value:
+		EnemyState.IDLE:
+			return "IDLE"
+		EnemyState.CHASE:
+			return "CHASE"
+		EnemyState.ATTACK:
+			return "ATTACK"
+		EnemyState.STAGGER:
+			return "STAGGER"
+		EnemyState.DEAD:
+			return "DEAD"
+		_:
+			return "UNKNOWN"
