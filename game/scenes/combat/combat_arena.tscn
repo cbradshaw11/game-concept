@@ -21,6 +21,27 @@ offset_right = 920.0
 offset_bottom = 60.0
 text = ""
 
+[node name="Bars" type="VBoxContainer" parent="HUD"]
+offset_left = 24.0
+offset_top = 64.0
+offset_right = 224.0
+offset_bottom = 124.0
+
+[node name="HPBar" type="ProgressBar" parent="HUD/Bars"]
+layout_mode = 2
+max_value = 100.0
+value = 100.0
+
+[node name="StaminaBar" type="ProgressBar" parent="HUD/Bars"]
+layout_mode = 2
+max_value = 100.0
+value = 100.0
+
+[node name="PoiseBar" type="ProgressBar" parent="HUD/Bars"]
+layout_mode = 2
+max_value = 100.0
+value = 100.0
+
 [node name="Player" type="CharacterBody2D" parent="."]
 position = Vector2(480, 270)
 script = ExtResource("2_8n9ne")

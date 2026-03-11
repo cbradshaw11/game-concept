@@ -2,13 +2,23 @@
 
 ## Active
 
-| ID       | Title                                        | Priority | Area  | Status      | Milestone       |
-|----------|----------------------------------------------|----------|-------|-------------|-----------------|
-| TASK-209 | Enable Godot runtime execution in CI         | p1       | infra | in-progress | M2 Ring1 Slice  |
+| ID       | Title                                        | Priority | Area   | Status  | Milestone      |
+|----------|----------------------------------------------|----------|--------|---------|----------------|
+| TASK-301 | Player HP and death state                    | p1       | combat | ready   | M3 Combat Model |
+| TASK-303 | Weapon stat integration                      | p1       | combat | ready   | M3 Combat Model |
 
 ## Backlog
 
-_Empty — ready for next milestone tasks._
+| ID       | Title                                        | Priority | Area   | Unblocked By  | Milestone      |
+|----------|----------------------------------------------|----------|--------|---------------|----------------|
+| TASK-302 | Enemy damage output                          | p1       | combat | TASK-301      | M3 Combat Model |
+| TASK-307 | Combat HUD (HP, stamina, poise)              | p1       | ui     | TASK-301      | M3 Combat Model |
+| TASK-304 | Guard damage reduction                       | p1       | combat | TASK-302      | M3 Combat Model |
+| TASK-305 | Dodge invulnerability frames                 | p1       | combat | TASK-302      | M3 Combat Model |
+| TASK-306 | Player poise tracking and stagger            | p2       | combat | TASK-302      | M3 Combat Model |
+| TASK-308 | Death screen and run summary                 | p2       | ui     | TASK-302      | M3 Combat Model |
+| TASK-309 | Ring 1 combat balance pass                   | p2       | data   | TASK-302,303  | M3 Combat Model |
+| TASK-310 | Full combat loop test suite                  | p1       | test   | TASK-301-306  | M3 Combat Model |
 
 ---
 
@@ -30,6 +40,7 @@ _Empty — ready for next milestone tasks._
 | TASK-206 | Contract objective system v1                       | progression |
 | TASK-207 | Verifier tests for save integrity and combat smoke | test        |
 | TASK-208 | Telemetry event sink for run lifecycle             | infra       |
+| TASK-209 | Enable Godot runtime execution in CI headless tests | infra      |
 
 ## Done (M1 Foundation)
 

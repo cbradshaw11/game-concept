@@ -1,0 +1,87 @@
+id: TASK-308
+title: Death screen and run summary
+type: feature
+priority: p2
+area: ui
+risk: low
+milestone: M3 Combat Model
+status: done
+
+problem: >
+  When player_died fires, flow_ui.on_died(unbanked_xp, unbanked_loot) is called
+  but only receives xp/loot values. There is no dedicated death screen showing
+  encounters cleared, ring reached, or a clear path back to Sanctuary.
+
+desired_outcome: >
+  A death screen panel overlays on player death. It shows encounters cleared this
+  run, unbanked XP/loot lost, and which ring the player died in. A "Return to
+  Sanctuary" button resets and returns to the prep screen.
+
+scope_in:
+  - Death screen panel in FlowUI (can be a Control node overlay)
+  - Shows: ring reached, encounters cleared, unbanked XP lost, unbanked loot lost
+  - "Return to Sanctuary" button → reset run state, show prep screen
+  - Data sourced from GameState (current_ring, unbanked_xp, unbanked_loot) and ContractSystem
+
+scope_out:
+  - Animated death screen
+  - Run statistics persistence (best run tracking)
+  - Sound effects
+
+dependencies:
+  blockers:
+    - TASK-301
+    - TASK-302
+  unblocks:
+    - TASK-310
+
+acceptance_criteria:
+  - id: ac1
+    description: FlowUI has an on_died method that shows death screen with run summary
+    verify: "grep -n 'on_died\\|death_screen\\|DeathScreen' game/scripts/ui/flow_ui.gd"
+  - id: ac2
+    description: Death screen shows ring, encounters cleared, XP/loot lost
+    verify: "grep -n 'encounters_cleared\\|unbanked\\|ring' game/scripts/ui/flow_ui.gd"
+  - id: ac3
+    description: Return to Sanctuary button resets to prep screen
+    verify: "grep -n 'return_to_sanctuary\\|on_idle_ready' game/scripts/ui/flow_ui.gd"
+
+verification_required:
+  - "grep -n 'on_died\\|death_screen' game/scripts/ui/flow_ui.gd"
+  - "grep -n 'return_to_sanctuary' game/scripts/ui/flow_ui.gd"
+
+slices:
+  - id: s1
+    name: Add death screen panel and summary logic to FlowUI
+    files_create: []
+    files_modify:
+      - game/scripts/ui/flow_ui.gd
+      - game/scenes/ui/flow_ui.tscn
+    files_read_only:
+      - game/autoload/game_state.gd
+      - game/scripts/systems/contract_system.gd
+    evidence: []
+
+context_refs:
+  - .plans/TASK-308-execution-plan.md
+  - game/scripts/ui/flow_ui.gd
+  - game/scenes/ui/flow_ui.tscn
+  - game/autoload/game_state.gd
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: "2026-03-10"
+  completed_at: "2026-03-10"
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  main.gd already calls flow_ui.on_died(GameState.unbanked_xp, GameState.unbanked_loot).
+  Extend the signature to include ring and encounters_cleared, or read them from
+  GameState directly. Add a death_panel Control node to flow_ui.tscn with Labels
+  for each stat and a ReturnButton. on_died() shows the panel and populates labels.
+  Return button calls on_idle_ready() to reset to prep state.

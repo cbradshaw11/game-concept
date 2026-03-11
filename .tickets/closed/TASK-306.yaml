@@ -1,0 +1,94 @@
+id: TASK-306
+title: Player poise tracking and stagger
+type: feature
+priority: p2
+area: combat
+risk: low
+milestone: M3 Combat Model
+status: done
+
+problem: >
+  EnemyController already has a poise system (poise_break bool in apply_damage).
+  Players have no equivalent. Player stagger from heavy hits is not implemented.
+
+desired_outcome: >
+  PlayerController tracks current_poise/max_poise. Enemy attacks that deal poise
+  damage reduce it. At 0, player_staggered fires and the player is briefly unable
+  to act. Poise regenerates after stagger resolves.
+
+scope_in:
+  - Add current_poise, max_poise to PlayerController (from weapons.json global_combat.max_poise=100)
+  - Add take_poise_damage(amount) and player_staggered signal
+  - Poise regenerates to max after stagger_duration (0.5s) resolves
+  - poise_changed(current, max_poise) signal for HUD (TASK-307)
+  - enemies.json poise_damage field used in _apply_damage_to_player
+
+scope_out:
+  - Guard effect on poise damage
+  - Weapon poise damage (player attacking enemies — enemy poise system already exists)
+  - Visual stagger animation
+
+dependencies:
+  blockers:
+    - TASK-301
+    - TASK-302
+  unblocks:
+    - TASK-310
+
+acceptance_criteria:
+  - id: ac1
+    description: PlayerController has current_poise, max_poise, take_poise_damage, player_staggered
+    verify: "grep -n 'current_poise\\|take_poise_damage\\|player_staggered' game/scripts/core/player_controller.gd"
+  - id: ac2
+    description: poise_changed signal emitted when poise changes
+    verify: "grep -n 'poise_changed' game/scripts/core/player_controller.gd"
+  - id: ac3
+    description: Unit test — poise damage to 0 fires player_staggered; poise recovers after stagger
+    verify: "bash scripts/ci/headless_tests.sh 2>&1 | grep -E 'PASS.*poise|poise.*PASS'"
+
+verification_required:
+  - "grep -n 'current_poise\\|player_staggered' game/scripts/core/player_controller.gd"
+  - "bash scripts/ci/headless_tests.sh 2>&1 | grep -E 'PASS.*poise|poise.*PASS'"
+
+slices:
+  - id: s1
+    name: Add poise to PlayerController
+    files_create: []
+    files_modify:
+      - game/scripts/core/player_controller.gd
+      - game/scenes/combat/combat_arena.gd
+    files_read_only:
+      - game/data/weapons.json
+      - game/data/enemies.json
+    evidence: []
+  - id: s2
+    name: Write poise unit test
+    files_create:
+      - game/scripts/tests/combat/test_poise.gd
+    files_modify: []
+    files_read_only: []
+    evidence: []
+
+context_refs:
+  - .plans/TASK-306-execution-plan.md
+  - game/scripts/core/player_controller.gd
+  - game/scripts/core/enemy_controller.gd
+  - game/data/weapons.json
+  - game/data/enemies.json
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: "2026-03-10"
+  completed_at: "2026-03-10"
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  enemies.json has poise_damage per enemy type. CombatArena._apply_damage_to_player
+  should also call player.take_poise_damage(enemy.poise_damage) alongside health damage.
+  Mirror the EnemyController pattern exactly: stagger_timer countdown in _process,
+  player_staggered emitted when poise hits 0, poise resets to max after stagger_duration.

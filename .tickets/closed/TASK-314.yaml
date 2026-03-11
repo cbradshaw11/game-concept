@@ -1,0 +1,67 @@
+id: TASK-314
+title: Initialize poise_bar in CombatArena._ready()
+type: bug
+priority: p2
+area: ui
+risk: low
+milestone: M3 Combat Model
+status: done
+
+problem: >
+  hp_bar and stamina_bar are explicitly seeded in CombatArena._ready() from
+  player values. poise_bar is not — it only updates when poise_changed fires.
+  Currently works by coincidence (tscn default max_value=100 matches max_poise=100)
+  but will display incorrect values if max_poise is ever tuned.
+  Found by static verifier (WARN-3).
+
+desired_outcome: >
+  poise_bar.max_value and poise_bar.value are set in _ready() immediately after
+  the player is assigned, matching the pattern used for hp_bar and stamina_bar.
+
+scope_in:
+  - Add poise_bar initialization in CombatArena._ready() after player assignment
+
+scope_out:
+  - Any other HUD changes
+
+dependencies:
+  blockers: []
+  unblocks: []
+
+acceptance_criteria:
+  - id: ac1
+    description: poise_bar initialized in _ready() alongside hp_bar and stamina_bar
+    verify: "grep -n 'poise_bar' game/scenes/combat/combat_arena.gd"
+
+verification_required:
+  - "grep -n 'poise_bar' game/scenes/combat/combat_arena.gd"
+
+slices:
+  - id: s1
+    name: Seed poise_bar in CombatArena._ready()
+    files_create: []
+    files_modify:
+      - game/scenes/combat/combat_arena.gd
+    files_read_only: []
+    evidence: []
+
+context_refs:
+  - .memory/M3-combat-model/verification.md
+  - game/scenes/combat/combat_arena.gd
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: "2026-03-10"
+  completed_at: "2026-03-10"
+  verification:
+    required_passed: true
+    commands_run:
+      - "grep -n 'poise_bar' game/scenes/combat/combat_arena.gd"
+    evidence_refs: []
+
+notes: >
+  Two-line fix. Added after stamina_bar initialization in _ready():
+    poise_bar.max_value = player.max_poise
+    poise_bar.value = player.current_poise

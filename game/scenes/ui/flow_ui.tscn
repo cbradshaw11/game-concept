@@ -53,6 +53,40 @@ text = "Extract to Sanctuary"
 [node name="DieButton" type="Button" parent="RunScreen"]
 text = "Simulate Death"
 
+[node name="DeathPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBox" type="VBoxContainer" parent="DeathPanel"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="DeathPanel/VBox"]
+layout_mode = 2
+text = "YOU DIED"
+
+[node name="RingLabel" type="Label" parent="DeathPanel/VBox"]
+layout_mode = 2
+text = ""
+
+[node name="EncountersLabel" type="Label" parent="DeathPanel/VBox"]
+layout_mode = 2
+text = ""
+
+[node name="XPLabel" type="Label" parent="DeathPanel/VBox"]
+layout_mode = 2
+text = ""
+
+[node name="LootLabel" type="Label" parent="DeathPanel/VBox"]
+layout_mode = 2
+text = ""
+
+[node name="ReturnButton" type="Button" parent="DeathPanel/VBox"]
+layout_mode = 2
+text = "Return to Sanctuary"
+
 [connection signal="pressed" from="PrepScreen/StartRunButton" to="." method="_on_start_run_button_pressed"]
 [connection signal="item_selected" from="PrepScreen/LoadoutSelect" to="." method="_on_loadout_select_item_selected"]
 [connection signal="pressed" from="RunScreen/ResolveEncounterButton" to="." method="_on_resolve_encounter_button_pressed"]

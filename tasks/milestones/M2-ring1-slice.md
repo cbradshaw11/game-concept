@@ -1,7 +1,7 @@
 ---
 id: M2
 title: Ring1 Slice
-status: in-progress
+status: done
 ---
 
 ## Description
@@ -22,7 +22,7 @@ Sanctuary + Ring1 stable vertical slice with combat depth baseline.
 3. Extract and bank rewards
 
 ## Verifier Sign-off
-- Pending (blocked on TASK-209)
+- Complete (2026-03-10)
 
 ## Tasks
 - [x] TASK-201 Sanctuary prep UI loadout selector
@@ -33,4 +33,4 @@ Sanctuary + Ring1 stable vertical slice with combat depth baseline.
 - [x] TASK-206 Contract objective system v1
 - [x] TASK-207 Verifier tests for save integrity and combat smoke
 - [x] TASK-208 Telemetry event sink for run lifecycle
-- [ ] TASK-209 Enable Godot runtime execution in CI headless tests
+- [x] TASK-209 Enable Godot runtime execution in CI headless tests

@@ -14,12 +14,19 @@ signal loadout_selected(weapon_id: String)
 @onready var loadout_summary: Label = $PrepScreen/LoadoutSummary
 @onready var run_status: Label = $RunScreen/RunStatus
 @onready var run_loadout: Label = $RunScreen/RunLoadout
+@onready var death_panel: PanelContainer = $DeathPanel
+@onready var ring_label: Label = $DeathPanel/VBox/RingLabel
+@onready var encounters_label: Label = $DeathPanel/VBox/EncountersLabel
+@onready var xp_label: Label = $DeathPanel/VBox/XPLabel
+@onready var loot_label: Label = $DeathPanel/VBox/LootLabel
+@onready var return_button: Button = $DeathPanel/VBox/ReturnButton
 
 var run_base_status: String = ""
 var objective_status: String = ""
 
 func _ready() -> void:
 	_show_prep()
+	return_button.pressed.connect(_on_return_to_sanctuary)
 
 func _on_start_run_button_pressed() -> void:
 	start_run_pressed.emit()
@@ -73,8 +80,15 @@ func on_extracted(total_xp: int, total_loot: int) -> void:
 	prep_status.text = "Extracted. Banked XP: %d, Loot: %d" % [total_xp, total_loot]
 
 func on_died(unbanked_xp: int, unbanked_loot: int) -> void:
-	_show_prep()
-	prep_status.text = "You died. Remaining unbanked XP: %d, Loot: %d" % [unbanked_xp, unbanked_loot]
+	ring_label.text = "Ring Reached: %s" % GameState.current_ring
+	encounters_label.text = "Encounters Cleared: %d" % GameState.encounters_cleared
+	xp_label.text = "XP Lost: %d" % unbanked_xp
+	loot_label.text = "Loot Lost: %d" % unbanked_loot
+	death_panel.visible = true
+
+func _on_return_to_sanctuary() -> void:
+	death_panel.visible = false
+	on_idle_ready()
 
 func on_idle_ready() -> void:
 	_show_prep()

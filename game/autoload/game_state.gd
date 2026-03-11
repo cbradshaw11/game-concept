@@ -10,10 +10,12 @@ signal player_died()
 
 var current_ring: String = "sanctuary"
 var active_seed: int = 0
+var selected_weapon_id: String = "blade_iron"
 var banked_xp: int = 0
 var banked_loot: int = 0
 var unbanked_xp: int = 0
 var unbanked_loot: int = 0
+var encounters_cleared: int = 0
 var telemetry := Telemetry.new()
 
 func default_save_state() -> Dictionary:
@@ -46,6 +48,7 @@ func start_run(seed: int, ring_id: String) -> void:
 	current_ring = ring_id
 	unbanked_xp = 0
 	unbanked_loot = 0
+	encounters_cleared = 0
 	telemetry.log_event("run_started", {
 		"seed": active_seed,
 		"ring": current_ring,
@@ -55,6 +58,7 @@ func start_run(seed: int, ring_id: String) -> void:
 func add_unbanked(xp_value: int, loot_value: int) -> void:
 	unbanked_xp += xp_value
 	unbanked_loot += loot_value
+	encounters_cleared += 1
 	telemetry.log_event("encounter_completed", {
 		"seed": active_seed,
 		"ring": current_ring,
@@ -82,6 +86,7 @@ func die_in_run() -> void:
 	var event_ring := current_ring
 	unbanked_xp = int(unbanked_xp * 0.5)
 	unbanked_loot = 0
+	encounters_cleared = 0
 	current_ring = "sanctuary"
 	telemetry.log_event("player_died", {
 		"seed": active_seed,

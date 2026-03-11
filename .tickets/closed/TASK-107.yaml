@@ -1,0 +1,53 @@
+id: TASK-107
+title: Create Projects v2 board and status automations
+type: chore
+priority: p2
+area: infra
+risk: low
+milestone: M1 Foundation
+status: done
+
+problem: No GitHub Projects board existed for tracking task status and milestone progress.
+desired_outcome: Projects v2 board with automated status transitions for tasks.
+
+scope_in:
+  - Create GitHub Projects v2 board
+  - Configure status automations for task lifecycle
+scope_out:
+  - Issue templates or label definitions
+  - CI workflows
+
+dependencies:
+  blockers:
+    - TASK-106
+  unblocks:
+    - TASK-108
+
+acceptance_criteria:
+  - id: ac1
+    description: Projects v2 board exists with status automations
+    verify: "gh project list"
+
+verification_required:
+  - "gh project list"
+
+slices:
+  - id: s1
+    name: Create Projects board
+    files_create: []
+    files_modify: []
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: Completed as part of M1 Foundation milestone.

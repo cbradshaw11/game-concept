@@ -1,0 +1,54 @@
+id: TASK-208
+title: Telemetry event sink for run lifecycle
+type: feature
+priority: p2
+area: infra
+risk: low
+milestone: M2 Ring1 Slice
+status: done
+
+problem: No telemetry system captured run lifecycle events, making debugging and analytics impossible.
+desired_outcome: Telemetry event sink records key run lifecycle events (run start, encounter result, extract, reward bank).
+
+scope_in:
+  - Telemetry event sink implementation
+  - Run lifecycle event hooks (start, encounter result, extract, bank)
+scope_out:
+  - UI telemetry display
+  - External analytics integrations
+
+dependencies:
+  blockers:
+    - TASK-206
+  unblocks:
+    - TASK-209
+
+acceptance_criteria:
+  - id: ac1
+    description: Telemetry lifecycle tests pass
+    verify: "bash scripts/ci/task_specific_tests.sh"
+
+verification_required:
+  - "bash scripts/ci/task_specific_tests.sh"
+
+slices:
+  - id: s1
+    name: Telemetry event sink and run lifecycle hooks
+    files_create:
+      - game/scripts/systems/reward_system.gd
+    files_modify: []
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: Completed as part of M2 Ring1 Slice milestone.

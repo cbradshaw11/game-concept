@@ -13,7 +13,7 @@
     {
       "id": "inner_ranged_mix",
       "ring": "inner",
-      "enemy_ids": ["scavenger_grunt", "ridge_archer"]
+      "enemy_ids": ["scavenger_grunt", "shieldbearer"]
     },
     {
       "id": "mid_patrol_a",

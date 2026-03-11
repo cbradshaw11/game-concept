@@ -1,0 +1,115 @@
+id: TASK-302
+title: Enemy damage output
+type: feature
+priority: p1
+area: combat
+risk: high
+milestone: M3 Combat Model
+status: done
+
+problem: >
+  EnemyController.tick() transitions to ATTACK state but never deals damage to the
+  player. _spawn_enemies uses hardcoded EnemyController.new(100, 3.5, 1.2) — no
+  data from enemies.json. Enemies are harmless; threat does not exist.
+
+desired_outcome: >
+  Each enemy spawns with stats from enemies.json. When the ATTACK state resolves,
+  the enemy calls combat_arena._apply_damage_to_player(enemy.damage). Different
+  enemy types deal different amounts.
+
+scope_in:
+  - Add damage field to EnemyController (read from data at spawn time)
+  - Update _spawn_enemies in CombatArena to read from DataStore.enemies using ring_id
+  - Add attack cooldown to EnemyController so it doesn't deal damage every frame
+  - Add _apply_damage_to_player(amount) to CombatArena that calls player.take_damage()
+  - Wire ATTACK state resolution in CombatArena._process to call _apply_damage_to_player
+
+scope_out:
+  - Guard reduction modifier (TASK-304)
+  - Dodge i-frame check (TASK-305)
+  - Poise damage from enemies (TASK-306)
+  - Ring 2/3 enemy types (out of scope for M3)
+
+dependencies:
+  blockers:
+    - TASK-301
+  unblocks:
+    - TASK-304
+    - TASK-305
+    - TASK-306
+    - TASK-308
+    - TASK-309
+
+acceptance_criteria:
+  - id: ac1
+    description: EnemyController has a damage field initialized from data
+    verify: "grep -n 'var damage' game/scripts/core/enemy_controller.gd"
+  - id: ac2
+    description: _spawn_enemies reads from DataStore.enemies filtered by ring_id
+    verify: "grep -n 'DataStore\\|enemies' game/scenes/combat/combat_arena.gd"
+  - id: ac3
+    description: CombatArena has _apply_damage_to_player method
+    verify: "grep -n '_apply_damage_to_player' game/scenes/combat/combat_arena.gd"
+  - id: ac4
+    description: ATTACK state resolution calls _apply_damage_to_player with enemy.damage
+    verify: "grep -n 'ATTACK\\|_apply_damage_to_player' game/scenes/combat/combat_arena.gd"
+  - id: ac5
+    description: Unit test — mock enemy with known damage, trigger attack, assert player HP reduced
+    verify: "bash scripts/ci/headless_tests.sh 2>&1 | grep -E 'PASS.*enemy_damage|enemy_damage.*PASS'"
+
+verification_required:
+  - "grep -n 'var damage' game/scripts/core/enemy_controller.gd"
+  - "grep -n '_apply_damage_to_player' game/scenes/combat/combat_arena.gd"
+  - "bash scripts/ci/headless_tests.sh 2>&1 | grep -E 'PASS.*enemy_damage|enemy_damage.*PASS'"
+
+slices:
+  - id: s1
+    name: Add damage field to EnemyController and spawn from data
+    files_create: []
+    files_modify:
+      - game/scripts/core/enemy_controller.gd
+      - game/scenes/combat/combat_arena.gd
+    files_read_only:
+      - game/data/enemies.json
+      - game/autoload/data_store.gd
+    evidence: []
+  - id: s2
+    name: Wire ATTACK state to deal damage with cooldown
+    files_create: []
+    files_modify:
+      - game/scenes/combat/combat_arena.gd
+    files_read_only:
+      - game/scripts/core/player_controller.gd
+    evidence: []
+  - id: s3
+    name: Write enemy damage unit test
+    files_create:
+      - game/scripts/tests/combat/test_enemy_damage.gd
+    files_modify: []
+    files_read_only: []
+    evidence: []
+
+context_refs:
+  - .plans/TASK-302-execution-plan.md
+  - game/scripts/core/enemy_controller.gd
+  - game/scenes/combat/combat_arena.gd
+  - game/data/enemies.json
+  - game/scripts/core/player_controller.gd
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: "2026-03-10"
+  completed_at: "2026-03-10"
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  enemies.json has "damage" field on each enemy (e.g. scavenger_grunt: 8).
+  EnemyController.tick() sets ATTACK state but never calls anything.
+  Need an attack_cooldown timer on EnemyController (e.g. 1.5s) to prevent
+  every-frame damage. CombatArena._process loop checks ATTACK state and
+  calls _apply_damage_to_player when cooldown expires.

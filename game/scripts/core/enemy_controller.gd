@@ -9,16 +9,22 @@ enum EnemyState {
 	DEAD,
 }
 
+signal attack_resolved(damage_amount: int)
+
 var state: EnemyState = EnemyState.IDLE
 var health: int
 var attack_range: float
 var chase_range: float
 var stagger_timer: float = 0.0
+var damage: int = 0
+var attack_cooldown_timer: float = 0.0
+var attack_cooldown: float = 1.5
 
-func _init(max_health: int = 100, chase_distance: float = 6.0, attack_distance: float = 1.8) -> void:
+func _init(max_health: int = 100, chase_distance: float = 6.0, attack_distance: float = 1.8, p_damage: int = 10) -> void:
 	health = max_health
 	chase_range = chase_distance
 	attack_range = attack_distance
+	damage = p_damage
 
 func tick(distance_to_player: float, delta: float) -> EnemyState:
 	if state == EnemyState.DEAD:
@@ -32,10 +38,17 @@ func tick(distance_to_player: float, delta: float) -> EnemyState:
 
 	if distance_to_player <= attack_range:
 		state = EnemyState.ATTACK
+		if attack_cooldown_timer <= 0.0:
+			attack_cooldown_timer = attack_cooldown
+			attack_resolved.emit(damage)
 	elif distance_to_player <= chase_range:
 		state = EnemyState.CHASE
 	else:
 		state = EnemyState.IDLE
+
+	if attack_cooldown_timer > 0.0:
+		attack_cooldown_timer -= delta
+
 	return state
 
 func apply_damage(amount: int, poise_break: bool = false) -> EnemyState:

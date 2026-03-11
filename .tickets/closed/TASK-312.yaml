@@ -1,0 +1,71 @@
+id: TASK-312
+title: Fix ridge_archer contradictory ring_availability field
+type: bug
+priority: p2
+area: data
+risk: low
+milestone: M3 Combat Model
+status: done
+
+problem: >
+  ridge_archer has ring_availability="inner" but rings=["mid","outer"]. These
+  contradict each other. The spawn code uses the rings[] array so ridge_archer
+  is correctly excluded from inner encounters at runtime, but the corrupt
+  ring_availability metadata will mislead future agents and code that reads
+  that field. Found by static verifier (WARN-1).
+
+desired_outcome: >
+  ridge_archer.ring_availability corrected to "mid" to match rings array.
+  inner_ranged_mix encounter template updated to use an inner-eligible enemy
+  instead of ridge_archer.
+
+scope_in:
+  - Change ridge_archer ring_availability from "inner" to "mid" in enemies.json
+  - Update inner_ranged_mix in encounter_templates.json to replace ridge_archer
+
+scope_out:
+  - Any other enemy stat changes
+
+dependencies:
+  blockers: []
+  unblocks: []
+
+acceptance_criteria:
+  - id: ac1
+    description: ridge_archer ring_availability matches rings array
+    verify: "python3 -c \"import json; e=json.load(open('game/data/enemies.json')); r=[x for x in e['enemies'] if x['id']=='ridge_archer'][0]; print(r.get('ring_availability'), r.get('rings'))\""
+
+verification_required:
+  - "python3 -c \"import json; e=json.load(open('game/data/enemies.json')); r=[x for x in e['enemies'] if x['id']=='ridge_archer'][0]; print(r.get('ring_availability'), r.get('rings'))\""
+
+slices:
+  - id: s1
+    name: Fix ridge_archer ring_availability and update inner_ranged_mix template
+    files_create: []
+    files_modify:
+      - game/data/enemies.json
+      - game/data/encounter_templates.json
+    files_read_only: []
+    evidence: []
+
+context_refs:
+  - .memory/M3-combat-model/verification.md
+  - game/data/enemies.json
+  - game/data/encounter_templates.json
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: "2026-03-10"
+  completed_at: "2026-03-10"
+  verification:
+    required_passed: true
+    commands_run:
+      - "python3 -c \"import json; e=json.load(open('game/data/enemies.json')); r=[x for x in e['enemies'] if x['id']=='ridge_archer'][0]; print(r.get('ring_availability'), r.get('rings'))\""
+    evidence_refs: []
+
+notes: >
+  Data-only fix. inner_ranged_mix replaced ridge_archer with shieldbearer,
+  which is inner-eligible. ridge_archer ring_availability corrected from
+  "inner" to "mid" to match its rings array.

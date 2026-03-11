@@ -1,0 +1,57 @@
+id: TASK-207
+title: Verifier tests for save integrity and combat smoke
+type: test
+priority: p1
+area: test
+risk: low
+milestone: M2 Ring1 Slice
+status: done
+
+problem: No automated verifier tests covered save/load integrity or combat smoke scenarios.
+desired_outcome: Verifier test suite covers save integrity and combat smoke with passing results.
+
+scope_in:
+  - Save/load integrity tests
+  - Combat smoke test (scene loads, basic interaction succeeds)
+scope_out:
+  - Progression or contract system tests
+  - Headless CI runtime (TASK-209)
+
+dependencies:
+  blockers:
+    - TASK-203
+    - TASK-204
+    - TASK-205
+  unblocks:
+    - TASK-209
+
+acceptance_criteria:
+  - id: ac1
+    description: Save integrity and combat smoke tests pass
+    verify: "bash scripts/ci/task_specific_tests.sh"
+
+verification_required:
+  - "bash scripts/ci/task_specific_tests.sh"
+
+slices:
+  - id: s1
+    name: Save integrity and combat smoke tests
+    files_create:
+      - game/scripts/tests/save_load_integrity_test.gd
+      - game/scripts/tests/combat_smoke_test.gd
+    files_modify: []
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: Completed as part of M2 Ring1 Slice milestone.
