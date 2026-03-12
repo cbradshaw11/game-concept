@@ -1,0 +1,98 @@
+id: TASK-404
+title: Ring 3 encounter completion and boss spawn path fix
+type: bugfix
+priority: p1
+area: combat
+risk: medium
+milestone: M4 The Road Opens
+status: done
+
+problem: >
+  outer_warden is under the "bosses" key in enemies.json but _spawn_enemies()
+  only reads the "enemies" key. The Warden can never spawn. Additionally, there
+  are no mid-ring or outer-ring encounter templates, so Ring 2 and Ring 3 runs
+  have no encounters to spawn.
+
+desired_outcome: >
+  CombatArena can spawn outer_warden. Ring 2 and Ring 3 have distinct encounter
+  templates. A Ring 3 run spawns exclusively outer-ring enemies (rift_caster,
+  warden_hunter). A Ring 3 final encounter can trigger the Warden.
+
+scope_in:
+  - Add boss spawn path in CombatArena: read DataStore.enemies.get("bosses", [])
+    for final Ring 3 encounter, OR move outer_warden to enemies array (decide
+    based on what simplest code path is)
+  - Add mid-ring encounter templates to encounter_templates.json (at least 2)
+  - Add outer-ring encounter templates to encounter_templates.json (at least 2)
+  - Ensure Ring 3 run spawns only outer-ring enemies
+  - Fix ring_availability filtering in _spawn_enemies() to respect current ring
+
+scope_out:
+  - Warden HP/behavior/signal (TASK-405)
+  - Warden "Descend" UI option (TASK-405)
+
+dependencies:
+  blockers:
+    - TASK-402
+  unblocks:
+    - TASK-405
+
+acceptance_criteria:
+  - id: ac1
+    description: outer_warden is reachable via CombatArena spawn path
+    verify: "python3 -c \"import json; d=json.load(open('game/data/enemies.json')); all_ids=[e['id'] for e in d.get('enemies',[])+d.get('bosses',[])]; print('outer_warden reachable:', 'outer_warden' in all_ids)\""
+  - id: ac2
+    description: Ring 3 run spawns only outer-ring enemies
+    verify: "grep -n 'ring_availability\\|current_ring\\|outer' game/scenes/combat/combat_arena.gd"
+  - id: ac3
+    description: outer-ring encounter template exists with at least 2 enemy types
+    verify: "python3 -c \"import json; t=json.load(open('game/data/encounter_templates.json')); outer=[x for x in t.get('templates',[]) if x.get('ring')=='outer']; print(f'{len(outer)} outer templates found')\""
+
+verification_required:
+  - "python3 -c \"import json; d=json.load(open('game/data/enemies.json')); print([e['id'] for e in d.get('enemies',[])+d.get('bosses',[])])\""
+  - "python3 -c \"import json; t=json.load(open('game/data/encounter_templates.json')); [print(x.get('ring'), x.get('id')) for x in t.get('templates',[])]\""
+  - "grep -n '_spawn_enemies\\|ring_availability' game/scenes/combat/combat_arena.gd"
+
+slices:
+  - id: s1
+    name: Add boss spawn path and ring filtering to CombatArena
+    files_modify:
+      - game/scenes/combat/combat_arena.gd
+    files_read_only:
+      - game/data/enemies.json
+      - game/autoload/game_state.gd
+  - id: s2
+    name: Add mid and outer encounter templates
+    files_modify:
+      - game/data/encounter_templates.json
+    files_read_only:
+      - game/data/enemies.json
+
+context_refs:
+  - .plans/TASK-404-execution-plan.md
+  - game/scenes/combat/combat_arena.gd
+  - game/data/enemies.json
+  - game/data/encounter_templates.json
+  - game/autoload/game_state.gd
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: false
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  Decision point: simplest fix is to add a boss spawn path in CombatArena that
+  reads from DataStore.enemies.get("bosses", []) for the Ring 3 final encounter
+  rather than moving outer_warden into the enemies array. This keeps data
+  organization clean. Preferred approach: add _spawn_boss(boss_id) helper,
+  call it from Ring 3 final encounter trigger in TASK-405.
+
+  Ring 2 enemies: cursed_pilgrim, ash_flanker (behavior_profile: flank_aggressive)
+  Ring 3 enemies: rift_caster, warden_hunter (from enemies.json outer section)
+  Check ring_availability field on each enemy.

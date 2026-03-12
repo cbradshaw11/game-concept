@@ -25,6 +25,11 @@ text = "Weapon Loadout"
 [node name="LoadoutSummary" type="Label" parent="PrepScreen"]
 text = ""
 
+[node name="RingSelectorLabel" type="Label" parent="PrepScreen"]
+text = "Select Ring"
+
+[node name="RingSelector" type="OptionButton" parent="PrepScreen"]
+
 [node name="StartRunButton" type="Button" parent="PrepScreen"]
 text = "Enter Ring 1"
 
@@ -52,6 +57,10 @@ text = "Extract to Sanctuary"
 
 [node name="DieButton" type="Button" parent="RunScreen"]
 text = "Simulate Death"
+
+[node name="DescendWardenButton" type="Button" parent="RunScreen"]
+visible = false
+text = "Descend to Warden"
 
 [node name="DeathPanel" type="PanelContainer" parent="."]
 visible = false
@@ -87,8 +96,46 @@ text = ""
 layout_mode = 2
 text = "Return to Sanctuary"
 
+[node name="CreditsPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBox" type="VBoxContainer" parent="CreditsPanel"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="CreditsPanel/VBox"]
+layout_mode = 2
+text = "The Long Walk"
+
+[node name="NarrativeLabel" type="Label" parent="CreditsPanel/VBox"]
+layout_mode = 2
+autowrap_mode = 3
+text = "You have retrieved the Sunken Artifact.
+The rings grow quiet.
+The long walk ends here — for now."
+
+[node name="CreditsLabel" type="Label" parent="CreditsPanel/VBox"]
+layout_mode = 2
+autowrap_mode = 3
+text = "— Credits —
+
+Game Design & Development
+[Placeholder]
+
+Thank you for playing."
+
+[node name="BeginNewJourneyButton" type="Button" parent="CreditsPanel/VBox"]
+layout_mode = 2
+text = "Begin New Journey"
+
 [connection signal="pressed" from="PrepScreen/StartRunButton" to="." method="_on_start_run_button_pressed"]
 [connection signal="item_selected" from="PrepScreen/LoadoutSelect" to="." method="_on_loadout_select_item_selected"]
+[connection signal="item_selected" from="PrepScreen/RingSelector" to="." method="_on_ring_selected"]
 [connection signal="pressed" from="RunScreen/ResolveEncounterButton" to="." method="_on_resolve_encounter_button_pressed"]
 [connection signal="pressed" from="RunScreen/ExtractButton" to="." method="_on_extract_button_pressed"]
 [connection signal="pressed" from="RunScreen/DieButton" to="." method="_on_die_button_pressed"]
+[connection signal="pressed" from="RunScreen/DescendWardenButton" to="." method="_on_descend_warden_pressed"]
+[connection signal="pressed" from="CreditsPanel/VBox/BeginNewJourneyButton" to="." method="_on_begin_new_journey_pressed"]

@@ -7,6 +7,7 @@ signal attack_hook_triggered
 signal dodge_hook_triggered
 signal guard_hook_changed(is_guarding: bool)
 signal encounter_cleared(enemy_count: int)
+signal boss_encounter_cleared
 signal player_died()
 
 @onready var player: PlayerController = $Player
@@ -24,6 +25,7 @@ var enemies: Array[EnemyController] = []
 var encounter_enemy_count: int = 0
 var encounter_completed: bool = false
 var weapon_data: Dictionary = {}
+var is_boss_encounter: bool = false
 
 func _ready() -> void:
 	player.attack_triggered.connect(_on_attack_triggered)
@@ -34,12 +36,19 @@ func _ready() -> void:
 	player.stamina_changed.connect(_on_stamina_changed)
 	if player.has_signal("poise_changed"):
 		player.poise_changed.connect(_on_poise_changed)
+	player.heavy_attack_triggered.connect(_on_heavy_attack_triggered)
 	hp_bar.max_value = player.max_health
 	hp_bar.value = player.current_health
 	stamina_bar.max_value = player.max_stamina
 	stamina_bar.value = player.stamina
 	poise_bar.max_value = player.max_poise
 	poise_bar.value = player.current_poise
+	if not InputMap.has_action("heavy_attack"):
+		InputMap.add_action("heavy_attack")
+		var ev := InputEventKey.new()
+		ev.keycode = KEY_X
+		InputMap.action_add_event("heavy_attack", ev)
+	player.reload_weapon_stats()
 	_load_weapon_data()
 	_update_status()
 
@@ -59,6 +68,7 @@ func set_context(next_ring_id: String, next_seed: int, enemy_count: int = 1) -> 
 	guard_active = false
 	encounter_enemy_count = max(1, enemy_count)
 	encounter_completed = false
+	is_boss_encounter = false
 	_load_weapon_data()
 	_spawn_enemies(encounter_enemy_count)
 	player.set_guarding(false)
@@ -80,13 +90,24 @@ func _process(delta: float) -> void:
 		enemy.tick(distance_to_player, delta)
 	if _all_enemies_defeated():
 		encounter_completed = true
-		encounter_cleared.emit(encounter_enemy_count)
+		if is_boss_encounter:
+			boss_encounter_cleared.emit()
+		else:
+			encounter_cleared.emit(encounter_enemy_count)
 	_update_status()
+
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("heavy_attack"):
+		player.heavy_attack()
 
 func _on_attack_triggered() -> void:
 	attack_count += 1
 	_apply_damage_to_front_enemy(weapon_data.get("light_damage", 14))
 	attack_hook_triggered.emit()
+	_update_status()
+
+func _on_heavy_attack_triggered(dmg: int) -> void:
+	_apply_damage_to_front_enemy(dmg)
 	_update_status()
 
 func _on_dodge_triggered() -> void:
@@ -116,11 +137,33 @@ func _update_status() -> void:
 		enemies_text,
 	]
 
+func _apply_behavior_profile(enemy: EnemyController, profile: String) -> void:
+	match profile:
+		"flank_aggressive":
+			enemy.chase_range = 5.0
+			enemy.attack_cooldown = 0.9
+		"kite_volley":
+			enemy.preferred_min_range = 1.5
+			enemy.attack_range = 4.5
+		"guard_counter":
+			enemy.chase_range = 4.5
+			var pc = player
+			enemy.guard_query = func() -> bool: return pc.guarding
+		"zone_control":
+			enemy.chase_range = 6.0
+			enemy.attack_cooldown = 1.8
+		"elite_pressure":
+			enemy.chase_range = 4.5
+			enemy.attack_cooldown = 0.7
+		_:
+			pass
+
 func _spawn_enemies(count: int) -> void:
 	enemies.clear()
+	var ring = GameState.current_ring
 	var all_enemies: Array = DataStore.enemies.get("enemies", [])
 	var enemy_pool: Array = all_enemies.filter(func(e: Dictionary) -> bool:
-		return e.get("rings", []).has(ring_id)
+		return e.get("ring_availability", e.get("rings", [ring])[0]) == ring or e.get("rings", []).has(ring)
 	)
 	if enemy_pool.is_empty():
 		enemy_pool = all_enemies
@@ -136,7 +179,43 @@ func _spawn_enemies(count: int) -> void:
 		enemy.attack_resolved.connect(func(amount: int) -> void:
 			_apply_damage_to_player(amount, poise_dmg)
 		)
+		var profile: String = enemy_data.get("behavior_profile", "frontline_basic")
+		_apply_behavior_profile(enemy, profile)
 		enemies.append(enemy)
+
+func _spawn_boss(boss_id: String) -> EnemyController:
+	var bosses = DataStore.enemies.get("bosses", [])
+	var matches = bosses.filter(func(b: Dictionary) -> bool: return b.get("id") == boss_id)
+	if matches.is_empty():
+		push_error("Boss not found: " + boss_id)
+		return null
+	var boss_data: Dictionary = matches[0]
+	var boss := EnemyController.new(
+		boss_data.get("health", 1200),
+		3.5,
+		1.2,
+		boss_data.get("damage", 22)
+	)
+	boss.attack_resolved.connect(func(amount: int) -> void:
+		_apply_damage_to_player(amount, boss_data.get("poise_damage", 35))
+	)
+	var profile: String = boss_data.get("behavior_profile", "elite_pressure")
+	_apply_behavior_profile(boss, profile)
+	return boss
+
+func start_boss_encounter(boss_id: String) -> void:
+	enemies.clear()
+	encounter_completed = false
+	is_boss_encounter = true
+	attack_count = 0
+	dodge_count = 0
+	var boss := _spawn_boss(boss_id)
+	if boss == null:
+		return
+	enemies.append(boss)
+	encounter_enemy_count = 1
+	player.set_guarding(false)
+	_update_status()
 
 func _player_zone() -> int:
 	var zone := int(round(player.position.x / 160.0))

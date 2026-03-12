@@ -11,6 +11,7 @@ signal player_died()
 signal poise_changed(current: int, maximum: int)
 signal player_staggered()
 signal attack_evaded()
+signal heavy_attack_triggered(damage: int)
 
 const GUARD_BREAK_THRESHOLD: int = 30
 
@@ -23,6 +24,8 @@ const GUARD_BREAK_THRESHOLD: int = 30
 var stamina: float = 100.0
 var guarding: bool = false
 var guard_efficiency: float = 0.0
+var heavy_damage: int = 24
+var heavy_stamina_cost: float = 18.0
 var current_health: int
 var max_health: int
 var current_poise: int
@@ -47,6 +50,25 @@ func _ready() -> void:
 		if w.get("id") == GameState.selected_weapon_id:
 			guard_efficiency = w.get("guard_efficiency", 0.0)
 			break
+
+func reload_weapon_stats() -> void:
+	var weapons_list: Array = DataStore.weapons.get("weapons", [])
+	for w in weapons_list:
+		if w.get("id") == GameState.selected_weapon_id:
+			guard_efficiency = float(w.get("guard_efficiency", 0.70))
+			heavy_damage = w.get("heavy_damage", 24)
+			heavy_stamina_cost = float(w.get("heavy_stamina_cost", 18.0))
+			break
+
+func heavy_attack() -> bool:
+	if is_staggered:
+		return false
+	if stamina < heavy_stamina_cost:
+		return false
+	stamina -= heavy_stamina_cost
+	stamina_changed.emit(stamina, max_stamina)
+	heavy_attack_triggered.emit(heavy_damage)
+	return true
 
 func _physics_process(delta: float) -> void:
 	var direction := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")

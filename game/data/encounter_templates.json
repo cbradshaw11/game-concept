@@ -21,9 +21,29 @@
       "enemy_ids": ["ash_flanker", "ridge_archer", "shieldbearer"]
     },
     {
+      "id": "mid_flank_pair",
+      "ring": "mid",
+      "enemies": ["ash_flanker", "ash_flanker"]
+    },
+    {
+      "id": "mid_mixed_advance",
+      "ring": "mid",
+      "enemies": ["cursed_pilgrim", "ash_flanker"]
+    },
+    {
       "id": "outer_elite_a",
       "ring": "outer",
       "enemy_ids": ["warden_hunter", "rift_caster"]
+    },
+    {
+      "id": "outer_rift_assault",
+      "ring": "outer",
+      "enemies": ["rift_caster", "rift_caster"]
+    },
+    {
+      "id": "outer_hunter_advance",
+      "ring": "outer",
+      "enemies": ["rift_caster", "warden_hunter"]
     }
   ]
 }

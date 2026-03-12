@@ -16,6 +16,9 @@ var banked_loot: int = 0
 var unbanked_xp: int = 0
 var unbanked_loot: int = 0
 var encounters_cleared: int = 0
+var rings_cleared: Array[String] = []
+var warden_defeated: bool = false
+var game_completed: bool = false
 var telemetry := Telemetry.new()
 
 func default_save_state() -> Dictionary:
@@ -25,6 +28,9 @@ func default_save_state() -> Dictionary:
 		"unbanked_xp": 0,
 		"unbanked_loot": 0,
 		"current_ring": "sanctuary",
+		"rings_cleared": [],
+		"warden_defeated": false,
+		"game_completed": false,
 	}
 
 func to_save_state() -> Dictionary:
@@ -34,6 +40,9 @@ func to_save_state() -> Dictionary:
 		"unbanked_xp": unbanked_xp,
 		"unbanked_loot": unbanked_loot,
 		"current_ring": current_ring,
+		"rings_cleared": rings_cleared,
+		"warden_defeated": warden_defeated,
+		"game_completed": game_completed,
 	}
 
 func apply_save_state(data: Dictionary) -> void:
@@ -42,6 +51,9 @@ func apply_save_state(data: Dictionary) -> void:
 	unbanked_xp = int(data.get("unbanked_xp", 0))
 	unbanked_loot = int(data.get("unbanked_loot", 0))
 	current_ring = str(data.get("current_ring", "sanctuary"))
+	rings_cleared = Array(data.get("rings_cleared", []), TYPE_STRING, "", null)
+	warden_defeated = bool(data.get("warden_defeated", false))
+	game_completed = bool(data.get("game_completed", false))
 
 func start_run(seed: int, ring_id: String) -> void:
 	active_seed = seed
@@ -69,6 +81,8 @@ func add_unbanked(xp_value: int, loot_value: int) -> void:
 
 func extract() -> void:
 	var event_ring := current_ring
+	if current_ring != "sanctuary" and current_ring not in rings_cleared:
+		rings_cleared.append(current_ring)
 	banked_xp += unbanked_xp
 	banked_loot += unbanked_loot
 	unbanked_xp = 0

@@ -19,6 +19,8 @@ var stagger_timer: float = 0.0
 var damage: int = 0
 var attack_cooldown_timer: float = 0.0
 var attack_cooldown: float = 1.5
+var preferred_min_range: float = 0.0
+var guard_query: Callable = func() -> bool: return false
 
 func _init(max_health: int = 100, chase_distance: float = 6.0, attack_distance: float = 1.8, p_damage: int = 10) -> void:
 	health = max_health
@@ -36,9 +38,9 @@ func tick(distance_to_player: float, delta: float) -> EnemyState:
 			state = EnemyState.CHASE
 		return state
 
-	if distance_to_player <= attack_range:
+	if distance_to_player <= attack_range and distance_to_player >= preferred_min_range:
 		state = EnemyState.ATTACK
-		if attack_cooldown_timer <= 0.0:
+		if attack_cooldown_timer <= 0.0 and not guard_query.call():
 			attack_cooldown_timer = attack_cooldown
 			attack_resolved.emit(damage)
 	elif distance_to_player <= chase_range:

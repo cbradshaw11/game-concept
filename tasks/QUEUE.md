@@ -2,23 +2,9 @@
 
 ## Active
 
-| ID       | Title                                        | Priority | Area   | Status  | Milestone      |
-|----------|----------------------------------------------|----------|--------|---------|----------------|
-| TASK-301 | Player HP and death state                    | p1       | combat | ready   | M3 Combat Model |
-| TASK-303 | Weapon stat integration                      | p1       | combat | ready   | M3 Combat Model |
+_No active tasks. M4 complete. Planning M5._
 
-## Backlog
-
-| ID       | Title                                        | Priority | Area   | Unblocked By  | Milestone      |
-|----------|----------------------------------------------|----------|--------|---------------|----------------|
-| TASK-302 | Enemy damage output                          | p1       | combat | TASK-301      | M3 Combat Model |
-| TASK-307 | Combat HUD (HP, stamina, poise)              | p1       | ui     | TASK-301      | M3 Combat Model |
-| TASK-304 | Guard damage reduction                       | p1       | combat | TASK-302      | M3 Combat Model |
-| TASK-305 | Dodge invulnerability frames                 | p1       | combat | TASK-302      | M3 Combat Model |
-| TASK-306 | Player poise tracking and stagger            | p2       | combat | TASK-302      | M3 Combat Model |
-| TASK-308 | Death screen and run summary                 | p2       | ui     | TASK-302      | M3 Combat Model |
-| TASK-309 | Ring 1 combat balance pass                   | p2       | data   | TASK-302,303  | M3 Combat Model |
-| TASK-310 | Full combat loop test suite                  | p1       | test   | TASK-301-306  | M3 Combat Model |
+## Backlog (M5 — not yet planned)
 
 ---
 
@@ -27,6 +13,39 @@
 - **PM/design agents**: Add new rows to Backlog, create a task file in `tasks/backlog/TASK-XXX.md`
 - **Implementation agents**: Pick the top Backlog task, move its file to `tasks/in-progress/`, update status here
 - **On completion**: Move file to `tasks/done/`, mark Done below, update the milestone file
+
+## Done (M4 The Road Opens)
+
+| ID       | Title                                              | Area        |
+|----------|----------------------------------------------------|-------------|
+| TASK-401 | Ring selection UI + main.gd decoupling             | ui          |
+| TASK-402 | Ring unlock gates + save migration                 | progression |
+| TASK-403 | Enemy behavior profile dispatch                    | combat      |
+| TASK-404 | Ring 3 encounter + boss spawn path fix             | combat      |
+| TASK-405 | Warden boss encounter                              | combat      |
+| TASK-406 | Win condition handler + credits screen             | ui          |
+| TASK-407 | Heavy attacks + weapon stat reload fix             | combat      |
+| TASK-408 | Loot threshold ring gate                           | progression |
+| TASK-409 | M4 test suite                                      | test        |
+
+## Done (M3 Combat Model)
+
+| ID       | Title                                              | Area        |
+|----------|----------------------------------------------------|-------------|
+| TASK-301 | Player HP and death state                          | combat      |
+| TASK-302 | Enemy damage output                                | combat      |
+| TASK-303 | Weapon stat integration                            | combat      |
+| TASK-304 | Guard damage reduction                             | combat      |
+| TASK-305 | Dodge invulnerability frames                       | combat      |
+| TASK-306 | Player poise tracking and stagger                  | combat      |
+| TASK-307 | Combat HUD (HP, stamina, poise)                   | ui          |
+| TASK-308 | Death screen and run summary                       | ui          |
+| TASK-309 | Ring 1 combat balance pass                         | data        |
+| TASK-310 | Full combat loop test suite                        | test        |
+| TASK-311 | Fix: encounters_cleared never incremented          | combat      |
+| TASK-312 | Fix: ridge_archer wrong ring_availability          | data        |
+| TASK-313 | Fix: ash_flanker missing poise_damage              | data        |
+| TASK-314 | Fix: poise_bar not initialized in _ready()         | ui          |
 
 ## Done (M2 Ring1 Slice)
 

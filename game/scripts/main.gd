@@ -29,6 +29,7 @@ func _connect_ui() -> void:
 	flow_ui.extract_pressed.connect(_on_extract_pressed)
 	flow_ui.die_pressed.connect(_on_die_pressed)
 	flow_ui.loadout_selected.connect(_on_loadout_selected)
+	flow_ui.descend_warden_pressed.connect(_on_descend_warden_pressed)
 
 func _connect_state() -> void:
 	GameState.run_started.connect(flow_ui.on_run_started)
@@ -38,17 +39,17 @@ func _connect_state() -> void:
 
 func _on_start_run_pressed() -> void:
 	var seed := Time.get_unix_time_from_system()
-	GameState.start_run(int(seed), "inner")
-	var contract := contract_system.start_contract("ring1_clearance", "inner", 3)
+	GameState.start_run(int(seed), GameState.current_ring)
+	var contract := contract_system.start_contract("ring1_clearance", GameState.current_ring, 3)
 	flow_ui.on_objective_started(contract)
 	active_encounter = ring_director.generate_encounter(
 		int(seed),
-		"inner",
+		GameState.current_ring,
 		DataStore.enemies,
 		DataStore.encounter_templates
 	)
 	_ensure_combat_arena()
-	combat_arena.set_context("inner", int(seed), int(active_encounter.get("enemy_count", 1)))
+	combat_arena.set_context(GameState.current_ring, int(seed), int(active_encounter.get("enemy_count", 1)))
 	combat_arena.set_arena_active(true)
 	flow_ui.set_current_loadout(selected_weapon_id)
 
@@ -59,7 +60,7 @@ func _on_resolve_encounter_pressed() -> void:
 		return
 
 	var rewards := reward_system.calculate_rewards(
-		"inner",
+		GameState.current_ring,
 		DataStore.rings,
 		int(active_encounter.get("enemy_count", 1))
 	)
@@ -112,6 +113,7 @@ func _ensure_combat_arena() -> void:
 	combat_arena.dodge_hook_triggered.connect(_on_dodge_hook_triggered)
 	combat_arena.guard_hook_changed.connect(_on_guard_hook_changed)
 	combat_arena.encounter_cleared.connect(_on_encounter_cleared)
+	combat_arena.boss_encounter_cleared.connect(_on_warden_defeated)
 	combat_arena.player_died.connect(_on_combat_player_died)
 
 func _on_attack_hook_triggered() -> void:
@@ -127,6 +129,19 @@ func _on_encounter_cleared(enemy_count: int) -> void:
 	print("Combat hook: encounter cleared (%d enemies)" % enemy_count)
 	_on_resolve_encounter_pressed()
 
+func _on_descend_warden_pressed() -> void:
+	_ensure_combat_arena()
+	combat_arena.set_arena_active(true)
+	combat_arena.start_boss_encounter("outer_warden")
+
+func _on_warden_defeated() -> void:
+	GameState.warden_defeated = true
+	GameState.game_completed = true
+	if combat_arena != null:
+		combat_arena.set_arena_active(false)
+	_save_state()
+	flow_ui.show_credits()
+
 func _initialize_loadouts() -> void:
 	var weapons: Array = DataStore.weapons.get("weapons", [])
 	if weapons.size() > 0:
@@ -138,6 +153,8 @@ func _on_loadout_selected(weapon_id: String) -> void:
 	selected_weapon_id = weapon_id
 	GameState.selected_weapon_id = weapon_id
 	flow_ui.set_current_loadout(selected_weapon_id)
+	if is_instance_valid(combat_arena) and is_instance_valid(combat_arena.player):
+		combat_arena.player.reload_weapon_stats()
 
 func _load_save_state() -> void:
 	var state := SaveSystem.load_state(GameState.default_save_state())
