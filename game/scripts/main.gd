@@ -282,6 +282,7 @@ func _on_warden_defeated() -> void:
 	GameState.game_completed = true
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
+	GameState.record_warden_defeated()
 	_save_state()
 	flow_ui.show_credits()
 	# Credits: crossfade back to sanctuary music

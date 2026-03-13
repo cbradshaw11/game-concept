@@ -28,6 +28,8 @@ var prologue_seen: bool = false
 var first_run_complete: bool = false
 var xp_gain_multiplier: float = 1.0
 var warden_map_unlocked: bool = false
+var run_history: Array = []
+var weapons_unlocked: Array = ["blade_iron"]
 var telemetry := Telemetry.new()
 
 func default_save_state() -> Dictionary:
@@ -45,7 +47,9 @@ func default_save_state() -> Dictionary:
 		"first_run_complete": false,
 		"permanent_upgrades": [],
 		"selected_weapon_id": "blade_iron",
-		"save_version": 3,
+		"run_history": [],
+		"weapons_unlocked": ["blade_iron"],
+		"save_version": 4,
 	}
 
 func to_save_state() -> Dictionary:
@@ -63,7 +67,9 @@ func to_save_state() -> Dictionary:
 		"first_run_complete": first_run_complete,
 		"permanent_upgrades": permanent_upgrades,
 		"selected_weapon_id": selected_weapon_id,
-		"save_version": 3,
+		"run_history": run_history,
+		"weapons_unlocked": weapons_unlocked,
+		"save_version": 4,
 	}
 
 func apply_save_state(data: Dictionary) -> void:
@@ -94,6 +100,13 @@ func apply_save_state(data: Dictionary) -> void:
 	else:
 		permanent_upgrades = []
 	selected_weapon_id = str(data.get("selected_weapon_id", "blade_iron"))
+	# TASK-701 migration guard: only restore run_history/weapons_unlocked if save_version >= 4
+	if data.get("save_version", 0) >= 4:
+		run_history = Array(data.get("run_history", []))
+		weapons_unlocked = Array(data.get("weapons_unlocked", ["blade_iron"]))
+	else:
+		run_history = []
+		weapons_unlocked = ["blade_iron"]
 
 func start_run(seed: int, ring_id: String) -> void:
 	active_seed = seed
@@ -128,6 +141,20 @@ func extract() -> void:
 		rings_cleared.append(current_ring)
 	banked_xp += unbanked_xp
 	banked_loot += unbanked_loot
+	# Append run record BEFORE clearing unbanked values so fields are still valid
+	var record := {
+		"ring_reached": current_ring,
+		"encounters_cleared": encounters_cleared,
+		"outcome": "extracted",
+		"loot_banked": banked_loot,
+		"xp_banked": banked_xp,
+		"seed": active_seed,
+		"upgrades": active_upgrades.map(func(u): return u.get("id", "")),
+		"run_number": run_history.size() + 1,
+	}
+	run_history.append(record)
+	if run_history.size() > 20:
+		run_history = run_history.slice(-20)
 	unbanked_xp = 0
 	unbanked_loot = 0
 	current_ring = "sanctuary"
@@ -143,6 +170,20 @@ func die_in_run() -> void:
 	var event_ring := current_ring
 	var retained: int = int(unbanked_loot * 0.25)
 	banked_loot += retained
+	# Append run record BEFORE zeroing run state so ring_reached/encounters_cleared are valid
+	var record := {
+		"ring_reached": current_ring,
+		"encounters_cleared": encounters_cleared,
+		"outcome": "died",
+		"loot_banked": banked_loot,
+		"xp_banked": banked_xp,
+		"seed": active_seed,
+		"upgrades": active_upgrades.map(func(u): return u.get("id", "")),
+		"run_number": run_history.size() + 1,
+	}
+	run_history.append(record)
+	if run_history.size() > 20:
+		run_history = run_history.slice(-20)
 	unbanked_xp = int(unbanked_xp * 0.5)
 	unbanked_loot = 0
 	encounters_cleared = 0
@@ -153,6 +194,21 @@ func die_in_run() -> void:
 		"remaining_unbanked_xp": unbanked_xp,
 	})
 	player_died.emit()
+
+func record_warden_defeated() -> void:
+	var record := {
+		"ring_reached": current_ring,
+		"encounters_cleared": encounters_cleared,
+		"outcome": "warden_defeated",
+		"loot_banked": banked_loot,
+		"xp_banked": banked_xp,
+		"seed": active_seed,
+		"upgrades": active_upgrades.map(func(u): return u.get("id", "")),
+		"run_number": run_history.size() + 1,
+	}
+	run_history.append(record)
+	if run_history.size() > 20:
+		run_history = run_history.slice(-20)
 
 func get_loot_per_encounter_bonus() -> int:
 	var bonus: int = 0
@@ -198,6 +254,8 @@ func reset_for_new_game() -> void:
 	selected_weapon_id = "blade_iron"
 	xp_gain_multiplier = 1.0
 	warden_map_unlocked = false
+	run_history = []
+	weapons_unlocked = ["blade_iron"]
 	prologue_seen = true  # preserve: prologue is a one-time player experience, not run state
 	# Delete the save file so no stale state persists
 	if FileAccess.file_exists(_SaveSystem.SAVE_PATH):
