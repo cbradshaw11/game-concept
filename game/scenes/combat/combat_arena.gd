@@ -19,6 +19,22 @@ signal player_died()
 @onready var _damage_taken_player: AudioStreamPlayer = $DamageTakenPlayer
 @onready var _dodge_guard_player: AudioStreamPlayer = $DodgeGuardPlayer
 @onready var _player_death_player: AudioStreamPlayer = $PlayerDeathPlayer
+@onready var _background: TextureRect = $Background
+@onready var _player_sprite: Sprite2D = $PlayerSprite
+@onready var _enemy_sprites: Array[Sprite2D] = [
+	$EnemySprite0,
+	$EnemySprite1,
+	$EnemySprite2,
+]
+
+const _ENEMY_TEXTURES: Dictionary = {
+	"grunt": "res://assets/sprites/enemy_grunt.png",
+	"flanker": "res://assets/sprites/enemy_grunt.png",
+	"defender": "res://assets/sprites/enemy_defender.png",
+	"ranged": "res://assets/sprites/enemy_ranged.png",
+	"caster": "res://assets/sprites/enemy_ranged.png",
+	"elite": "res://assets/sprites/enemy_defender.png",
+}
 
 var ring_id: String = "inner"
 var seed: int = 0
@@ -55,6 +71,8 @@ func _ready() -> void:
 		InputMap.action_add_event("heavy_attack", ev)
 	player.reload_weapon_stats()
 	_load_weapon_data()
+	_load_player_sprite()
+	_load_ring_background(GameState.current_ring)
 	_update_status()
 
 func _load_weapon_data() -> void:
@@ -76,6 +94,7 @@ func set_context(next_ring_id: String, next_seed: int, enemy_count: int = 1) -> 
 	is_boss_encounter = false
 	_load_weapon_data()
 	_spawn_enemies(encounter_enemy_count)
+	_load_ring_background(ring_id)
 	player.set_guarding(false)
 	_update_status()
 
@@ -109,12 +128,14 @@ func _on_attack_triggered() -> void:
 	attack_count += 1
 	_apply_damage_to_front_enemy(weapon_data.get("light_damage", 14))
 	_hit_land_player.play()
+	_flash_front_enemy_sprite()
 	attack_hook_triggered.emit()
 	_update_status()
 
 func _on_heavy_attack_triggered(dmg: int) -> void:
 	_apply_damage_to_front_enemy(dmg)
 	_hit_land_player.play()
+	_flash_front_enemy_sprite()
 	_update_status()
 
 func _on_dodge_triggered() -> void:
@@ -175,8 +196,10 @@ func _spawn_enemies(count: int) -> void:
 	)
 	if enemy_pool.is_empty():
 		enemy_pool = all_enemies
+	var spawned_data: Array = []
 	for i in range(count):
 		var enemy_data: Dictionary = enemy_pool[i % enemy_pool.size()]
+		spawned_data.append(enemy_data)
 		var enemy := EnemyController.new(
 			enemy_data.get("health", 60),
 			3.5,
@@ -191,6 +214,7 @@ func _spawn_enemies(count: int) -> void:
 		var profile: String = enemy_data.get("behavior_profile", "frontline_basic")
 		_apply_behavior_profile(enemy, profile)
 		enemies.append(enemy)
+	_load_enemy_sprites(spawned_data)
 
 func _spawn_boss(boss_id: String) -> EnemyController:
 	var bosses = DataStore.enemies.get("bosses", [])
@@ -250,10 +274,83 @@ func _apply_damage_to_player(amount: int, poise_damage: int = 0) -> void:
 		player.take_damage(amount)
 		if player.current_health < health_before:
 			_damage_taken_player.play()
+			_apply_hit_flash(_player_sprite)
+			_screen_shake(0.15, 3.0)
 		elif player.guarding:
 			_dodge_guard_player.play()
 		if poise_damage > 0:
 			player.take_poise_damage(poise_damage)
+
+func _load_ring_background(target_ring: String) -> void:
+	if not is_instance_valid(_background):
+		return
+	var bg_path: String
+	match target_ring:
+		"inner":
+			bg_path = "res://assets/backgrounds/inner.png"
+		"mid":
+			bg_path = "res://assets/backgrounds/mid.png"
+		"outer":
+			bg_path = "res://assets/backgrounds/outer.png"
+		_:
+			_background.texture = null
+			return
+	if ResourceLoader.exists(bg_path):
+		_background.texture = load(bg_path)
+
+func _load_player_sprite() -> void:
+	if not is_instance_valid(_player_sprite):
+		return
+	var tex_path := "res://assets/sprites/player.png"
+	if ResourceLoader.exists(tex_path):
+		_player_sprite.texture = load(tex_path)
+	_player_sprite.position = player.position
+
+func _load_enemy_sprites(enemy_data_array: Array) -> void:
+	for i in _enemy_sprites.size():
+		var sprite := _enemy_sprites[i]
+		if not is_instance_valid(sprite):
+			continue
+		if i < enemy_data_array.size():
+			var role: String = enemy_data_array[i].get("role", "grunt")
+			var tex_path: String = _ENEMY_TEXTURES.get(role, "res://assets/sprites/enemy_grunt.png")
+			if ResourceLoader.exists(tex_path):
+				sprite.texture = load(tex_path)
+			sprite.visible = true
+			# Space enemies evenly across the arena width
+			var slot_x := 640.0 + float(i) * 120.0
+			sprite.position = Vector2(slot_x, 270.0)
+		else:
+			sprite.visible = false
+			sprite.texture = null
+
+func _apply_hit_flash(sprite: Sprite2D) -> void:
+	if not is_instance_valid(sprite):
+		return
+	sprite.modulate = Color(2.0, 1.0, 1.0)
+	var tween := create_tween()
+	tween.tween_property(sprite, "modulate", Color(1.0, 1.0, 1.0), 0.1)
+
+func _flash_front_enemy_sprite() -> void:
+	for i in enemies.size():
+		if i < _enemy_sprites.size() and enemies[i].state != EnemyController.EnemyState.DEAD:
+			_apply_hit_flash(_enemy_sprites[i])
+			return
+
+func _screen_shake(duration: float, magnitude: float) -> void:
+	var camera := get_viewport().get_camera_2d() if get_viewport() else null
+	var target_node: Node2D = camera if is_instance_valid(camera) else self
+	var origin: Vector2 = target_node.position
+	var tween := create_tween()
+	var steps := int(duration / 0.016)
+	steps = max(steps, 4)
+	for _i in steps:
+		var offset := Vector2(
+			randf_range(-magnitude, magnitude),
+			randf_range(-magnitude, magnitude)
+		)
+		tween.tween_property(target_node, "position", origin + offset, duration / steps)
+	tween.tween_property(target_node, "position", origin, 0.02)
 
 func _on_enemy_wind_up() -> void:
 	var tween := create_tween()

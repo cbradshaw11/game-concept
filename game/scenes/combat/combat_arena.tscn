@@ -11,6 +11,11 @@
 visible = false
 script = ExtResource("1_2w5ud")
 
+[node name="Background" type="TextureRect" parent="."]
+offset_right = 960.0
+offset_bottom = 540.0
+stretch_mode = 3
+
 [node name="ArenaBounds" type="ColorRect" parent="."]
 offset_right = 960.0
 offset_bottom = 540.0
@@ -20,16 +25,16 @@ color = Color(0.0588235, 0.101961, 0.117647, 1)
 
 [node name="CombatStatus" type="Label" parent="HUD"]
 offset_left = 24.0
-offset_top = 24.0
-offset_right = 920.0
-offset_bottom = 60.0
+offset_top = 8.0
+offset_right = 600.0
+offset_bottom = 32.0
 text = ""
 
 [node name="Bars" type="VBoxContainer" parent="HUD"]
 offset_left = 24.0
-offset_top = 64.0
+offset_top = 36.0
 offset_right = 224.0
-offset_bottom = 124.0
+offset_bottom = 96.0
 
 [node name="HPBar" type="ProgressBar" parent="HUD/Bars"]
 layout_mode = 2
@@ -45,6 +50,91 @@ value = 100.0
 layout_mode = 2
 max_value = 100.0
 value = 100.0
+modulate = Color(1.0, 1.0, 0.4, 1)
+
+[node name="EnemyHUDContainer" type="VBoxContainer" parent="HUD"]
+offset_left = 330.0
+offset_top = 8.0
+offset_right = 640.0
+offset_bottom = 80.0
+alignment = 1
+
+[node name="EnemyHUD_0" type="HBoxContainer" parent="HUD/EnemyHUDContainer"]
+layout_mode = 2
+
+[node name="EnemyNameLabel" type="Label" parent="HUD/EnemyHUDContainer/EnemyHUD_0"]
+layout_mode = 2
+custom_minimum_size = Vector2(80, 0)
+text = "Enemy"
+
+[node name="EnemyHPBar" type="ProgressBar" parent="HUD/EnemyHUDContainer/EnemyHUD_0"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 100.0
+value = 100.0
+modulate = Color(0.8, 0.2, 0.2, 1)
+
+[node name="EnemyHUD_1" type="HBoxContainer" parent="HUD/EnemyHUDContainer"]
+layout_mode = 2
+
+[node name="EnemyNameLabel" type="Label" parent="HUD/EnemyHUDContainer/EnemyHUD_1"]
+layout_mode = 2
+custom_minimum_size = Vector2(80, 0)
+text = "Enemy"
+
+[node name="EnemyHPBar" type="ProgressBar" parent="HUD/EnemyHUDContainer/EnemyHUD_1"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 100.0
+value = 100.0
+modulate = Color(0.8, 0.2, 0.2, 1)
+
+[node name="EnemyHUD_2" type="HBoxContainer" parent="HUD/EnemyHUDContainer"]
+layout_mode = 2
+
+[node name="EnemyNameLabel" type="Label" parent="HUD/EnemyHUDContainer/EnemyHUD_2"]
+layout_mode = 2
+custom_minimum_size = Vector2(80, 0)
+text = "Enemy"
+
+[node name="EnemyHPBar" type="ProgressBar" parent="HUD/EnemyHUDContainer/EnemyHUD_2"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 100.0
+value = 100.0
+modulate = Color(0.8, 0.2, 0.2, 1)
+
+[node name="ActionFeedback" type="Label" parent="HUD"]
+offset_left = 330.0
+offset_top = 420.0
+offset_right = 640.0
+offset_bottom = 460.0
+visible = false
+horizontal_alignment = 1
+vertical_alignment = 1
+text = ""
+
+[node name="StaminaHints" type="Label" parent="HUD"]
+offset_left = 560.0
+offset_top = 505.0
+offset_right = 940.0
+offset_bottom = 530.0
+text = "Attack [SPC] -12  |  Dodge [Z] -22  |  Heavy [X] -26  |  Guard [ESC] free"
+
+[node name="PlayerSprite" type="Sprite2D" parent="."]
+position = Vector2(480, 270)
+
+[node name="EnemySprite0" type="Sprite2D" parent="."]
+position = Vector2(640, 270)
+visible = false
+
+[node name="EnemySprite1" type="Sprite2D" parent="."]
+position = Vector2(760, 270)
+visible = false
+
+[node name="EnemySprite2" type="Sprite2D" parent="."]
+position = Vector2(880, 270)
+visible = false
 
 [node name="Player" type="CharacterBody2D" parent="."]
 position = Vector2(480, 270)
