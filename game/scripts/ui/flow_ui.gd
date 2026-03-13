@@ -52,6 +52,7 @@ func _ready() -> void:
 	descend_warden_button.pressed.connect(_on_descend_warden_pressed)
 	resume_button.pressed.connect(_on_resume_pressed)
 	quit_to_menu_button.pressed.connect(_on_quit_to_menu_pressed)
+	settings_button.pressed.connect(_on_settings_button_pressed)
 	upgrade_card_0.pressed.connect(_on_upgrade_card_selected.bind(0))
 	upgrade_card_1.pressed.connect(_on_upgrade_card_selected.bind(1))
 	upgrade_card_2.pressed.connect(_on_upgrade_card_selected.bind(2))
@@ -92,6 +93,15 @@ func _on_quit_to_menu_pressed() -> void:
 	pause_menu.visible = false
 	GameState.die_in_run()
 	on_idle_ready()
+
+func _on_settings_button_pressed() -> void:
+	var settings_scene := load("res://scenes/ui/settings.tscn")
+	var settings_instance := settings_scene.instantiate()
+	add_child(settings_instance)
+	settings_instance.settings_closed.connect(_on_settings_closed.bind(settings_instance))
+
+func _on_settings_closed(settings_instance: Node) -> void:
+	settings_instance.queue_free()
 
 func _populate_ring_selector() -> void:
 	ring_selector.clear()
