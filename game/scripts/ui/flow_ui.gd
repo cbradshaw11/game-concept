@@ -39,6 +39,8 @@ signal back_to_menu_requested
 @onready var upgrade_list_label: Label = $RunScreen/UpgradeListLabel
 @onready var upgrade_toast: Label = $UpgradeToast
 @onready var vendor_button: Button = $PrepScreen/VendorButton
+@onready var history_button: Button = $PrepScreen/HistoryButton
+@onready var permanent_upgrades_label: Label = $PrepScreen/PermanentUpgradesList
 
 var run_base_status: String = ""
 var objective_status: String = ""
@@ -71,6 +73,8 @@ func _ready() -> void:
 	upgrade_card_2.pressed.connect(_play_ui_upgrade_select)
 	vendor_button.pressed.connect(_on_visit_vendor_pressed)
 	vendor_button.pressed.connect(_play_ui_click)
+	history_button.pressed.connect(_on_history_button_pressed)
+	history_button.pressed.connect(_play_ui_click)
 	upgrade_toast.visible = false
 	_populate_ring_selector()
 
@@ -317,6 +321,7 @@ func on_idle_ready() -> void:
 	objective_status = ""
 	prep_status.text = "Sanctuary: choose loadout and start run"
 	_refresh_ring_selector()
+	_refresh_permanent_upgrades_display()
 
 func on_objective_started(contract: Dictionary) -> void:
 	var contract_id := str(contract.get("id", "contract"))
@@ -450,3 +455,22 @@ func _on_vendor_closed() -> void:
 	var _SaveSystem := load("res://scripts/systems/save_system.gd")
 	_SaveSystem.save_state(GameState.to_save_state())
 	_refresh_ring_selector()
+
+func _on_history_button_pressed() -> void:
+	var history_scene := load("res://scenes/ui/run_history.tscn")
+	var history_instance := history_scene.instantiate()
+	add_child(history_instance)
+	history_instance.closed.connect(history_instance.queue_free)
+
+func _refresh_permanent_upgrades_display() -> void:
+	if not is_instance_valid(permanent_upgrades_label):
+		return
+	var upgrades: Array = GameState.permanent_upgrades
+	if upgrades.is_empty():
+		permanent_upgrades_label.text = "No permanent upgrades yet."
+		return
+	var parts: Array = []
+	for u in upgrades:
+		var name: String = u.get("name", u.get("id", "?"))
+		parts.append(name)
+	permanent_upgrades_label.text = "Active Bonuses: " + ", ".join(parts)

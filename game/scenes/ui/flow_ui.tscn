@@ -55,6 +55,12 @@ text = "Enter Ring 1"
 [node name="VendorButton" type="Button" parent="PrepScreen"]
 text = "Visit Vendor"
 
+[node name="HistoryButton" type="Button" parent="PrepScreen"]
+text = "Run History"
+
+[node name="PermanentUpgradesList" type="Label" parent="PrepScreen"]
+text = ""
+
 [node name="RunScreen" type="VBoxContainer" parent="."]
 visible = false
 offset_left = 24.0
@@ -238,6 +244,7 @@ offset_bottom = -30.0
 
 [connection signal="pressed" from="PrepScreen/StartRunButton" to="." method="_on_start_run_button_pressed"]
 [connection signal="pressed" from="PrepScreen/VendorButton" to="." method="_on_visit_vendor_pressed"]
+[connection signal="pressed" from="PrepScreen/HistoryButton" to="." method="_on_history_button_pressed"]
 [connection signal="item_selected" from="PrepScreen/LoadoutSelect" to="." method="_on_loadout_select_item_selected"]
 [connection signal="item_selected" from="PrepScreen/RingSelector" to="." method="_on_ring_selected"]
 [connection signal="pressed" from="RunScreen/ResolveEncounterButton" to="." method="_on_resolve_encounter_button_pressed"]
