@@ -2,6 +2,7 @@
   "weapons": [
     {
       "id": "blade_iron",
+      "display_name": "Iron Blade",
       "family": "blade",
       "light_damage": 14,
       "heavy_damage": 24,
@@ -13,6 +14,7 @@
     },
     {
       "id": "polearm_iron",
+      "display_name": "Iron Polearm",
       "family": "polearm",
       "light_damage": 12,
       "heavy_damage": 28,
@@ -24,6 +26,7 @@
     },
     {
       "id": "bow_iron",
+      "display_name": "Short Bow",
       "family": "bow",
       "light_damage": 11,
       "heavy_damage": 26,

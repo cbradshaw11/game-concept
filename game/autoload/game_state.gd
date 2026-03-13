@@ -243,6 +243,18 @@ func apply_shop_item(item: Dictionary) -> void:
 func set_telemetry_enabled(enabled: bool) -> void:
 	telemetry.enabled = enabled
 
+func unlock_weapon(weapon_id: String) -> bool:
+	if weapon_id in weapons_unlocked:
+		return false  # already unlocked
+	weapons_unlocked.append(weapon_id)
+	return true
+
+func can_afford_weapon_unlock(cost_xp: int) -> bool:
+	return banked_xp >= cost_xp
+
+func spend_xp(amount: int) -> void:
+	banked_xp = max(0, banked_xp - amount)
+
 func reset_for_new_game() -> void:
 	var defaults := default_save_state()
 	apply_save_state(defaults)

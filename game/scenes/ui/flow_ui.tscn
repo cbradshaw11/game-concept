@@ -61,6 +61,11 @@ text = "Run History"
 [node name="PermanentUpgradesList" type="Label" parent="PrepScreen"]
 text = ""
 
+[node name="WeaponUnlockPanel" type="VBoxContainer" parent="PrepScreen"]
+
+[node name="WeaponUnlocksHeader" type="Label" parent="PrepScreen/WeaponUnlockPanel"]
+text = "Weapon Unlocks"
+
 [node name="RunScreen" type="VBoxContainer" parent="."]
 visible = false
 offset_left = 24.0

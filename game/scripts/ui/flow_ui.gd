@@ -362,6 +362,7 @@ func on_idle_ready() -> void:
 	prep_status.text = "Sanctuary: choose loadout and start run"
 	_refresh_ring_selector()
 	_refresh_permanent_upgrades_display()
+	_refresh_weapon_unlock_panel()
 
 func on_objective_started(contract: Dictionary) -> void:
 	var contract_id := str(contract.get("id", "contract"))
@@ -514,3 +515,41 @@ func _refresh_permanent_upgrades_display() -> void:
 		var name: String = u.get("name", u.get("id", "?"))
 		parts.append(name)
 	permanent_upgrades_label.text = "Active Bonuses: " + ", ".join(parts)
+
+func _refresh_weapon_unlock_panel() -> void:
+	var panel: Node = get_node_or_null("PrepScreen/WeaponUnlockPanel")
+	if not panel:
+		return
+	for child in panel.get_children():
+		child.queue_free()
+	var items: Array = []
+	var f := FileAccess.open("res://data/shop_items.json", FileAccess.READ)
+	if f:
+		var parsed = JSON.parse_string(f.get_as_text())
+		if parsed is Dictionary:
+			items = parsed.get("items", [])
+	for item in items:
+		if item.get("type") != "weapon_unlock":
+			continue
+		var weapon_id: String = str(item.get("value", ""))
+		var already_unlocked: bool = weapon_id in GameState.weapons_unlocked
+		if already_unlocked:
+			continue  # Don't show already unlocked weapons
+		var cost_xp: int = int(item.get("cost_xp", 999))
+		var btn := Button.new()
+		btn.text = "%s -- %d XP" % [item.get("name", weapon_id), cost_xp]
+		btn.disabled = not GameState.can_afford_weapon_unlock(cost_xp)
+		btn.pressed.connect(_on_unlock_weapon_pressed.bind(item))
+		panel.add_child(btn)
+
+func _on_unlock_weapon_pressed(item: Dictionary) -> void:
+	var cost_xp: int = int(item.get("cost_xp", 999))
+	var weapon_id: String = str(item.get("value", ""))
+	if not GameState.can_afford_weapon_unlock(cost_xp):
+		return
+	GameState.spend_xp(cost_xp)
+	GameState.unlock_weapon(weapon_id)
+	var _SaveSystem := load("res://scripts/systems/save_system.gd")
+	_SaveSystem.save_state(GameState.to_save_state())
+	set_available_loadouts(DataStore.weapons.get("weapons", []))
+	_refresh_weapon_unlock_panel()
