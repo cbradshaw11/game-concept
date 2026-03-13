@@ -281,15 +281,46 @@ func set_available_loadouts(weapons: Array) -> void:
 	loadout_select.clear()
 	for weapon in weapons:
 		var weapon_id := str(weapon.get("id", ""))
-		loadout_select.add_item(weapon_id)
-		loadout_select.set_item_metadata(loadout_select.get_item_count() - 1, weapon_id)
+		var display_name := str(weapon.get("display_name", weapon_id))
+		var is_unlocked: bool = weapon_id in GameState.weapons_unlocked
+		if is_unlocked:
+			loadout_select.add_item(display_name)
+			loadout_select.set_item_metadata(loadout_select.get_item_count() - 1, weapon_id)
+		else:
+			# Show locked weapons with XP cost
+			var cost_xp: int = _get_weapon_unlock_cost(weapon_id)
+			loadout_select.add_item("%s [LOCKED - %d XP]" % [display_name, cost_xp])
+			loadout_select.set_item_metadata(loadout_select.get_item_count() - 1, weapon_id)
+			loadout_select.set_item_disabled(loadout_select.get_item_count() - 1, true)
 	if loadout_select.get_item_count() > 0:
-		loadout_select.select(0)
-		_on_loadout_select_item_selected(0)
+		# Select first non-disabled item
+		for i in range(loadout_select.get_item_count()):
+			if not loadout_select.is_item_disabled(i):
+				loadout_select.select(i)
+				_on_loadout_select_item_selected(i)
+				break
+
+func _get_weapon_unlock_cost(weapon_id: String) -> int:
+	var items: Array = []
+	var f := FileAccess.open("res://data/shop_items.json", FileAccess.READ)
+	if f:
+		var parsed = JSON.parse_string(f.get_as_text())
+		if parsed is Dictionary:
+			items = parsed.get("items", [])
+	for item in items:
+		if item.get("type") == "weapon_unlock" and item.get("value") == weapon_id:
+			return int(item.get("cost_xp", 999))
+	return 999
 
 func set_current_loadout(weapon_id: String) -> void:
-	loadout_summary.text = "Selected loadout: %s" % weapon_id
-	run_loadout.text = "Loadout: %s" % weapon_id
+	var weapons: Array = DataStore.weapons.get("weapons", [])
+	var display_name: String = weapon_id
+	for w in weapons:
+		if w.get("id") == weapon_id:
+			display_name = str(w.get("display_name", weapon_id))
+			break
+	loadout_summary.text = "Selected loadout: %s" % display_name
+	run_loadout.text = "Loadout: %s" % display_name
 
 func on_encounter_resolved(xp_gain: int, loot_gain: int) -> void:
 	run_base_status = "Encounter won: +%d XP, +%d Loot" % [xp_gain, loot_gain]
@@ -298,14 +329,23 @@ func on_encounter_resolved(xp_gain: int, loot_gain: int) -> void:
 
 func on_extracted(total_xp: int, total_loot: int) -> void:
 	_show_prep()
-	prep_status.text = "Extracted. Banked XP: %d, Loot: %d" % [total_xp, total_loot]
+	prep_status.text = "Extracted!\nRing Cleared: %s\nXP Banked: %d  |  Loot Banked: %d" % [
+		GameState.rings_cleared[-1] if not GameState.rings_cleared.is_empty() else "?",
+		total_xp,
+		total_loot
+	]
 	_refresh_ring_selector()
 
 func on_died(unbanked_xp: int, unbanked_loot: int) -> void:
-	ring_label.text = "Ring Reached: %s" % GameState.current_ring
+	var ring_names := {"inner": "Ring 1 - The Inner Reaches", "mid": "Ring 2 - The Mid Wastes", "outer": "Ring 3 - The Outer Void"}
+	ring_label.text = "Ring Reached: %s" % ring_names.get(GameState.current_ring, GameState.current_ring)
 	encounters_label.text = "Encounters Cleared: %d" % GameState.encounters_cleared
-	xp_label.text = "XP Lost: %d" % unbanked_xp
-	loot_label.text = "Loot Lost: %d" % unbanked_loot
+	var xp_kept: int = int(unbanked_xp * 0.5)
+	var xp_lost: int = unbanked_xp - xp_kept
+	xp_label.text = "XP: Lost %d | Kept %d (50%% retention)" % [xp_lost, xp_kept]
+	var loot_kept: int = int(unbanked_loot * 0.25)
+	var loot_lost: int = unbanked_loot - loot_kept
+	loot_label.text = "Loot: Lost %d | Kept %d (25%% retention)" % [loot_lost, loot_kept]
 	_refresh_upgrade_display()
 	death_panel.visible = true
 

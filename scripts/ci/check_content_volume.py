@@ -84,7 +84,7 @@ def main():
 
     all_failures = []
 
-    failures = check_template_counts(templates, min_count=5)
+    failures = check_template_counts(templates, min_count=9)
     if failures:
         print("FAIL - template count per ring:")
         for f in failures:

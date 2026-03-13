@@ -7,6 +7,7 @@ const CombatArenaScene = preload("res://scenes/combat/combat_arena.tscn")
 const ContractSystem = preload("res://scripts/systems/contract_system.gd")
 const PrologueScene = preload("res://scenes/ui/prologue.tscn")
 const TitleScreenScene = preload("res://scenes/ui/title_screen.tscn")
+const VictoryScene = preload("res://scenes/ui/victory.tscn")
 
 @onready var flow_ui: FlowUI = $FlowUI
 
@@ -18,6 +19,7 @@ var selected_weapon_id: String = "blade_iron"
 var combat_arena: CombatArena = null
 var _prologue_instance: CanvasLayer = null
 var _title_screen_instance: CanvasLayer = null
+var _victory_instance: CanvasLayer = null
 
 var _music_player: AudioStreamPlayer = null
 var _ambience_player: AudioStreamPlayer = null
@@ -282,12 +284,42 @@ func _on_warden_defeated() -> void:
 	GameState.game_completed = true
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
-	GameState.record_warden_defeated()
+	# Record warden defeated run (TASK-701 adds this method -- call if available)
+	if GameState.has_method("record_warden_defeated"):
+		GameState.record_warden_defeated()
 	_save_state()
-	flow_ui.show_credits()
-	# Credits: crossfade back to sanctuary music
+	# Show victory screen instead of going directly to credits
+	_victory_instance = VictoryScene.instantiate() as CanvasLayer
+	add_child(_victory_instance)
+	_victory_instance.populate(
+		GameState.rings_cleared.size(),
+		GameState.banked_loot,
+		GameState.banked_xp,
+		GameState.active_seed
+	)
+	_victory_instance.new_journey_requested.connect(_on_victory_new_journey)
+	_victory_instance.return_to_menu_requested.connect(_on_victory_return_to_menu)
+	_victory_instance.view_credits_requested.connect(_on_victory_view_credits)
 	_play_music("music_sanctuary")
 	_play_ambience("ambient_ring")
+
+func _on_victory_new_journey() -> void:
+	if is_instance_valid(_victory_instance):
+		_victory_instance.queue_free()
+		_victory_instance = null
+	flow_ui.on_idle_ready()
+
+func _on_victory_return_to_menu() -> void:
+	if is_instance_valid(_victory_instance):
+		_victory_instance.queue_free()
+		_victory_instance = null
+	_show_title_screen()
+
+func _on_victory_view_credits() -> void:
+	if is_instance_valid(_victory_instance):
+		_victory_instance.queue_free()
+		_victory_instance = null
+	flow_ui.show_credits()
 
 func _initialize_loadouts() -> void:
 	var weapons: Array = DataStore.weapons.get("weapons", [])

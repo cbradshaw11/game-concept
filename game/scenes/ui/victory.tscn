@@ -1,0 +1,54 @@
+[gd_scene load_steps=2 format=3 uid="uid://victory_screen_703"]
+
+[ext_resource type="Script" path="res://scripts/ui/victory.gd" id="1_victory"]
+
+[node name="VictoryScreen" type="CanvasLayer"]
+script = ExtResource("1_victory")
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "The Warden Falls."
+
+[node name="SubtitleLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "You have completed your journey through the rings."
+
+[node name="StatsBox" type="VBoxContainer" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="RingsLabel" type="Label" parent="PanelContainer/VBoxContainer/StatsBox"]
+layout_mode = 2
+text = "Rings Cleared: 0"
+
+[node name="LootLabel" type="Label" parent="PanelContainer/VBoxContainer/StatsBox"]
+layout_mode = 2
+text = "Total Loot Banked: 0"
+
+[node name="XPLabel" type="Label" parent="PanelContainer/VBoxContainer/StatsBox"]
+layout_mode = 2
+text = "Total XP Banked: 0"
+
+[node name="SeedLabel" type="Label" parent="PanelContainer/VBoxContainer/StatsBox"]
+layout_mode = 2
+text = "Run Seed: 0"
+
+[node name="NewJourneyButton" type="Button" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Begin New Journey"
+
+[node name="ReturnToMenuButton" type="Button" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Return to Menu"
+
+[node name="ViewCreditsButton" type="Button" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "View Credits"
