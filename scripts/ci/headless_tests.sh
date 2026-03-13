@@ -88,6 +88,12 @@ if command -v godot4 >/dev/null 2>&1; then
   run_test res://scripts/tests/m5/test_save_migration_m5.gd
   run_test res://scripts/tests/m5/test_contract_targets.gd
   run_test res://scripts/tests/m5/test_audio_events.gd
+  run_test res://scripts/tests/m6/test_shop_system.gd
+  run_test res://scripts/tests/m6/test_vendor_catalog.gd
+  run_test res://scripts/tests/m6/test_prologue_persistence.gd
+  run_test res://scripts/tests/m6/test_settings_persistence.gd
+  run_test res://scripts/tests/m6/test_title_screen_routing.gd
+  run_test res://scripts/tests/m6/test_m6_save_migration.gd
 else
   echo "godot4 not found in runner. Performing structural checks only."
   test -f game/scripts/tests/replay_test.gd
@@ -118,6 +124,12 @@ else
   test -f game/scripts/tests/m5/test_save_migration_m5.gd
   test -f game/scripts/tests/m5/test_contract_targets.gd
   test -f game/scripts/tests/m5/test_audio_events.gd
+  test -f game/scripts/tests/m6/test_shop_system.gd
+  test -f game/scripts/tests/m6/test_vendor_catalog.gd
+  test -f game/scripts/tests/m6/test_prologue_persistence.gd
+  test -f game/scripts/tests/m6/test_settings_persistence.gd
+  test -f game/scripts/tests/m6/test_title_screen_routing.gd
+  test -f game/scripts/tests/m6/test_m6_save_migration.gd
 fi
 
 echo ""
