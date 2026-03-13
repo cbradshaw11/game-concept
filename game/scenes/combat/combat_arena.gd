@@ -212,7 +212,6 @@ func _spawn_boss(boss_id: String) -> EnemyController:
 	var profile: String = boss_data.get("behavior_profile", "elite_pressure")
 	_apply_behavior_profile(boss, profile)
 	boss.is_boss = true
-	boss.initial_health = boss_data.get("health", 1200)
 	return boss
 
 func start_boss_encounter(boss_id: String) -> void:

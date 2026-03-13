@@ -28,6 +28,7 @@ const WIND_UP_DURATION: float = 0.2
 var is_boss: bool = false
 var initial_health: int = 0
 var damage_multiplier: float = 1.0
+var _current_phase: int = 1
 
 func _init(max_health: int = 100, chase_distance: float = 6.0, attack_distance: float = 1.8, p_damage: int = 10) -> void:
 	health = max_health
@@ -40,19 +41,22 @@ func _update_boss_phase() -> void:
 	if not is_boss or initial_health <= 0:
 		return
 	var hp_ratio: float = float(health) / float(initial_health)
-	if hp_ratio > 0.70:
-		# Phase 1: default elite_pressure params already set
-		damage_multiplier = 1.0
-		attack_cooldown = 0.8
-	elif hp_ratio > 0.35:
-		# Phase 2
+	var target_phase: int = 1
+	if hp_ratio <= 0.35:
+		target_phase = 3
+	elif hp_ratio <= 0.70:
+		target_phase = 2
+	# Phases only advance, never regress
+	if target_phase <= _current_phase:
+		return
+	_current_phase = target_phase
+	if _current_phase == 2:
 		damage_multiplier = 1.25
 		attack_cooldown = 0.6
 		if GameState.warden_phase_reached < 2:
 			GameState.warden_phase_reached = 2
-	else:
-		# Phase 3
-		damage_multiplier = 1.25
+	elif _current_phase == 3:
+		damage_multiplier = 1.5
 		attack_cooldown = 0.4
 		preferred_min_range = 0.0
 		if GameState.warden_phase_reached < 3:

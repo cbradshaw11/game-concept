@@ -33,6 +33,8 @@ func default_save_state() -> Dictionary:
 		"rings_cleared": [],
 		"warden_defeated": false,
 		"game_completed": false,
+		"warden_phase_reached": -1,
+		"save_version": 1,
 	}
 
 func to_save_state() -> Dictionary:
@@ -50,9 +52,6 @@ func to_save_state() -> Dictionary:
 	}
 
 func apply_save_state(data: Dictionary) -> void:
-	# M5 migration guard — must run BEFORE normal key assignments
-	if data.get("save_version", 0) < 1:
-		warden_phase_reached = -1
 	banked_xp = int(data.get("banked_xp", 0))
 	banked_loot = int(data.get("banked_loot", 0))
 	unbanked_xp = int(data.get("unbanked_xp", 0))
@@ -61,7 +60,11 @@ func apply_save_state(data: Dictionary) -> void:
 	rings_cleared = Array(data.get("rings_cleared", []), TYPE_STRING, "", null)
 	warden_defeated = bool(data.get("warden_defeated", false))
 	game_completed = bool(data.get("game_completed", false))
-	warden_phase_reached = int(data.get("warden_phase_reached", -1))
+	# M5 migration guard: only restore warden_phase_reached from save if save_version >= 1
+	if data.get("save_version", 0) >= 1:
+		warden_phase_reached = int(data.get("warden_phase_reached", -1))
+	else:
+		warden_phase_reached = -1
 
 func start_run(seed: int, ring_id: String) -> void:
 	active_seed = seed

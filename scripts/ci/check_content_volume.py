@@ -61,6 +61,16 @@ def check_template_sizes(templates, min_size=1, max_size=5):
             failures.append(f"  template '{t['id']}': {n} enemies (valid range {min_size}-{max_size})")
     return failures
 
+REQUIRED_ENEMY_FIELDS = ["id", "role", "rings", "health", "poise", "damage", "poise_damage", "behavior_profile"]
+
+def check_enemy_schema(enemies):
+    failures = []
+    for e in enemies:
+        for field in REQUIRED_ENEMY_FIELDS:
+            if field not in e:
+                failures.append(f"  enemy '{e.get('id','?')}' missing required field '{field}'")
+    return failures
+
 def main():
     base = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     templates_path = os.path.join(base, "game", "data", "encounter_templates.json")
@@ -118,6 +128,15 @@ def main():
         all_failures.extend(failures)
     else:
         print("PASS - template sizes in range")
+
+    failures = check_enemy_schema(enemies)
+    if failures:
+        print("FAIL - enemy schema incomplete:")
+        for f in failures:
+            print(f)
+        all_failures.extend(failures)
+    else:
+        print("PASS - enemy schema complete")
 
     if all_failures:
         print(f"\n{len(all_failures)} check(s) failed.")

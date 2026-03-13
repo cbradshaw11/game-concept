@@ -58,6 +58,8 @@ func _input(event: InputEvent) -> void:
 func _handle_pause_input() -> void:
 	if not run_screen.visible:
 		return
+	if upgrade_draw_panel.visible:
+		return
 	if _is_paused:
 		_unpause()
 	else:
@@ -221,6 +223,8 @@ func _on_return_to_sanctuary() -> void:
 
 func on_idle_ready() -> void:
 	_show_prep()
+	death_panel.visible = false
+	upgrade_draw_panel.visible = false
 	run_base_status = ""
 	objective_status = ""
 	prep_status.text = "Sanctuary: choose loadout and start run"
@@ -258,17 +262,34 @@ func _show_upgrade_draw() -> void:
 		var parsed = JSON.parse_string(f.get_as_text())
 		if parsed is Dictionary:
 			upgrades_data = parsed.get("upgrades", [])
-	upgrades_data.shuffle()
-	_current_draw = upgrades_data.slice(0, 3)
+	else:
+		push_error("upgrades.json not found — skipping upgrade draw")
+		extract_pressed.emit()
+		return
+	if upgrades_data.is_empty():
+		push_error("upgrades.json parsed but contains no upgrades — skipping upgrade draw")
+		extract_pressed.emit()
+		return
+	# Filter out upgrades already selected this run
+	var taken_ids: Array = GameState.active_upgrades.map(func(u): return u.get("id", ""))
+	var available: Array = upgrades_data.filter(func(u): return u.get("id", "") not in taken_ids)
+	available.shuffle()
+	_current_draw = available.slice(0, 3)
 	if _current_draw.size() < 3:
 		extract_pressed.emit()
 		return
 	upgrade_card_0.text = "%s\n%s" % [_current_draw[0]["name"], _current_draw[0]["description"]]
 	upgrade_card_1.text = "%s\n%s" % [_current_draw[1]["name"], _current_draw[1]["description"]]
 	upgrade_card_2.text = "%s\n%s" % [_current_draw[2]["name"], _current_draw[2]["description"]]
+	upgrade_card_0.disabled = false
+	upgrade_card_1.disabled = false
+	upgrade_card_2.disabled = false
 	upgrade_draw_panel.visible = true
 
 func _on_upgrade_card_selected(index: int) -> void:
+	upgrade_card_0.disabled = true
+	upgrade_card_1.disabled = true
+	upgrade_card_2.disabled = true
 	var selected: Dictionary = _current_draw[index]
 	GameState.apply_upgrade(selected)
 	upgrade_selected.emit(selected)
@@ -292,8 +313,13 @@ func _refresh_run_status() -> void:
 	run_status.text = "\n".join(lines)
 
 func _refresh_warden_option() -> void:
+	var outer_target: int = 3
+	for r in DataStore.rings.get("rings", []):
+		if r.get("id") == "outer":
+			outer_target = r.get("contract_target", 3)
+			break
 	var show_warden: bool = GameState.current_ring == "outer" \
-		and GameState.encounters_cleared >= 3 \
+		and GameState.encounters_cleared >= outer_target \
 		and not GameState.warden_defeated
 	descend_warden_button.visible = show_warden
 

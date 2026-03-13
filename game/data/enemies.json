@@ -50,6 +50,7 @@
       "health": 65,
       "poise": 18,
       "damage": 14,
+      "poise_damage": 16,
       "behavior_profile": "zone_control"
     },
     {
@@ -59,6 +60,7 @@
       "health": 130,
       "poise": 70,
       "damage": 16,
+      "poise_damage": 20,
       "behavior_profile": "elite_pressure"
     },
     {

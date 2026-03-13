@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/ui/flow_ui.gd" id="1_jn33y"]
 
 [node name="FlowUI" type="CanvasLayer"]
+process_mode = 3
 script = ExtResource("1_jn33y")
 
 [node name="PrepScreen" type="VBoxContainer" parent="."]

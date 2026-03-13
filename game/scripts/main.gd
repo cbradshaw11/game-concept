@@ -30,6 +30,7 @@ func _connect_ui() -> void:
 	flow_ui.die_pressed.connect(_on_die_pressed)
 	flow_ui.loadout_selected.connect(_on_loadout_selected)
 	flow_ui.descend_warden_pressed.connect(_on_descend_warden_pressed)
+	flow_ui.upgrade_selected.connect(_on_upgrade_selected)
 
 func _connect_state() -> void:
 	GameState.run_started.connect(flow_ui.on_run_started)
@@ -154,6 +155,10 @@ func _initialize_loadouts() -> void:
 		selected_weapon_id = str(weapons[0].get("id", selected_weapon_id))
 	flow_ui.set_available_loadouts(weapons)
 	flow_ui.set_current_loadout(selected_weapon_id)
+
+func _on_upgrade_selected(upgrade: Dictionary) -> void:
+	if is_instance_valid(combat_arena) and is_instance_valid(combat_arena.player):
+		combat_arena.player.apply_upgrade(upgrade)
 
 func _on_loadout_selected(weapon_id: String) -> void:
 	selected_weapon_id = weapon_id

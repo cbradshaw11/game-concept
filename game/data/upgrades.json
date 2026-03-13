@@ -19,7 +19,7 @@
     {
       "id": "reckless_momentum",
       "name": "Reckless Momentum",
-      "description": "Light and heavy attacks deal 4 more damage.",
+      "description": "Heavy attacks deal 4 more damage.",
       "stat": "attack_damage",
       "modifier_type": "add",
       "value": 4

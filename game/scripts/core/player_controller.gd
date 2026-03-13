@@ -62,6 +62,8 @@ func apply_upgrade(upgrade: Dictionary) -> void:
 			health_changed.emit(current_health, max_health)
 		"max_stamina":
 			max_stamina += int(value)
+			stamina = min(stamina + float(value), float(max_stamina))
+			stamina_changed.emit(stamina, max_stamina)
 		"attack_damage":
 			if "heavy_damage" in self:
 				heavy_damage += int(value)
