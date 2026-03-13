@@ -128,6 +128,8 @@ func _on_quit_to_menu_pressed() -> void:
 	_is_paused = false
 	pause_menu.visible = false
 	GameState.die_in_run()
+	var _SaveSystem := load("res://scripts/systems/save_system.gd")
+	_SaveSystem.save_state(GameState.to_save_state())
 	on_idle_ready()
 
 func _on_settings_button_pressed() -> void:
@@ -203,7 +205,7 @@ func _on_resolve_encounter_button_pressed() -> void:
 
 func _on_extract_button_pressed() -> void:
 	_play_ui_click()
-	if GameState.current_ring in ["inner", "mid"]:
+	if GameState.current_ring in ["inner", "mid", "outer"]:
 		_show_upgrade_draw()
 	else:
 		extract_pressed.emit()

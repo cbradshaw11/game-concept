@@ -2,6 +2,7 @@ extends Node
 class_name GameState
 
 const Telemetry = preload("res://scripts/systems/telemetry.gd")
+const _SaveSystem = preload("res://scripts/systems/save_system.gd")
 
 signal run_started(seed: int)
 signal encounter_completed(reward_xp: int, reward_loot: int)
@@ -41,6 +42,7 @@ func default_save_state() -> Dictionary:
 		"prologue_seen": false,
 		"first_run_complete": false,
 		"permanent_upgrades": [],
+		"selected_weapon_id": "blade_iron",
 		"save_version": 3,
 	}
 
@@ -58,6 +60,7 @@ func to_save_state() -> Dictionary:
 		"prologue_seen": prologue_seen,
 		"first_run_complete": first_run_complete,
 		"permanent_upgrades": permanent_upgrades,
+		"selected_weapon_id": selected_weapon_id,
 		"save_version": 3,
 	}
 
@@ -88,6 +91,7 @@ func apply_save_state(data: Dictionary) -> void:
 		permanent_upgrades = raw.filter(func(e): return e is Dictionary)
 	else:
 		permanent_upgrades = []
+	selected_weapon_id = str(data.get("selected_weapon_id", "blade_iron"))
 
 func start_run(seed: int, ring_id: String) -> void:
 	active_seed = seed
@@ -192,5 +196,5 @@ func reset_for_new_game() -> void:
 	selected_weapon_id = "blade_iron"
 	prologue_seen = true  # preserve: prologue is a one-time player experience, not run state
 	# Delete the save file so no stale state persists
-	if FileAccess.file_exists(SaveSystem.SAVE_PATH):
-		DirAccess.remove_absolute(SaveSystem.SAVE_PATH)
+	if FileAccess.file_exists(_SaveSystem.SAVE_PATH):
+		DirAccess.remove_absolute(_SaveSystem.SAVE_PATH)

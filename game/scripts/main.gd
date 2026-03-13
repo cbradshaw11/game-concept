@@ -85,6 +85,8 @@ func _stop_ambience() -> void:
 	_ambience_player.stop()
 
 func _show_title_screen() -> void:
+	if is_instance_valid(_title_screen_instance):
+		return
 	_title_screen_instance = TitleScreenScene.instantiate() as CanvasLayer
 	add_child(_title_screen_instance)
 	_title_screen_instance.new_game_requested.connect(_on_title_new_game)
@@ -161,8 +163,10 @@ func _on_start_run_pressed() -> void:
 	_ensure_combat_arena()
 	combat_arena.set_context(GameState.current_ring, int(seed), int(active_encounter.get("enemy_count", 1)))
 	combat_arena.set_arena_active(true)
-	# Apply per_run shop upgrades to the player now that the arena/player is ready
+	# Apply permanent upgrades first, then per-run upgrades, at run start
 	if is_instance_valid(combat_arena) and is_instance_valid(combat_arena.player):
+		for upgrade in GameState.permanent_upgrades:
+			combat_arena.player.apply_upgrade(upgrade)
 		for upgrade in GameState.active_upgrades:
 			combat_arena.player.apply_upgrade(upgrade)
 	flow_ui.set_current_loadout(selected_weapon_id)
@@ -205,20 +209,25 @@ func _on_extract_pressed() -> void:
 func _on_die_pressed() -> void:
 	if GameState.current_ring == "sanctuary":
 		return
+	var xp_at_risk: int = GameState.unbanked_xp
 	GameState.die_in_run()
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
 	contract_system.fail_active_contract()
+	# Show objective failure before death panel so contract fail state is visible
 	flow_ui.on_objective_failed(contract_system.get_contract())
+	flow_ui.on_died(xp_at_risk, GameState.unbanked_loot)
 	_save_state()
 	# Return to sanctuary music after dying
 	_play_music("music_sanctuary")
 	_play_ambience("ambient_ring")
 
 func _on_player_died() -> void:
+	# Signal handler for GameState.player_died -- audio/arena teardown only.
+	# Death panel display is handled by the explicit die paths (_on_die_pressed,
+	# _on_combat_player_died) so that on_objective_failed runs before on_died.
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
-	flow_ui.on_died(GameState.unbanked_xp, GameState.unbanked_loot)
 	# Return to sanctuary music after player death
 	_play_music("music_sanctuary")
 	_play_ambience("ambient_ring")
@@ -226,9 +235,12 @@ func _on_player_died() -> void:
 func _on_combat_player_died() -> void:
 	if GameState.current_ring == "sanctuary":
 		return
+	var xp_at_risk: int = GameState.unbanked_xp
 	GameState.die_in_run()
 	contract_system.fail_active_contract()
+	# Show objective failure before death panel so contract fail state is visible
 	flow_ui.on_objective_failed(contract_system.get_contract())
+	flow_ui.on_died(xp_at_risk, GameState.unbanked_loot)
 	_save_state()
 
 func _ensure_combat_arena() -> void:

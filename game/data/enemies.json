@@ -120,10 +120,15 @@
   "bosses": [
     {
       "id": "outer_warden",
+      "role": "boss",
+      "rings": ["outer"],
       "ring": "outer",
       "phases": 3,
       "health": 1200,
       "poise": 250,
+      "damage": 22,
+      "poise_damage": 35,
+      "behavior_profile": "elite_pressure",
       "damage_profile": "heavy_commitment_punish"
     }
   ]
