@@ -31,6 +31,11 @@ signal player_died()
 @onready var action_feedback: Label = $HUD/ActionFeedback
 
 var _tutorial_showing: bool = false
+var _dismiss_frame: int = -1
+var _feedback_tween: Tween = null
+var _poise_flash_tween: Tween = null
+var _shake_tween: Tween = null
+var _shake_origin: Vector2 = Vector2.ZERO
 
 const _ENEMY_TEXTURES: Dictionary = {
 	"grunt": "res://assets/sprites/enemy_grunt.png",
@@ -57,7 +62,6 @@ func _ready() -> void:
 	player.dodge_triggered.connect(_on_dodge_triggered)
 	player.guard_changed.connect(_on_guard_changed)
 	player.player_died.connect(func() -> void: _player_death_player.play(); player_died.emit())
-	player.attack_evaded.connect(func() -> void: _dodge_guard_player.play())
 	player.health_changed.connect(_on_health_changed)
 	player.stamina_changed.connect(_on_stamina_changed)
 	if player.has_signal("poise_changed"):
@@ -116,6 +120,8 @@ func set_arena_active(is_active: bool) -> void:
 	process_mode = Node.PROCESS_MODE_INHERIT if is_active else Node.PROCESS_MODE_DISABLED
 
 func _process(delta: float) -> void:
+	if _tutorial_showing:
+		return
 	if enemies.is_empty() or encounter_completed:
 		return
 	var player_zone := _player_zone()
@@ -142,6 +148,7 @@ func _dismiss_tutorial() -> void:
 	if not _tutorial_showing:
 		return
 	_tutorial_showing = false
+	_dismiss_frame = Engine.get_process_frames()
 	_combat_tutorial_overlay.visible = false
 	GameState.first_run_complete = true
 
@@ -156,12 +163,12 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 	if event.is_action_pressed("heavy_attack"):
-		if _tutorial_showing:
-			_dismiss_tutorial()
 		player.heavy_attack()
 
 func _on_attack_triggered() -> void:
 	_dismiss_tutorial()
+	if _dismiss_frame >= 0 and Engine.get_process_frames() <= _dismiss_frame:
+		return
 	attack_count += 1
 	_apply_damage_to_front_enemy(weapon_data.get("light_damage", 14))
 	_hit_land_player.play()
@@ -189,6 +196,7 @@ func _on_guard_changed(is_guarding: bool) -> void:
 	_update_status()
 
 func _on_attack_evaded() -> void:
+	_dodge_guard_player.play()
 	_show_action_feedback("DODGED")
 
 func _on_guard_broken() -> void:
@@ -196,26 +204,21 @@ func _on_guard_broken() -> void:
 
 func _on_player_staggered() -> void:
 	_show_action_feedback("POISE BREAK!")
-	var tween := create_tween()
-	tween.tween_property(poise_bar, "modulate", Color(1.0, 0.2, 0.2, 1.0), 0.05)
-	tween.tween_property(poise_bar, "modulate", Color(1.0, 1.0, 0.4, 1.0), 0.3)
+	if _poise_flash_tween:
+		_poise_flash_tween.kill()
+	_poise_flash_tween = create_tween()
+	_poise_flash_tween.tween_property(poise_bar, "modulate", Color(1.0, 0.2, 0.2, 1.0), 0.05)
+	_poise_flash_tween.tween_property(poise_bar, "modulate", Color(1.0, 1.0, 0.4, 1.0), 0.3)
 
 func _update_status() -> void:
-	var state_parts: PackedStringArray = []
-	for index in enemies.size():
-		var enemy := enemies[index]
-		state_parts.append("E%d:%s(%d)" % [index + 1, EnemyController.state_name(enemy.state), enemy.health])
-	var enemies_text := " | ".join(state_parts)
-	combat_status.text = "Ring %s Seed %d | Atk %d Dodge %d Guard %s | Stamina %d/%d | %s" % [
-		ring_id,
-		seed,
-		attack_count,
-		dodge_count,
-		"On" if guard_active else "Off",
-		int(round(player.stamina)),
-		player.max_stamina,
-		enemies_text,
-	]
+	var ring_name: String = GameState.current_ring.capitalize() if GameState.current_ring else ""
+	var enc: int = GameState.encounters_cleared
+	var target: int = 3
+	for r in DataStore.rings.get("rings", []):
+		if r.get("id") == GameState.current_ring:
+			target = r.get("contract_target", 3)
+			break
+	combat_status.text = "Ring: %s  |  Encounters: %d/%d" % [ring_name, enc, target]
 
 func _update_enemy_hud() -> void:
 	var slots := [
@@ -233,7 +236,7 @@ func _update_enemy_hud() -> void:
 			var enemy_name_label: Label = slot.get_node_or_null("EnemyNameLabel")
 			var enemy := enemies[i]
 			if enemy_name_label:
-				enemy_name_label.text = "Grunt  %d/%d" % [enemy.health, enemy.initial_health]
+				enemy_name_label.text = "%s  %d/%d" % [enemy.enemy_display_name, enemy.health, enemy.initial_health]
 			if enemy_hp_bar:
 				enemy_hp_bar.max_value = enemy.initial_health
 				enemy_hp_bar.value = enemy.health
@@ -241,13 +244,15 @@ func _update_enemy_hud() -> void:
 			slot.visible = false
 
 func _show_action_feedback(text: String) -> void:
+	if _feedback_tween:
+		_feedback_tween.kill()
 	action_feedback.text = text
 	action_feedback.visible = true
 	action_feedback.modulate = Color(1.0, 1.0, 1.0, 1.0)
-	var tween := create_tween()
-	tween.tween_interval(0.5)
-	tween.tween_property(action_feedback, "modulate:a", 0.0, 0.3)
-	tween.tween_callback(func() -> void: action_feedback.visible = false)
+	_feedback_tween = create_tween()
+	_feedback_tween.tween_interval(0.5)
+	_feedback_tween.tween_property(action_feedback, "modulate:a", 0.0, 0.3)
+	_feedback_tween.tween_callback(func() -> void: action_feedback.visible = false)
 
 func _apply_behavior_profile(enemy: EnemyController, profile: String) -> void:
 	match profile:
@@ -296,6 +301,7 @@ func _spawn_enemies(count: int) -> void:
 		enemy.wind_up_started.connect(_on_enemy_wind_up)
 		var profile: String = enemy_data.get("behavior_profile", "frontline_basic")
 		_apply_behavior_profile(enemy, profile)
+		enemy.enemy_display_name = enemy_data.get("role", "enemy").capitalize()
 		enemies.append(enemy)
 	_load_enemy_sprites(spawned_data)
 	_update_enemy_hud()
@@ -320,6 +326,7 @@ func _spawn_boss(boss_id: String) -> EnemyController:
 	var profile: String = boss_data.get("behavior_profile", "elite_pressure")
 	_apply_behavior_profile(boss, profile)
 	boss.is_boss = true
+	boss.enemy_display_name = boss_data.get("role", boss_data.get("id", "boss")).capitalize()
 	return boss
 
 func start_boss_encounter(boss_id: String) -> void:
@@ -334,6 +341,13 @@ func start_boss_encounter(boss_id: String) -> void:
 	enemies.append(boss)
 	encounter_enemy_count = 1
 	player.set_guarding(false)
+	var bosses = DataStore.enemies.get("bosses", [])
+	var boss_matches = bosses.filter(func(b: Dictionary) -> bool: return b.get("id") == boss_id)
+	if not boss_matches.is_empty():
+		_load_enemy_sprites([boss_matches[0]])
+	else:
+		_load_enemy_sprites([{"role": "elite"}])
+	_update_enemy_hud()
 	_update_status()
 
 func _player_zone() -> int:
@@ -427,8 +441,12 @@ func _flash_front_enemy_sprite() -> void:
 func _screen_shake(duration: float, magnitude: float) -> void:
 	var camera := get_viewport().get_camera_2d() if get_viewport() else null
 	var target_node: Node2D = camera if is_instance_valid(camera) else self
-	var origin: Vector2 = target_node.position
-	var tween := create_tween()
+	if _shake_tween:
+		_shake_tween.kill()
+		target_node.position = _shake_origin
+	else:
+		_shake_origin = target_node.position
+	_shake_tween = create_tween()
 	var steps := int(duration / 0.016)
 	steps = max(steps, 4)
 	for _i in steps:
@@ -436,8 +454,8 @@ func _screen_shake(duration: float, magnitude: float) -> void:
 			randf_range(-magnitude, magnitude),
 			randf_range(-magnitude, magnitude)
 		)
-		tween.tween_property(target_node, "position", origin + offset, duration / steps)
-	tween.tween_property(target_node, "position", origin, 0.02)
+		_shake_tween.tween_property(target_node, "position", _shake_origin + offset, duration / steps)
+	_shake_tween.tween_property(target_node, "position", _shake_origin, 0.02)
 
 func _on_enemy_wind_up() -> void:
 	var tween := create_tween()

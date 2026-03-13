@@ -29,6 +29,7 @@ var is_boss: bool = false
 var initial_health: int = 0
 var damage_multiplier: float = 1.0
 var _current_phase: int = 1
+var enemy_display_name: String = "Enemy"
 
 func _init(max_health: int = 100, chase_distance: float = 6.0, attack_distance: float = 1.8, p_damage: int = 10) -> void:
 	health = max_health
