@@ -395,7 +395,7 @@ func _refresh_upgrade_display() -> void:
 	if GameState.active_upgrades.is_empty():
 		upgrade_list_label.text = ""
 	else:
-		var names: Array = GameState.active_upgrades.map(func(u): return u["name"])
+		var names: Array = GameState.active_upgrades.map(func(u): return u.get("name", u.get("id", "Unknown")))
 		upgrade_list_label.text = "Upgrades: " + ", ".join(names)
 
 func _refresh_run_status() -> void:

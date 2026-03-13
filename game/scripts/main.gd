@@ -161,6 +161,10 @@ func _on_start_run_pressed() -> void:
 	_ensure_combat_arena()
 	combat_arena.set_context(GameState.current_ring, int(seed), int(active_encounter.get("enemy_count", 1)))
 	combat_arena.set_arena_active(true)
+	# Apply per_run shop upgrades to the player now that the arena/player is ready
+	if is_instance_valid(combat_arena) and is_instance_valid(combat_arena.player):
+		for upgrade in GameState.active_upgrades:
+			combat_arena.player.apply_upgrade(upgrade)
 	flow_ui.set_current_loadout(selected_weapon_id)
 	# Switch to combat music when run starts
 	_play_music("music_combat")
@@ -177,7 +181,8 @@ func _on_resolve_encounter_pressed() -> void:
 		DataStore.rings,
 		int(active_encounter.get("enemy_count", 1))
 	)
-	GameState.add_unbanked(int(rewards["xp"]), int(rewards["loot"]))
+	var loot_bonus: int = GameState.get_loot_per_encounter_bonus()
+	GameState.add_unbanked(int(rewards["xp"]), int(rewards["loot"]) + loot_bonus)
 	var contract := contract_system.record_encounter_completed()
 	flow_ui.on_objective_progress(contract)
 	active_encounter = {}

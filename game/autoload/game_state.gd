@@ -21,6 +21,7 @@ var warden_defeated: bool = false
 var game_completed: bool = false
 var warden_phase_reached: int = -1
 var active_upgrades: Array = []
+var pending_run_upgrades: Array = []
 var permanent_upgrades: Array = []
 var prologue_seen: bool = false
 var first_run_complete: bool = false
@@ -83,7 +84,8 @@ func apply_save_state(data: Dictionary) -> void:
 		first_run_complete = false
 	# TASK-604 migration guard: only restore permanent_upgrades if save_version >= 3
 	if data.get("save_version", 0) >= 3:
-		permanent_upgrades = Array(data.get("permanent_upgrades", []))
+		var raw = data.get("permanent_upgrades", [])
+		permanent_upgrades = raw.filter(func(e): return e is Dictionary)
 	else:
 		permanent_upgrades = []
 
@@ -93,7 +95,9 @@ func start_run(seed: int, ring_id: String) -> void:
 	unbanked_xp = 0
 	unbanked_loot = 0
 	encounters_cleared = 0
-	active_upgrades = []
+	# Carry pending per_run shop purchases into the new run, then clear the queue
+	active_upgrades = pending_run_upgrades.duplicate()
+	pending_run_upgrades = []
 	telemetry.log_event("run_started", {
 		"seed": active_seed,
 		"ring": current_ring,
@@ -144,6 +148,13 @@ func die_in_run() -> void:
 	})
 	player_died.emit()
 
+func get_loot_per_encounter_bonus() -> int:
+	var bonus: int = 0
+	for upgrade in active_upgrades:
+		if upgrade.get("stat", "") == "loot_per_encounter":
+			bonus += int(upgrade.get("value", 0))
+	return bonus
+
 func apply_upgrade(upgrade: Dictionary) -> void:
 	active_upgrades.append(upgrade)
 
@@ -159,8 +170,8 @@ func apply_shop_item(item: Dictionary) -> void:
 			"stat": stat,
 		})
 	else:
-		# per_run: store in active_upgrades so PlayerController can apply at run start
-		active_upgrades.append(item)
+		# per_run: store in pending_run_upgrades so they survive start_run() clearing active_upgrades
+		pending_run_upgrades.append(item)
 		telemetry.log_event("shop_item_purchased", {
 			"item_id": item.get("id", ""),
 			"type": "per_run",
@@ -174,10 +185,12 @@ func reset_for_new_game() -> void:
 	var defaults := default_save_state()
 	apply_save_state(defaults)
 	active_upgrades = []
+	pending_run_upgrades = []
 	permanent_upgrades = []
 	active_seed = 0
 	encounters_cleared = 0
 	selected_weapon_id = "blade_iron"
+	prologue_seen = true  # preserve: prologue is a one-time player experience, not run state
 	# Delete the save file so no stale state persists
 	if FileAccess.file_exists(SaveSystem.SAVE_PATH):
 		DirAccess.remove_absolute(SaveSystem.SAVE_PATH)

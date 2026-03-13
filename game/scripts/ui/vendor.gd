@@ -10,6 +10,8 @@ signal closed
 
 var _all_items: Array = []
 var _offered_items: Array = []
+var _purchasing: bool = false
+var _feedback_timer: SceneTreeTimer = null
 
 func _ready() -> void:
 	close_button.pressed.connect(_on_close_pressed)
@@ -70,28 +72,53 @@ func _populate_item_list() -> void:
 		item_list.add_child(card)
 
 func _on_buy_pressed(item_id: String) -> void:
+	if _purchasing:
+		return
+	_purchasing = true
+
 	var item: Dictionary = {}
 	for i in _offered_items:
 		if i.get("id", "") == item_id:
 			item = i
 			break
 	if item.is_empty():
+		_purchasing = false
 		return
+
+	# Disable all Buy buttons while processing to prevent double-clicks
+	for card in item_list.get_children():
+		for child in card.get_children():
+			if child is Button and child.text == "Buy":
+				child.disabled = true
 
 	var cost: int = int(item.get("cost", 0))
 	if GameState.banked_loot < cost:
+		# Re-enable buttons on failure
+		for card in item_list.get_children():
+			for child in card.get_children():
+				if child is Button and child.text == "Buy":
+					child.disabled = false
+		_purchasing = false
 		_show_feedback("Not enough loot!")
 		return
 
 	GameState.banked_loot -= cost
 	GameState.apply_shop_item(item)
+	SaveSystem.save_state(GameState.to_save_state())
 	_refresh_loot_label()
 	_show_feedback("Purchased: %s" % str(item.get("name", "")))
+	_purchasing = false
 
 func _show_feedback(message: String) -> void:
 	feedback_label.text = message
 	feedback_label.visible = true
-	get_tree().create_timer(2.0).timeout.connect(func(): feedback_label.visible = false)
+	# Cancel any existing feedback timer to prevent stacking hide callbacks
+	_feedback_timer = get_tree().create_timer(2.0)
+	var captured_timer := _feedback_timer
+	captured_timer.timeout.connect(func():
+		if captured_timer == _feedback_timer:
+			feedback_label.visible = false
+	)
 
 func _on_close_pressed() -> void:
 	closed.emit()
