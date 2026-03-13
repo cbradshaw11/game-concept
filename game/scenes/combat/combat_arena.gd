@@ -26,6 +26,9 @@ signal player_died()
 	$EnemySprite1,
 	$EnemySprite2,
 ]
+@onready var _combat_tutorial_overlay: Panel = $TutorialLayer/CombatTutorialOverlay
+
+var _tutorial_showing: bool = false
 
 const _ENEMY_TEXTURES: Dictionary = {
 	"grunt": "res://assets/sprites/enemy_grunt.png",
@@ -97,6 +100,8 @@ func set_context(next_ring_id: String, next_seed: int, enemy_count: int = 1) -> 
 	_load_ring_background(ring_id)
 	player.set_guarding(false)
 	_update_status()
+	if not GameState.first_run_complete:
+		_show_first_run_tooltips()
 
 func set_arena_active(is_active: bool) -> void:
 	visible = is_active
@@ -120,11 +125,34 @@ func _process(delta: float) -> void:
 			encounter_cleared.emit(encounter_enemy_count)
 	_update_status()
 
+func _show_first_run_tooltips() -> void:
+	_tutorial_showing = true
+	_combat_tutorial_overlay.visible = true
+
+func _dismiss_tutorial() -> void:
+	if not _tutorial_showing:
+		return
+	_tutorial_showing = false
+	_combat_tutorial_overlay.visible = false
+	GameState.first_run_complete = true
+
 func _input(event: InputEvent) -> void:
+	if _tutorial_showing:
+		if event is InputEventKey and event.pressed:
+			_dismiss_tutorial()
+			get_viewport().set_input_as_handled()
+			return
+		if event is InputEventMouseButton and event.pressed:
+			_dismiss_tutorial()
+			get_viewport().set_input_as_handled()
+			return
 	if event.is_action_pressed("heavy_attack"):
+		if _tutorial_showing:
+			_dismiss_tutorial()
 		player.heavy_attack()
 
 func _on_attack_triggered() -> void:
+	_dismiss_tutorial()
 	attack_count += 1
 	_apply_damage_to_front_enemy(weapon_data.get("light_damage", 14))
 	_hit_land_player.play()

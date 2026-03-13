@@ -265,6 +265,9 @@ func _on_warden_defeated() -> void:
 		combat_arena.set_arena_active(false)
 	_save_state()
 	flow_ui.show_credits()
+	# Credits: crossfade back to sanctuary music
+	_play_music("music_sanctuary")
+	_play_ambience("ambient_ring")
 
 func _initialize_loadouts() -> void:
 	var weapons: Array = DataStore.weapons.get("weapons", [])
