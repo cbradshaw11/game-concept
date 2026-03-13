@@ -27,6 +27,8 @@ signal player_died()
 	$EnemySprite2,
 ]
 @onready var _combat_tutorial_overlay: Panel = $TutorialLayer/CombatTutorialOverlay
+@onready var enemy_hud_container: VBoxContainer = $HUD/EnemyHUDContainer
+@onready var action_feedback: Label = $HUD/ActionFeedback
 
 var _tutorial_showing: bool = false
 
@@ -60,6 +62,12 @@ func _ready() -> void:
 	player.stamina_changed.connect(_on_stamina_changed)
 	if player.has_signal("poise_changed"):
 		player.poise_changed.connect(_on_poise_changed)
+	if player.has_signal("player_staggered"):
+		player.player_staggered.connect(_on_player_staggered)
+	if player.has_signal("attack_evaded"):
+		player.attack_evaded.connect(_on_attack_evaded)
+	if player.has_signal("guard_broken"):
+		player.guard_broken.connect(_on_guard_broken)
 	player.heavy_attack_triggered.connect(_on_heavy_attack_triggered)
 	hp_bar.max_value = player.max_health
 	hp_bar.value = player.current_health
@@ -123,6 +131,7 @@ func _process(delta: float) -> void:
 			boss_encounter_cleared.emit()
 		else:
 			encounter_cleared.emit(encounter_enemy_count)
+	_update_enemy_hud()
 	_update_status()
 
 func _show_first_run_tooltips() -> void:
@@ -157,7 +166,9 @@ func _on_attack_triggered() -> void:
 	_apply_damage_to_front_enemy(weapon_data.get("light_damage", 14))
 	_hit_land_player.play()
 	_flash_front_enemy_sprite()
+	_show_action_feedback("HIT +%d" % weapon_data.get("light_damage", 14))
 	attack_hook_triggered.emit()
+	_update_enemy_hud()
 	_update_status()
 
 func _on_heavy_attack_triggered(dmg: int) -> void:
@@ -177,6 +188,18 @@ func _on_guard_changed(is_guarding: bool) -> void:
 	guard_hook_changed.emit(is_guarding)
 	_update_status()
 
+func _on_attack_evaded() -> void:
+	_show_action_feedback("DODGED")
+
+func _on_guard_broken() -> void:
+	_show_action_feedback("BLOCKED")
+
+func _on_player_staggered() -> void:
+	_show_action_feedback("POISE BREAK!")
+	var tween := create_tween()
+	tween.tween_property(poise_bar, "modulate", Color(1.0, 0.2, 0.2, 1.0), 0.05)
+	tween.tween_property(poise_bar, "modulate", Color(1.0, 1.0, 0.4, 1.0), 0.3)
+
 func _update_status() -> void:
 	var state_parts: PackedStringArray = []
 	for index in enemies.size():
@@ -193,6 +216,38 @@ func _update_status() -> void:
 		player.max_stamina,
 		enemies_text,
 	]
+
+func _update_enemy_hud() -> void:
+	var slots := [
+		enemy_hud_container.get_node_or_null("EnemyHUD_0"),
+		enemy_hud_container.get_node_or_null("EnemyHUD_1"),
+		enemy_hud_container.get_node_or_null("EnemyHUD_2"),
+	]
+	for i in slots.size():
+		var slot = slots[i]
+		if slot == null:
+			continue
+		if i < enemies.size() and enemies[i].state != EnemyController.EnemyState.DEAD:
+			slot.visible = true
+			var enemy_hp_bar: ProgressBar = slot.get_node_or_null("EnemyHPBar")
+			var enemy_name_label: Label = slot.get_node_or_null("EnemyNameLabel")
+			var enemy := enemies[i]
+			if enemy_name_label:
+				enemy_name_label.text = "Grunt  %d/%d" % [enemy.health, enemy.initial_health]
+			if enemy_hp_bar:
+				enemy_hp_bar.max_value = enemy.initial_health
+				enemy_hp_bar.value = enemy.health
+		else:
+			slot.visible = false
+
+func _show_action_feedback(text: String) -> void:
+	action_feedback.text = text
+	action_feedback.visible = true
+	action_feedback.modulate = Color(1.0, 1.0, 1.0, 1.0)
+	var tween := create_tween()
+	tween.tween_interval(0.5)
+	tween.tween_property(action_feedback, "modulate:a", 0.0, 0.3)
+	tween.tween_callback(func() -> void: action_feedback.visible = false)
 
 func _apply_behavior_profile(enemy: EnemyController, profile: String) -> void:
 	match profile:
@@ -243,6 +298,7 @@ func _spawn_enemies(count: int) -> void:
 		_apply_behavior_profile(enemy, profile)
 		enemies.append(enemy)
 	_load_enemy_sprites(spawned_data)
+	_update_enemy_hud()
 
 func _spawn_boss(boss_id: String) -> EnemyController:
 	var bosses = DataStore.enemies.get("bosses", [])
@@ -287,7 +343,10 @@ func _player_zone() -> int:
 func _apply_damage_to_front_enemy(damage: int) -> void:
 	for enemy in enemies:
 		if enemy.state != EnemyController.EnemyState.DEAD:
+			var prev_state := enemy.state
 			enemy.apply_damage(damage, true)
+			if prev_state != EnemyController.EnemyState.STAGGER and enemy.state == EnemyController.EnemyState.STAGGER:
+				_show_action_feedback("STAGGERED")
 			return
 
 func _all_enemies_defeated() -> bool:

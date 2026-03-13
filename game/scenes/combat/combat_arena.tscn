@@ -27,7 +27,7 @@ color = Color(0.0588235, 0.101961, 0.117647, 1)
 offset_left = 24.0
 offset_top = 8.0
 offset_right = 600.0
-offset_bottom = 32.0
+offset_bottom = 30.0
 text = ""
 
 [node name="Bars" type="VBoxContainer" parent="HUD"]
@@ -64,7 +64,7 @@ layout_mode = 2
 
 [node name="EnemyNameLabel" type="Label" parent="HUD/EnemyHUDContainer/EnemyHUD_0"]
 layout_mode = 2
-custom_minimum_size = Vector2(80, 0)
+custom_minimum_size = Vector2(100, 0)
 text = "Enemy"
 
 [node name="EnemyHPBar" type="ProgressBar" parent="HUD/EnemyHUDContainer/EnemyHUD_0"]
@@ -79,7 +79,7 @@ layout_mode = 2
 
 [node name="EnemyNameLabel" type="Label" parent="HUD/EnemyHUDContainer/EnemyHUD_1"]
 layout_mode = 2
-custom_minimum_size = Vector2(80, 0)
+custom_minimum_size = Vector2(100, 0)
 text = "Enemy"
 
 [node name="EnemyHPBar" type="ProgressBar" parent="HUD/EnemyHUDContainer/EnemyHUD_1"]
@@ -94,7 +94,7 @@ layout_mode = 2
 
 [node name="EnemyNameLabel" type="Label" parent="HUD/EnemyHUDContainer/EnemyHUD_2"]
 layout_mode = 2
-custom_minimum_size = Vector2(80, 0)
+custom_minimum_size = Vector2(100, 0)
 text = "Enemy"
 
 [node name="EnemyHPBar" type="ProgressBar" parent="HUD/EnemyHUDContainer/EnemyHUD_2"]
