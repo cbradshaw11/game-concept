@@ -40,7 +40,13 @@ func _connect_state() -> void:
 func _on_start_run_pressed() -> void:
 	var seed := Time.get_unix_time_from_system()
 	GameState.start_run(int(seed), GameState.current_ring)
-	var contract := contract_system.start_contract("ring1_clearance", GameState.current_ring, 3)
+	var ring_data: Dictionary = {}
+	for r in DataStore.rings.get("rings", []):
+		if r.get("id") == GameState.current_ring:
+			ring_data = r
+			break
+	var contract_target: int = ring_data.get("contract_target", 3)
+	var contract := contract_system.start_contract("ring_clearance", GameState.current_ring, contract_target)
 	flow_ui.on_objective_started(contract)
 	active_encounter = ring_director.generate_encounter(
 		int(seed),

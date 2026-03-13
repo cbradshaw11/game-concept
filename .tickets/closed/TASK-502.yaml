@@ -1,0 +1,102 @@
+id: TASK-502
+title: Content Volume Pass (Templates + Enemies)
+type: feature
+priority: p1
+area: data
+risk: low
+milestone: M5 Into the Dark
+status: done
+
+problem: >
+  inner_patrol_a and inner_ranged_mix have identical enemy_ids (data bug).
+  All rings have only 3 encounter templates each. Players see all templates
+  within 3-4 runs, causing repetition across the 15-25 run arc needed for
+  the 8-12h target. Enemy roster is too thin (2 native types per ring).
+
+desired_outcome: >
+  Each ring has >= 5 distinct encounter templates with no duplicate compositions.
+  Enemy roster expanded with 5 new enemy types. CI script check_content_volume.py
+  validates all constraints statically against JSON.
+
+scope_in:
+  - Fix inner_patrol_a / inner_ranged_mix duplicate (change enemy_ids on one)
+  - Add 5 new enemies to enemies.json with correct behavior_profile and ring fields
+  - Add new encounter templates to reach >= 5 per ring
+  - Create scripts/ci/check_content_volume.py with 5 verification checks
+scope_out:
+  - Balance tuning or stat adjustments beyond what ships new enemies
+  - Visual assets for new enemies (use existing sprite placeholders)
+
+dependencies:
+  blockers: []
+  unblocks:
+    - TASK-508
+
+acceptance_criteria:
+  - id: ac1
+    description: check_content_volume.py exits 0
+    verify: "python3 scripts/ci/check_content_volume.py"
+  - id: ac2
+    description: At least 5 inner ring templates
+    verify: "grep -c '\"ring\": \"inner\"' game/data/encounter_templates.json"
+  - id: ac3
+    description: At least 5 mid ring templates
+    verify: "grep -c '\"ring\": \"mid\"' game/data/encounter_templates.json"
+  - id: ac4
+    description: At least 5 outer ring templates
+    verify: "grep -c '\"ring\": \"outer\"' game/data/encounter_templates.json"
+  - id: ac5
+    description: No duplicate compositions within a ring
+    verify: "python3 scripts/ci/check_content_volume.py"
+
+verification_required:
+  - "python3 scripts/ci/check_content_volume.py"
+  - "grep -c '\"ring\": \"inner\"' game/data/encounter_templates.json"
+  - "grep -c '\"ring\": \"mid\"' game/data/encounter_templates.json"
+  - "grep -c '\"ring\": \"outer\"' game/data/encounter_templates.json"
+
+slices:
+  - id: s1
+    name: Fix duplicate inner templates and expand enemy roster
+    files_create: []
+    files_modify:
+      - game/data/encounter_templates.json
+      - game/data/enemies.json
+    files_read_only: []
+    evidence: []
+  - id: s2
+    name: Add new encounter templates per ring
+    files_create: []
+    files_modify:
+      - game/data/encounter_templates.json
+    files_read_only: []
+    evidence: []
+  - id: s3
+    name: Create check_content_volume.py CI script
+    files_create:
+      - scripts/ci/check_content_volume.py
+    files_modify: []
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: true
+    commands_run:
+      - "python3 scripts/ci/check_content_volume.py"
+      - "grep -c '\"ring\": \"inner\"' game/data/encounter_templates.json"
+      - "grep -c '\"ring\": \"mid\"' game/data/encounter_templates.json"
+      - "grep -c '\"ring\": \"outer\"' game/data/encounter_templates.json"
+    evidence_refs: []
+
+notes: >
+  New enemies: dust_runner (inner, frontline_basic), siege_crossbowman (inner, kite_volley),
+  iron_vanguard (mid, guard_counter), rift_sentinel (outer, elite_pressure),
+  void_sniper (outer, kite_volley). All must reference behavior_profiles that
+  already exist in enemy_controller.gd. Read the execution plan at
+  .plans/TASK-502-execution-plan.md before implementing.

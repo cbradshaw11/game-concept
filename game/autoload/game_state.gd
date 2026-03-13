@@ -19,6 +19,8 @@ var encounters_cleared: int = 0
 var rings_cleared: Array[String] = []
 var warden_defeated: bool = false
 var game_completed: bool = false
+var warden_phase_reached: int = -1
+var active_upgrades: Array = []
 var telemetry := Telemetry.new()
 
 func default_save_state() -> Dictionary:
@@ -43,9 +45,14 @@ func to_save_state() -> Dictionary:
 		"rings_cleared": rings_cleared,
 		"warden_defeated": warden_defeated,
 		"game_completed": game_completed,
+		"warden_phase_reached": warden_phase_reached,
+		"save_version": 1,
 	}
 
 func apply_save_state(data: Dictionary) -> void:
+	# M5 migration guard — must run BEFORE normal key assignments
+	if data.get("save_version", 0) < 1:
+		warden_phase_reached = -1
 	banked_xp = int(data.get("banked_xp", 0))
 	banked_loot = int(data.get("banked_loot", 0))
 	unbanked_xp = int(data.get("unbanked_xp", 0))
@@ -54,6 +61,7 @@ func apply_save_state(data: Dictionary) -> void:
 	rings_cleared = Array(data.get("rings_cleared", []), TYPE_STRING, "", null)
 	warden_defeated = bool(data.get("warden_defeated", false))
 	game_completed = bool(data.get("game_completed", false))
+	warden_phase_reached = int(data.get("warden_phase_reached", -1))
 
 func start_run(seed: int, ring_id: String) -> void:
 	active_seed = seed
@@ -61,6 +69,7 @@ func start_run(seed: int, ring_id: String) -> void:
 	unbanked_xp = 0
 	unbanked_loot = 0
 	encounters_cleared = 0
+	active_upgrades = []
 	telemetry.log_event("run_started", {
 		"seed": active_seed,
 		"ring": current_ring,
@@ -98,6 +107,8 @@ func extract() -> void:
 
 func die_in_run() -> void:
 	var event_ring := current_ring
+	var retained: int = int(unbanked_loot * 0.25)
+	banked_loot += retained
 	unbanked_xp = int(unbanked_xp * 0.5)
 	unbanked_loot = 0
 	encounters_cleared = 0
@@ -108,6 +119,9 @@ func die_in_run() -> void:
 		"remaining_unbanked_xp": unbanked_xp,
 	})
 	player_died.emit()
+
+func apply_upgrade(upgrade: Dictionary) -> void:
+	active_upgrades.append(upgrade)
 
 func set_telemetry_enabled(enabled: bool) -> void:
 	telemetry.enabled = enabled

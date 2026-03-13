@@ -51,6 +51,30 @@ func _ready() -> void:
 			guard_efficiency = w.get("guard_efficiency", 0.0)
 			break
 
+func apply_upgrade(upgrade: Dictionary) -> void:
+	var stat: String = upgrade.get("stat", "")
+	var mod_type: String = upgrade.get("modifier_type", "add")
+	var value = upgrade.get("value", 0)
+	match stat:
+		"max_health":
+			max_health += int(value)
+			current_health = min(current_health + int(value), max_health)
+			health_changed.emit(current_health, max_health)
+		"max_stamina":
+			max_stamina += int(value)
+		"attack_damage":
+			if "heavy_damage" in self:
+				heavy_damage += int(value)
+		"guard_efficiency":
+			guard_efficiency = min(guard_efficiency + float(value), 0.95)
+		"max_poise":
+			max_poise += int(value)
+		"stamina_regen_rate":
+			if mod_type == "multiply":
+				stamina_regen_per_sec *= float(value)
+			else:
+				stamina_regen_per_sec += float(value)
+
 func reload_weapon_stats() -> void:
 	var weapons_list: Array = DataStore.weapons.get("weapons", [])
 	for w in weapons_list:

@@ -7,6 +7,7 @@ signal extract_pressed
 signal die_pressed
 signal loadout_selected(weapon_id: String)
 signal descend_warden_pressed
+signal upgrade_selected(upgrade: Dictionary)
 
 @onready var prep_screen: VBoxContainer = $PrepScreen
 @onready var run_screen: VBoxContainer = $RunScreen
@@ -24,15 +25,63 @@ signal descend_warden_pressed
 @onready var return_button: Button = $DeathPanel/VBox/ReturnButton
 @onready var descend_warden_button: Button = $RunScreen/DescendWardenButton
 @onready var credits_panel: PanelContainer = $CreditsPanel
+@onready var ring_display: Label = $RunScreen/RingDisplay
+@onready var pause_menu: PanelContainer = $PauseMenu
+@onready var resume_button: Button = $PauseMenu/VBoxContainer/ResumeButton
+@onready var quit_to_menu_button: Button = $PauseMenu/VBoxContainer/QuitButton
+@onready var upgrade_draw_panel: PanelContainer = $UpgradeDrawPanel
+@onready var upgrade_card_0: Button = $UpgradeDrawPanel/VBoxContainer/HBoxContainer/UpgradeCard0
+@onready var upgrade_card_1: Button = $UpgradeDrawPanel/VBoxContainer/HBoxContainer/UpgradeCard1
+@onready var upgrade_card_2: Button = $UpgradeDrawPanel/VBoxContainer/HBoxContainer/UpgradeCard2
+@onready var upgrade_list_label: Label = $RunScreen/UpgradeListLabel
 
 var run_base_status: String = ""
 var objective_status: String = ""
+var _is_paused: bool = false
+var _current_draw: Array = []
 
 func _ready() -> void:
 	_show_prep()
 	return_button.pressed.connect(_on_return_to_sanctuary)
 	descend_warden_button.pressed.connect(_on_descend_warden_pressed)
+	resume_button.pressed.connect(_on_resume_pressed)
+	quit_to_menu_button.pressed.connect(_on_quit_to_menu_pressed)
+	upgrade_card_0.pressed.connect(_on_upgrade_card_selected.bind(0))
+	upgrade_card_1.pressed.connect(_on_upgrade_card_selected.bind(1))
+	upgrade_card_2.pressed.connect(_on_upgrade_card_selected.bind(2))
 	_populate_ring_selector()
+
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		_handle_pause_input()
+
+func _handle_pause_input() -> void:
+	if not run_screen.visible:
+		return
+	if _is_paused:
+		_unpause()
+	else:
+		_pause()
+
+func _pause() -> void:
+	_is_paused = true
+	pause_menu.visible = true
+	get_tree().paused = true
+
+func _unpause() -> void:
+	_is_paused = false
+	pause_menu.visible = false
+	get_tree().paused = false
+
+func _on_resume_pressed() -> void:
+	_unpause()
+
+func _on_quit_to_menu_pressed() -> void:
+	get_tree().paused = false
+	_is_paused = false
+	pause_menu.visible = false
+	GameState.die_in_run()
+	on_idle_ready()
 
 func _populate_ring_selector() -> void:
 	ring_selector.clear()
@@ -95,7 +144,10 @@ func _on_resolve_encounter_button_pressed() -> void:
 	resolve_encounter_pressed.emit()
 
 func _on_extract_button_pressed() -> void:
-	extract_pressed.emit()
+	if GameState.current_ring in ["inner", "mid"]:
+		_show_upgrade_draw()
+	else:
+		extract_pressed.emit()
 
 func _on_die_button_pressed() -> void:
 	die_pressed.emit()
@@ -120,6 +172,16 @@ func on_run_started(seed: int) -> void:
 	_show_run()
 	run_base_status = "Run active (seed %d)" % seed
 	_refresh_run_status()
+	_refresh_ring_display()
+	_refresh_upgrade_display()
+
+func _refresh_ring_display() -> void:
+	var ring_names := {
+		"inner": "Ring 1 - The Inner Way",
+		"mid": "Ring 2 - The Mid Path",
+		"outer": "Ring 3 - The Outer Reaches",
+	}
+	ring_display.text = ring_names.get(GameState.current_ring, "")
 
 func set_available_loadouts(weapons: Array) -> void:
 	loadout_select.clear()
@@ -150,6 +212,7 @@ func on_died(unbanked_xp: int, unbanked_loot: int) -> void:
 	encounters_label.text = "Encounters Cleared: %d" % GameState.encounters_cleared
 	xp_label.text = "XP Lost: %d" % unbanked_xp
 	loot_label.text = "Loot Lost: %d" % unbanked_loot
+	_refresh_upgrade_display()
 	death_panel.visible = true
 
 func _on_return_to_sanctuary() -> void:
@@ -188,6 +251,38 @@ func on_objective_failed(contract: Dictionary) -> void:
 	objective_status = "%s failed" % contract_id
 	_refresh_run_status()
 
+func _show_upgrade_draw() -> void:
+	var f := FileAccess.open("res://data/upgrades.json", FileAccess.READ)
+	var upgrades_data: Array = []
+	if f:
+		var parsed = JSON.parse_string(f.get_as_text())
+		if parsed is Dictionary:
+			upgrades_data = parsed.get("upgrades", [])
+	upgrades_data.shuffle()
+	_current_draw = upgrades_data.slice(0, 3)
+	if _current_draw.size() < 3:
+		extract_pressed.emit()
+		return
+	upgrade_card_0.text = "%s\n%s" % [_current_draw[0]["name"], _current_draw[0]["description"]]
+	upgrade_card_1.text = "%s\n%s" % [_current_draw[1]["name"], _current_draw[1]["description"]]
+	upgrade_card_2.text = "%s\n%s" % [_current_draw[2]["name"], _current_draw[2]["description"]]
+	upgrade_draw_panel.visible = true
+
+func _on_upgrade_card_selected(index: int) -> void:
+	var selected: Dictionary = _current_draw[index]
+	GameState.apply_upgrade(selected)
+	upgrade_selected.emit(selected)
+	upgrade_draw_panel.visible = false
+	_refresh_upgrade_display()
+	extract_pressed.emit()
+
+func _refresh_upgrade_display() -> void:
+	if GameState.active_upgrades.is_empty():
+		upgrade_list_label.text = ""
+	else:
+		var names: Array = GameState.active_upgrades.map(func(u): return u["name"])
+		upgrade_list_label.text = "Upgrades: " + ", ".join(names)
+
 func _refresh_run_status() -> void:
 	var lines: PackedStringArray = []
 	if run_base_status != "":
@@ -206,6 +301,7 @@ func show_credits() -> void:
 	prep_screen.visible = false
 	run_screen.visible = false
 	death_panel.visible = false
+	_refresh_upgrade_display()
 	credits_panel.visible = true
 
 func _on_begin_new_journey_pressed() -> void:

@@ -1,0 +1,52 @@
+{
+  "upgrades": [
+    {
+      "id": "iron_constitution",
+      "name": "Iron Constitution",
+      "description": "Increases maximum health by 20.",
+      "stat": "max_health",
+      "modifier_type": "add",
+      "value": 20
+    },
+    {
+      "id": "veteran_endurance",
+      "name": "Veteran Endurance",
+      "description": "Increases maximum stamina by 15.",
+      "stat": "max_stamina",
+      "modifier_type": "add",
+      "value": 15
+    },
+    {
+      "id": "reckless_momentum",
+      "name": "Reckless Momentum",
+      "description": "Light and heavy attacks deal 4 more damage.",
+      "stat": "attack_damage",
+      "modifier_type": "add",
+      "value": 4
+    },
+    {
+      "id": "ironhide_stance",
+      "name": "Ironhide Stance",
+      "description": "Increases guard efficiency by 5%.",
+      "stat": "guard_efficiency",
+      "modifier_type": "add",
+      "value": 0.05
+    },
+    {
+      "id": "poise_anchor",
+      "name": "Poise Anchor",
+      "description": "Increases maximum poise by 20.",
+      "stat": "max_poise",
+      "modifier_type": "add",
+      "value": 20
+    },
+    {
+      "id": "swift_recovery",
+      "name": "Swift Recovery",
+      "description": "Increases stamina regeneration rate by 25%.",
+      "stat": "stamina_regen_rate",
+      "modifier_type": "multiply",
+      "value": 1.25
+    }
+  ]
+}

@@ -2,9 +2,9 @@
 
 ## Active
 
-_No active tasks. M4 complete. Planning M5._
+_No active tasks. M5 complete. Planning M6._
 
-## Backlog (M5 — not yet planned)
+## Backlog (M6 — not yet planned)
 
 ---
 
@@ -13,6 +13,19 @@ _No active tasks. M4 complete. Planning M5._
 - **PM/design agents**: Add new rows to Backlog, create a task file in `tasks/backlog/TASK-XXX.md`
 - **Implementation agents**: Pick the top Backlog task, move its file to `tasks/in-progress/`, update status here
 - **On completion**: Move file to `tasks/done/`, mark Done below, update the milestone file
+
+## Done (M5 Into the Dark)
+
+| ID       | Title                                              | Area        |
+|----------|----------------------------------------------------|-------------|
+| TASK-501 | Upgrade Pass (per-run economy)                     | progression |
+| TASK-502 | Content Volume Pass (templates + enemies)          | data        |
+| TASK-503 | Warden Phases 2+3 (+ save_version: 1)              | combat      |
+| TASK-504 | Audio: Combat Readability Floor                    | audio       |
+| TASK-505 | Pause Menu + RunScreen Ring Display                | ui          |
+| TASK-506 | Bank on Death: Partial Loot Retention              | progression |
+| TASK-507 | Per-Ring Contract Targets (Data-Driven)            | data        |
+| TASK-508 | M5 Test Suite                                      | test        |
 
 ## Done (M4 The Road Opens)
 

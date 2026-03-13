@@ -82,6 +82,12 @@ if command -v godot4 >/dev/null 2>&1; then
   run_test res://scripts/tests/m4/test_save_migration.gd
   run_test res://scripts/tests/m4/test_behavior_profiles.gd
   run_test res://scripts/tests/m4/test_heavy_attack.gd
+  run_test res://scripts/tests/m5/test_upgrade_pass.gd
+  run_test res://scripts/tests/m5/test_warden_phases.gd
+  run_test res://scripts/tests/m5/test_bank_on_death.gd
+  run_test res://scripts/tests/m5/test_save_migration_m5.gd
+  run_test res://scripts/tests/m5/test_contract_targets.gd
+  run_test res://scripts/tests/m5/test_audio_events.gd
 else
   echo "godot4 not found in runner. Performing structural checks only."
   test -f game/scripts/tests/replay_test.gd
@@ -106,6 +112,12 @@ else
   test -f game/scripts/tests/m4/test_save_migration.gd
   test -f game/scripts/tests/m4/test_behavior_profiles.gd
   test -f game/scripts/tests/m4/test_heavy_attack.gd
+  test -f game/scripts/tests/m5/test_upgrade_pass.gd
+  test -f game/scripts/tests/m5/test_warden_phases.gd
+  test -f game/scripts/tests/m5/test_bank_on_death.gd
+  test -f game/scripts/tests/m5/test_save_migration_m5.gd
+  test -f game/scripts/tests/m5/test_contract_targets.gd
+  test -f game/scripts/tests/m5/test_audio_events.gd
 fi
 
 echo ""

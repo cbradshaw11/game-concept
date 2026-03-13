@@ -60,6 +60,59 @@
       "poise": 70,
       "damage": 16,
       "behavior_profile": "elite_pressure"
+    },
+    {
+      "id": "dust_runner",
+      "role": "grunt",
+      "rings": ["inner"],
+      "ring_availability": "inner",
+      "health": 35,
+      "poise": 20,
+      "damage": 8,
+      "poise_damage": 10,
+      "behavior_profile": "frontline_basic"
+    },
+    {
+      "id": "siege_crossbowman",
+      "role": "ranged",
+      "rings": ["inner"],
+      "ring_availability": "inner",
+      "health": 45,
+      "poise": 15,
+      "damage": 11,
+      "poise_damage": 12,
+      "behavior_profile": "kite_volley"
+    },
+    {
+      "id": "iron_vanguard",
+      "role": "defender",
+      "rings": ["mid"],
+      "ring_availability": "mid",
+      "health": 90,
+      "poise": 60,
+      "damage": 14,
+      "poise_damage": 22,
+      "behavior_profile": "guard_counter"
+    },
+    {
+      "id": "rift_sentinel",
+      "role": "elite",
+      "rings": ["outer"],
+      "health": 120,
+      "poise": 50,
+      "damage": 18,
+      "poise_damage": 25,
+      "behavior_profile": "elite_pressure"
+    },
+    {
+      "id": "void_sniper",
+      "role": "ranged",
+      "rings": ["outer"],
+      "health": 70,
+      "poise": 20,
+      "damage": 22,
+      "poise_damage": 14,
+      "behavior_profile": "kite_volley"
     }
   ],
   "bosses": [

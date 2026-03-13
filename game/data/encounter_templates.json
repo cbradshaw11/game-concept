@@ -13,7 +13,17 @@
     {
       "id": "inner_ranged_mix",
       "ring": "inner",
-      "enemy_ids": ["scavenger_grunt", "shieldbearer"]
+      "enemy_ids": ["siege_crossbowman", "scavenger_grunt"]
+    },
+    {
+      "id": "inner_runner_pack",
+      "ring": "inner",
+      "enemy_ids": ["dust_runner", "dust_runner", "scavenger_grunt"]
+    },
+    {
+      "id": "inner_crossbow_screen",
+      "ring": "inner",
+      "enemy_ids": ["siege_crossbowman", "shieldbearer"]
     },
     {
       "id": "mid_patrol_a",
@@ -31,6 +41,16 @@
       "enemy_ids": ["shieldbearer", "ash_flanker"]
     },
     {
+      "id": "mid_vanguard_push",
+      "ring": "mid",
+      "enemy_ids": ["iron_vanguard", "ash_flanker"]
+    },
+    {
+      "id": "mid_vanguard_screen",
+      "ring": "mid",
+      "enemy_ids": ["iron_vanguard", "ridge_archer"]
+    },
+    {
       "id": "outer_elite_a",
       "ring": "outer",
       "enemy_ids": ["warden_hunter", "rift_caster"]
@@ -43,7 +63,17 @@
     {
       "id": "outer_hunter_advance",
       "ring": "outer",
-      "enemy_ids": ["rift_caster", "warden_hunter"]
+      "enemy_ids": ["warden_hunter", "ash_flanker"]
+    },
+    {
+      "id": "outer_sentinel_pair",
+      "ring": "outer",
+      "enemy_ids": ["rift_sentinel", "void_sniper"]
+    },
+    {
+      "id": "outer_sniper_volley",
+      "ring": "outer",
+      "enemy_ids": ["void_sniper", "void_sniper"]
     }
   ]
 }

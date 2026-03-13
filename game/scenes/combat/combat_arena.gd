@@ -15,6 +15,10 @@ signal player_died()
 @onready var hp_bar: ProgressBar = $HUD/Bars/HPBar
 @onready var stamina_bar: ProgressBar = $HUD/Bars/StaminaBar
 @onready var poise_bar: ProgressBar = $HUD/Bars/PoiseBar
+@onready var _hit_land_player: AudioStreamPlayer = $HitLandPlayer
+@onready var _damage_taken_player: AudioStreamPlayer = $DamageTakenPlayer
+@onready var _dodge_guard_player: AudioStreamPlayer = $DodgeGuardPlayer
+@onready var _player_death_player: AudioStreamPlayer = $PlayerDeathPlayer
 
 var ring_id: String = "inner"
 var seed: int = 0
@@ -31,7 +35,8 @@ func _ready() -> void:
 	player.attack_triggered.connect(_on_attack_triggered)
 	player.dodge_triggered.connect(_on_dodge_triggered)
 	player.guard_changed.connect(_on_guard_changed)
-	player.player_died.connect(func() -> void: player_died.emit())
+	player.player_died.connect(func() -> void: _player_death_player.play(); player_died.emit())
+	player.attack_evaded.connect(func() -> void: _dodge_guard_player.play())
 	player.health_changed.connect(_on_health_changed)
 	player.stamina_changed.connect(_on_stamina_changed)
 	if player.has_signal("poise_changed"):
@@ -103,15 +108,18 @@ func _input(event: InputEvent) -> void:
 func _on_attack_triggered() -> void:
 	attack_count += 1
 	_apply_damage_to_front_enemy(weapon_data.get("light_damage", 14))
+	_hit_land_player.play()
 	attack_hook_triggered.emit()
 	_update_status()
 
 func _on_heavy_attack_triggered(dmg: int) -> void:
 	_apply_damage_to_front_enemy(dmg)
+	_hit_land_player.play()
 	_update_status()
 
 func _on_dodge_triggered() -> void:
 	dodge_count += 1
+	_dodge_guard_player.play()
 	dodge_hook_triggered.emit()
 	_update_status()
 
@@ -179,6 +187,7 @@ func _spawn_enemies(count: int) -> void:
 		enemy.attack_resolved.connect(func(amount: int) -> void:
 			_apply_damage_to_player(amount, poise_dmg)
 		)
+		enemy.wind_up_started.connect(_on_enemy_wind_up)
 		var profile: String = enemy_data.get("behavior_profile", "frontline_basic")
 		_apply_behavior_profile(enemy, profile)
 		enemies.append(enemy)
@@ -199,8 +208,11 @@ func _spawn_boss(boss_id: String) -> EnemyController:
 	boss.attack_resolved.connect(func(amount: int) -> void:
 		_apply_damage_to_player(amount, boss_data.get("poise_damage", 35))
 	)
+	boss.wind_up_started.connect(_on_enemy_wind_up)
 	var profile: String = boss_data.get("behavior_profile", "elite_pressure")
 	_apply_behavior_profile(boss, profile)
+	boss.is_boss = true
+	boss.initial_health = boss_data.get("health", 1200)
 	return boss
 
 func start_boss_encounter(boss_id: String) -> void:
@@ -235,9 +247,19 @@ func _all_enemies_defeated() -> bool:
 
 func _apply_damage_to_player(amount: int, poise_damage: int = 0) -> void:
 	if player:
+		var health_before: int = player.current_health
 		player.take_damage(amount)
+		if player.current_health < health_before:
+			_damage_taken_player.play()
+		elif player.guarding:
+			_dodge_guard_player.play()
 		if poise_damage > 0:
 			player.take_poise_damage(poise_damage)
+
+func _on_enemy_wind_up() -> void:
+	var tween := create_tween()
+	tween.tween_property($ArenaBounds, "modulate", Color(1.5, 0.5, 0.5), 0.05)
+	tween.tween_property($ArenaBounds, "modulate", Color(1.0, 1.0, 1.0), 0.15)
 
 func _on_health_changed(current: int, maximum: int) -> void:
 	hp_bar.max_value = maximum

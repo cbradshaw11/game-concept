@@ -4,12 +4,14 @@ class_name EnemyController
 enum EnemyState {
 	IDLE,
 	CHASE,
+	WIND_UP,
 	ATTACK,
 	STAGGER,
 	DEAD,
 }
 
 signal attack_resolved(damage_amount: int)
+signal wind_up_started
 
 var state: EnemyState = EnemyState.IDLE
 var health: int
@@ -21,16 +23,46 @@ var attack_cooldown_timer: float = 0.0
 var attack_cooldown: float = 1.5
 var preferred_min_range: float = 0.0
 var guard_query: Callable = func() -> bool: return false
+var wind_up_timer: float = 0.0
+const WIND_UP_DURATION: float = 0.2
+var is_boss: bool = false
+var initial_health: int = 0
+var damage_multiplier: float = 1.0
 
 func _init(max_health: int = 100, chase_distance: float = 6.0, attack_distance: float = 1.8, p_damage: int = 10) -> void:
 	health = max_health
+	initial_health = max_health
 	chase_range = chase_distance
 	attack_range = attack_distance
 	damage = p_damage
 
+func _update_boss_phase() -> void:
+	if not is_boss or initial_health <= 0:
+		return
+	var hp_ratio: float = float(health) / float(initial_health)
+	if hp_ratio > 0.70:
+		# Phase 1: default elite_pressure params already set
+		damage_multiplier = 1.0
+		attack_cooldown = 0.8
+	elif hp_ratio > 0.35:
+		# Phase 2
+		damage_multiplier = 1.25
+		attack_cooldown = 0.6
+		if GameState.warden_phase_reached < 2:
+			GameState.warden_phase_reached = 2
+	else:
+		# Phase 3
+		damage_multiplier = 1.25
+		attack_cooldown = 0.4
+		preferred_min_range = 0.0
+		if GameState.warden_phase_reached < 3:
+			GameState.warden_phase_reached = 3
+
 func tick(distance_to_player: float, delta: float) -> EnemyState:
 	if state == EnemyState.DEAD:
 		return state
+
+	_update_boss_phase()
 
 	if state == EnemyState.STAGGER:
 		stagger_timer -= delta
@@ -38,11 +70,22 @@ func tick(distance_to_player: float, delta: float) -> EnemyState:
 			state = EnemyState.CHASE
 		return state
 
-	if distance_to_player <= attack_range and distance_to_player >= preferred_min_range:
-		state = EnemyState.ATTACK
-		if attack_cooldown_timer <= 0.0 and not guard_query.call():
+	if state == EnemyState.WIND_UP:
+		wind_up_timer -= delta
+		if wind_up_timer <= 0.0:
+			state = EnemyState.ATTACK
 			attack_cooldown_timer = attack_cooldown
-			attack_resolved.emit(damage)
+			var final_damage: int = int(float(damage) * damage_multiplier)
+			attack_resolved.emit(final_damage)
+		return state
+
+	if distance_to_player <= attack_range and distance_to_player >= preferred_min_range:
+		if attack_cooldown_timer <= 0.0 and not guard_query.call():
+			state = EnemyState.WIND_UP
+			wind_up_timer = WIND_UP_DURATION
+			wind_up_started.emit()
+		else:
+			state = EnemyState.ATTACK
 	elif distance_to_player <= chase_range:
 		state = EnemyState.CHASE
 	else:
@@ -73,6 +116,8 @@ static func state_name(value: EnemyState) -> String:
 			return "IDLE"
 		EnemyState.CHASE:
 			return "CHASE"
+		EnemyState.WIND_UP:
+			return "WIND_UP"
 		EnemyState.ATTACK:
 			return "ATTACK"
 		EnemyState.STAGGER:

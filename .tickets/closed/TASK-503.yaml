@@ -1,0 +1,100 @@
+id: TASK-503
+title: Warden Boss Phases 2 and 3 (+ save_version 1)
+type: feature
+priority: p1
+area: combat
+risk: medium
+milestone: M5 Into the Dark
+status: done
+
+problem: >
+  The Warden boss uses a single-phase elite_pressure profile regardless of HP.
+  enemies.json declares phases: 3 but EnemyController has no phase logic.
+  The fight is a damage sponge with no escalation. Also, the save schema has
+  no version field, which will cause ambiguity when M5 adds new persistent fields.
+
+desired_outcome: >
+  Warden transitions to phase 2 behavior at 70% HP and phase 3 at 35% HP.
+  Each phase has distinct parameter changes that make the fight escalate.
+  save_version: 1 added to save schema with migration guard for M4 saves.
+  warden_phase_reached tracks highest phase reached (persisted to save).
+
+scope_in:
+  - is_boss: bool field in EnemyController
+  - Phase transition logic in tick() based on HP ratio
+  - Phase 2 params: damage_multiplier=1.25, attack_cooldown=0.6
+  - Phase 3 params: attack_cooldown=0.4, preferred_min_range=0.0
+  - var warden_phase_reached: int = -1 in GameState
+  - save_version: 1 in to_save_state()
+  - Migration guard in apply_save_state() for M4 saves
+scope_out:
+  - Phase 4+ or additional boss phases (M6)
+  - Visual effects for phase transitions (M6 polish)
+  - Phase-specific enemy spawns during boss fight
+
+dependencies:
+  blockers: []
+  unblocks:
+    - TASK-508
+
+acceptance_criteria:
+  - id: ac1
+    description: Phase threshold logic present in EnemyController
+    verify: "grep -n 'phase\\|warden_phase\\|is_boss' game/scripts/core/enemy_controller.gd"
+  - id: ac2
+    description: save_version and warden_phase_reached in GameState
+    verify: "grep -n 'warden_phase_reached\\|save_version' game/autoload/game_state.gd"
+  - id: ac3
+    description: Phase 2 triggers at <= 840 HP (70% of 1200)
+    verify: "grep -n '0.70\\|840\\|phase.*2\\|0.7' game/scripts/core/enemy_controller.gd"
+  - id: ac4
+    description: Phase 3 triggers at <= 420 HP (35% of 1200)
+    verify: "grep -n '0.35\\|420\\|phase.*3\\|0.35' game/scripts/core/enemy_controller.gd"
+  - id: ac5
+    description: save_version field in to_save_state output
+    verify: "grep -n '\"save_version\"\\|save_version' game/autoload/game_state.gd"
+
+verification_required:
+  - "grep -n 'phase\\|warden_phase\\|is_boss' game/scripts/core/enemy_controller.gd"
+  - "grep -n 'warden_phase_reached\\|save_version' game/autoload/game_state.gd"
+
+slices:
+  - id: s1
+    name: Add is_boss flag and phase logic to EnemyController
+    files_create: []
+    files_modify:
+      - game/scripts/core/enemy_controller.gd
+    files_read_only: []
+    evidence: []
+  - id: s2
+    name: Set is_boss=true when spawning outer_warden in CombatArena
+    files_create: []
+    files_modify:
+      - game/scenes/combat/combat_arena.gd
+    files_read_only: []
+    evidence: []
+  - id: s3
+    name: Add warden_phase_reached + save_version to GameState
+    files_create: []
+    files_modify:
+      - game/autoload/game_state.gd
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: false
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  Phase logic must be gated by is_boss flag so regular enemies are unaffected.
+  damage_multiplier in phase 2 applies to the damage value emitted by tick(),
+  not to the enemy's base stat. Migration guard: if data.get("save_version", 0) < 1,
+  set warden_phase_reached = -1 before normal key merge.
+  Read the execution plan at .plans/TASK-503-execution-plan.md before implementing.
