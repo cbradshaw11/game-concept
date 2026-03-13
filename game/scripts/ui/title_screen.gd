@@ -13,6 +13,7 @@ func _ready() -> void:
 	continue_button.disabled = not save_exists
 	new_game_button.pressed.connect(_on_new_game_pressed)
 	continue_button.pressed.connect(_on_continue_pressed)
+	$CenterContainer/VBoxContainer/Settings.pressed.connect(_on_settings_pressed)
 	$CenterContainer/VBoxContainer/Quit.pressed.connect(_on_quit_pressed)
 	new_game_confirm.confirmed.connect(_on_new_game_confirmed)
 
@@ -28,6 +29,15 @@ func _on_new_game_confirmed() -> void:
 
 func _on_continue_pressed() -> void:
 	continue_requested.emit()
+
+func _on_settings_pressed() -> void:
+	var settings_scene := load("res://scenes/ui/settings.tscn")
+	var settings_instance := settings_scene.instantiate()
+	add_child(settings_instance)
+	settings_instance.settings_closed.connect(_on_settings_closed.bind(settings_instance))
+
+func _on_settings_closed(settings_instance: Node) -> void:
+	settings_instance.queue_free()
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()

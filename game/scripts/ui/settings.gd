@@ -12,17 +12,17 @@ func _ready() -> void:
 	load_settings()
 
 func _on_master_slider_changed(value: float) -> void:
-	AudioServer.set_bus_volume_db(0, linear_to_db(value))
+	AudioServer.set_bus_volume_db(0, linear_to_db(max(value, 0.001)))
 
 func _on_sfx_slider_changed(value: float) -> void:
 	var idx := AudioServer.get_bus_index("SFX")
 	if idx >= 0:
-		AudioServer.set_bus_volume_db(idx, linear_to_db(value))
+		AudioServer.set_bus_volume_db(idx, linear_to_db(max(value, 0.001)))
 
 func _on_music_slider_changed(value: float) -> void:
 	var idx := AudioServer.get_bus_index("Music")
 	if idx >= 0:
-		AudioServer.set_bus_volume_db(idx, linear_to_db(value))
+		AudioServer.set_bus_volume_db(idx, linear_to_db(max(value, 0.001)))
 
 func _on_fullscreen_toggled(pressed: bool) -> void:
 	if pressed:
