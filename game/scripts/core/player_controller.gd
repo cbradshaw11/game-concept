@@ -33,6 +33,7 @@ var max_poise: int
 var is_staggered: bool = false
 var stagger_duration: float = 0.5
 var is_invulnerable: bool = false
+var _conditional_bonuses: Dictionary = {}  # stat -> bonus_value
 var dodge_iframe_duration: float = 0.22
 var dodge_cooldown_duration: float = 0.5
 var dodge_cooldown_timer: float = 0.0
@@ -90,6 +91,25 @@ func reload_weapon_stats() -> void:
 			heavy_stamina_cost = float(w.get("heavy_stamina_cost", 18.0))
 			break
 
+func _recalculate_conditional_bonuses() -> void:
+	_conditional_bonuses = {}
+	if max_health <= 0:
+		return
+	var health_pct: float = float(current_health) / float(max_health)
+	for upgrade in GameState.active_upgrades:
+		if upgrade.get("modifier_type", "") == "conditional_health_pct":
+			var threshold: float = float(upgrade.get("threshold", 1.0))
+			if health_pct < threshold:
+				var stat: String = upgrade.get("stat", "")
+				var val: float = float(upgrade.get("value", 0))
+				_conditional_bonuses[stat] = _conditional_bonuses.get(stat, 0.0) + val
+
+func get_effective_attack_damage() -> int:
+	return heavy_damage + int(_conditional_bonuses.get("attack_damage", 0))
+
+func get_effective_guard_efficiency() -> float:
+	return min(guard_efficiency + float(_conditional_bonuses.get("guard_efficiency", 0.0)), 0.95)
+
 func heavy_attack() -> bool:
 	if is_staggered:
 		return false
@@ -97,7 +117,7 @@ func heavy_attack() -> bool:
 		return false
 	stamina -= heavy_stamina_cost
 	stamina_changed.emit(stamina, max_stamina)
-	heavy_attack_triggered.emit(heavy_damage)
+	heavy_attack_triggered.emit(get_effective_attack_damage())
 	return true
 
 func _physics_process(delta: float) -> void:
@@ -166,8 +186,9 @@ func take_damage(amount: int) -> void:
 			guarding = false
 			effective_damage = amount - GUARD_BREAK_THRESHOLD
 		else:
-			effective_damage = int(amount * (1.0 - guard_efficiency))
+			effective_damage = int(amount * (1.0 - get_effective_guard_efficiency()))
 	current_health = max(0, current_health - effective_damage)
+	_recalculate_conditional_bonuses()
 	health_changed.emit(current_health, max_health)
 	if current_health <= 0:
 		player_died.emit()
@@ -187,3 +208,4 @@ func _trigger_stagger() -> void:
 	is_staggered = false
 	current_poise = max_poise
 	poise_changed.emit(current_poise, max_poise)
+	_recalculate_conditional_bonuses()
