@@ -46,19 +46,55 @@ var _is_paused: bool = false
 var _current_draw: Array = []
 var _vendor_instance: Node = null
 
+var _ui_sfx_player: AudioStreamPlayer = null
+var _ui_click_stream: AudioStream = null
+var _ui_upgrade_stream: AudioStream = null
+
 func _ready() -> void:
+	_setup_ui_audio()
 	_show_prep()
 	return_button.pressed.connect(_on_return_to_sanctuary)
+	return_button.pressed.connect(_play_ui_click)
 	descend_warden_button.pressed.connect(_on_descend_warden_pressed)
+	descend_warden_button.pressed.connect(_play_ui_click)
 	resume_button.pressed.connect(_on_resume_pressed)
+	resume_button.pressed.connect(_play_ui_click)
 	quit_to_menu_button.pressed.connect(_on_quit_to_menu_pressed)
+	quit_to_menu_button.pressed.connect(_play_ui_click)
 	settings_button.pressed.connect(_on_settings_button_pressed)
+	settings_button.pressed.connect(_play_ui_click)
 	upgrade_card_0.pressed.connect(_on_upgrade_card_selected.bind(0))
+	upgrade_card_0.pressed.connect(_play_ui_upgrade_select)
 	upgrade_card_1.pressed.connect(_on_upgrade_card_selected.bind(1))
+	upgrade_card_1.pressed.connect(_play_ui_upgrade_select)
 	upgrade_card_2.pressed.connect(_on_upgrade_card_selected.bind(2))
+	upgrade_card_2.pressed.connect(_play_ui_upgrade_select)
 	vendor_button.pressed.connect(_on_visit_vendor_pressed)
+	vendor_button.pressed.connect(_play_ui_click)
 	upgrade_toast.visible = false
 	_populate_ring_selector()
+
+func _setup_ui_audio() -> void:
+	_ui_sfx_player = AudioStreamPlayer.new()
+	_ui_sfx_player.name = "UISFXPlayer"
+	_ui_sfx_player.bus = "SFX"
+	add_child(_ui_sfx_player)
+	var click_path := "res://audio/ui_click.wav"
+	if ResourceLoader.exists(click_path):
+		_ui_click_stream = load(click_path)
+	var upgrade_path := "res://audio/ui_upgrade_select.wav"
+	if ResourceLoader.exists(upgrade_path):
+		_ui_upgrade_stream = load(upgrade_path)
+
+func _play_ui_click() -> void:
+	if _ui_sfx_player and _ui_click_stream:
+		_ui_sfx_player.stream = _ui_click_stream
+		_ui_sfx_player.play()
+
+func _play_ui_upgrade_select() -> void:
+	if _ui_sfx_player and _ui_upgrade_stream:
+		_ui_sfx_player.stream = _ui_upgrade_stream
+		_ui_sfx_player.play()
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
@@ -158,18 +194,22 @@ func _on_ring_selected(index: int) -> void:
 		GameState.current_ring = ring_ids[index]
 
 func _on_start_run_button_pressed() -> void:
+	_play_ui_click()
 	start_run_pressed.emit()
 
 func _on_resolve_encounter_button_pressed() -> void:
+	_play_ui_click()
 	resolve_encounter_pressed.emit()
 
 func _on_extract_button_pressed() -> void:
+	_play_ui_click()
 	if GameState.current_ring in ["inner", "mid"]:
 		_show_upgrade_draw()
 	else:
 		extract_pressed.emit()
 
 func _on_die_button_pressed() -> void:
+	_play_ui_click()
 	die_pressed.emit()
 
 func _on_descend_warden_pressed() -> void:
