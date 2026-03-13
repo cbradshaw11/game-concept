@@ -26,6 +26,24 @@ text = "Weapon Loadout"
 [node name="LoadoutSummary" type="Label" parent="PrepScreen"]
 text = ""
 
+[node name="WeaponStatPanel" type="VBoxContainer" parent="PrepScreen"]
+visible = false
+
+[node name="WeaponName" type="Label" parent="PrepScreen/WeaponStatPanel"]
+text = ""
+
+[node name="LightDamage" type="Label" parent="PrepScreen/WeaponStatPanel"]
+text = ""
+
+[node name="HeavyDamage" type="Label" parent="PrepScreen/WeaponStatPanel"]
+text = ""
+
+[node name="StaminaCost" type="Label" parent="PrepScreen/WeaponStatPanel"]
+text = ""
+
+[node name="PoiseDamage" type="Label" parent="PrepScreen/WeaponStatPanel"]
+text = ""
+
 [node name="RingSelectorLabel" type="Label" parent="PrepScreen"]
 text = "Select Ring"
 
@@ -33,6 +51,9 @@ text = "Select Ring"
 
 [node name="StartRunButton" type="Button" parent="PrepScreen"]
 text = "Enter Ring 1"
+
+[node name="VendorButton" type="Button" parent="PrepScreen"]
+text = "Visit Vendor"
 
 [node name="RunScreen" type="VBoxContainer" parent="."]
 visible = false
@@ -91,6 +112,10 @@ text = "Resume"
 [node name="QuitButton" type="Button" parent="PauseMenu/VBoxContainer"]
 layout_mode = 2
 text = "Quit to Main Menu"
+
+[node name="SettingsButton" type="Button" parent="PauseMenu/VBoxContainer"]
+layout_mode = 2
+text = "Settings"
 
 [node name="UpgradeDrawPanel" type="PanelContainer" parent="."]
 visible = false
@@ -182,7 +207,11 @@ autowrap_mode = 3
 text = "— Credits —
 
 Game Design & Development
-[Placeholder]
+An indie project
+
+Made with Godot 4
+
+Audio: Placeholder tracks
 
 Thank you for playing."
 
@@ -190,7 +219,25 @@ Thank you for playing."
 layout_mode = 2
 text = "Begin New Journey"
 
+[node name="BackToMenuButton" type="Button" parent="CreditsPanel/VBox"]
+layout_mode = 2
+text = "Back to Menu"
+
+[node name="UpgradeToast" type="Label" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 2
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -60.0
+offset_right = 400.0
+offset_bottom = -30.0
+
 [connection signal="pressed" from="PrepScreen/StartRunButton" to="." method="_on_start_run_button_pressed"]
+[connection signal="pressed" from="PrepScreen/VendorButton" to="." method="_on_visit_vendor_pressed"]
 [connection signal="item_selected" from="PrepScreen/LoadoutSelect" to="." method="_on_loadout_select_item_selected"]
 [connection signal="item_selected" from="PrepScreen/RingSelector" to="." method="_on_ring_selected"]
 [connection signal="pressed" from="RunScreen/ResolveEncounterButton" to="." method="_on_resolve_encounter_button_pressed"]
@@ -198,3 +245,5 @@ text = "Begin New Journey"
 [connection signal="pressed" from="RunScreen/DieButton" to="." method="_on_die_button_pressed"]
 [connection signal="pressed" from="RunScreen/DescendWardenButton" to="." method="_on_descend_warden_pressed"]
 [connection signal="pressed" from="CreditsPanel/VBox/BeginNewJourneyButton" to="." method="_on_begin_new_journey_pressed"]
+[connection signal="pressed" from="PauseMenu/VBoxContainer/SettingsButton" to="." method="_on_settings_button_pressed"]
+[connection signal="pressed" from="CreditsPanel/VBox/BackToMenuButton" to="." method="_on_back_to_menu_pressed"]

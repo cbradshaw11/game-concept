@@ -21,6 +21,9 @@ var warden_defeated: bool = false
 var game_completed: bool = false
 var warden_phase_reached: int = -1
 var active_upgrades: Array = []
+var permanent_upgrades: Array = []
+var prologue_seen: bool = false
+var first_run_complete: bool = false
 var telemetry := Telemetry.new()
 
 func default_save_state() -> Dictionary:
@@ -34,7 +37,10 @@ func default_save_state() -> Dictionary:
 		"warden_defeated": false,
 		"game_completed": false,
 		"warden_phase_reached": -1,
-		"save_version": 1,
+		"prologue_seen": false,
+		"first_run_complete": false,
+		"permanent_upgrades": [],
+		"save_version": 3,
 	}
 
 func to_save_state() -> Dictionary:
@@ -48,7 +54,10 @@ func to_save_state() -> Dictionary:
 		"warden_defeated": warden_defeated,
 		"game_completed": game_completed,
 		"warden_phase_reached": warden_phase_reached,
-		"save_version": 1,
+		"prologue_seen": prologue_seen,
+		"first_run_complete": first_run_complete,
+		"permanent_upgrades": permanent_upgrades,
+		"save_version": 3,
 	}
 
 func apply_save_state(data: Dictionary) -> void:
@@ -65,6 +74,18 @@ func apply_save_state(data: Dictionary) -> void:
 		warden_phase_reached = int(data.get("warden_phase_reached", -1))
 	else:
 		warden_phase_reached = -1
+	# M6 migration guard: only restore prologue/first_run fields if save_version >= 2
+	if data.get("save_version", 0) >= 2:
+		prologue_seen = bool(data.get("prologue_seen", false))
+		first_run_complete = bool(data.get("first_run_complete", false))
+	else:
+		prologue_seen = false
+		first_run_complete = false
+	# TASK-604 migration guard: only restore permanent_upgrades if save_version >= 3
+	if data.get("save_version", 0) >= 3:
+		permanent_upgrades = Array(data.get("permanent_upgrades", []))
+	else:
+		permanent_upgrades = []
 
 func start_run(seed: int, ring_id: String) -> void:
 	active_seed = seed
@@ -126,5 +147,37 @@ func die_in_run() -> void:
 func apply_upgrade(upgrade: Dictionary) -> void:
 	active_upgrades.append(upgrade)
 
+func apply_shop_item(item: Dictionary) -> void:
+	var item_type: String = str(item.get("type", "per_run"))
+	var stat: String = str(item.get("stat", ""))
+
+	if item_type == "permanent":
+		permanent_upgrades.append(item)
+		telemetry.log_event("shop_item_purchased", {
+			"item_id": item.get("id", ""),
+			"type": "permanent",
+			"stat": stat,
+		})
+	else:
+		# per_run: store in active_upgrades so PlayerController can apply at run start
+		active_upgrades.append(item)
+		telemetry.log_event("shop_item_purchased", {
+			"item_id": item.get("id", ""),
+			"type": "per_run",
+			"stat": stat,
+		})
+
 func set_telemetry_enabled(enabled: bool) -> void:
 	telemetry.enabled = enabled
+
+func reset_for_new_game() -> void:
+	var defaults := default_save_state()
+	apply_save_state(defaults)
+	active_upgrades = []
+	permanent_upgrades = []
+	active_seed = 0
+	encounters_cleared = 0
+	selected_weapon_id = "blade_iron"
+	# Delete the save file so no stale state persists
+	if FileAccess.file_exists(SaveSystem.SAVE_PATH):
+		DirAccess.remove_absolute(SaveSystem.SAVE_PATH)

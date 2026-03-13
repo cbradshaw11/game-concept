@@ -8,12 +8,14 @@ signal die_pressed
 signal loadout_selected(weapon_id: String)
 signal descend_warden_pressed
 signal upgrade_selected(upgrade: Dictionary)
+signal back_to_menu_requested
 
 @onready var prep_screen: VBoxContainer = $PrepScreen
 @onready var run_screen: VBoxContainer = $RunScreen
 @onready var prep_status: Label = $PrepScreen/PrepStatus
 @onready var loadout_select: OptionButton = $PrepScreen/LoadoutSelect
 @onready var loadout_summary: Label = $PrepScreen/LoadoutSummary
+@onready var weapon_stat_panel: VBoxContainer = $PrepScreen/WeaponStatPanel
 @onready var ring_selector: OptionButton = $PrepScreen/RingSelector
 @onready var run_status: Label = $RunScreen/RunStatus
 @onready var run_loadout: Label = $RunScreen/RunLoadout
@@ -29,16 +31,20 @@ signal upgrade_selected(upgrade: Dictionary)
 @onready var pause_menu: PanelContainer = $PauseMenu
 @onready var resume_button: Button = $PauseMenu/VBoxContainer/ResumeButton
 @onready var quit_to_menu_button: Button = $PauseMenu/VBoxContainer/QuitButton
+@onready var settings_button: Button = $PauseMenu/VBoxContainer/SettingsButton
 @onready var upgrade_draw_panel: PanelContainer = $UpgradeDrawPanel
 @onready var upgrade_card_0: Button = $UpgradeDrawPanel/VBoxContainer/HBoxContainer/UpgradeCard0
 @onready var upgrade_card_1: Button = $UpgradeDrawPanel/VBoxContainer/HBoxContainer/UpgradeCard1
 @onready var upgrade_card_2: Button = $UpgradeDrawPanel/VBoxContainer/HBoxContainer/UpgradeCard2
 @onready var upgrade_list_label: Label = $RunScreen/UpgradeListLabel
+@onready var upgrade_toast: Label = $UpgradeToast
+@onready var vendor_button: Button = $PrepScreen/VendorButton
 
 var run_base_status: String = ""
 var objective_status: String = ""
 var _is_paused: bool = false
 var _current_draw: Array = []
+var _vendor_instance: Node = null
 
 func _ready() -> void:
 	_show_prep()
@@ -49,6 +55,8 @@ func _ready() -> void:
 	upgrade_card_0.pressed.connect(_on_upgrade_card_selected.bind(0))
 	upgrade_card_1.pressed.connect(_on_upgrade_card_selected.bind(1))
 	upgrade_card_2.pressed.connect(_on_upgrade_card_selected.bind(2))
+	vendor_button.pressed.connect(_on_visit_vendor_pressed)
+	upgrade_toast.visible = false
 	_populate_ring_selector()
 
 func _input(event: InputEvent) -> void:
@@ -160,6 +168,34 @@ func _on_descend_warden_pressed() -> void:
 func _on_loadout_select_item_selected(index: int) -> void:
 	var weapon_id: String = str(loadout_select.get_item_metadata(index))
 	loadout_selected.emit(weapon_id)
+	_refresh_weapon_stats(weapon_id)
+
+func _refresh_weapon_stats(weapon_id: String) -> void:
+	var weapons: Array = DataStore.weapons.get("weapons", [])
+	var weapon_data: Dictionary = {}
+	for w in weapons:
+		if w.get("id", "") == weapon_id:
+			weapon_data = w
+			break
+	if weapon_data.is_empty():
+		weapon_stat_panel.visible = false
+		return
+	weapon_stat_panel.visible = true
+	var name_label: Label = weapon_stat_panel.get_node_or_null("WeaponName")
+	var light_dmg_label: Label = weapon_stat_panel.get_node_or_null("LightDamage")
+	var heavy_dmg_label: Label = weapon_stat_panel.get_node_or_null("HeavyDamage")
+	var stamina_label: Label = weapon_stat_panel.get_node_or_null("StaminaCost")
+	var poise_label: Label = weapon_stat_panel.get_node_or_null("PoiseDamage")
+	if name_label:
+		name_label.text = str(weapon_data.get("id", ""))
+	if light_dmg_label:
+		light_dmg_label.text = "Damage: %d" % weapon_data.get("light_damage", 0)
+	if heavy_dmg_label:
+		heavy_dmg_label.text = "Heavy Damage: %d" % weapon_data.get("heavy_damage", 0)
+	if stamina_label:
+		stamina_label.text = "Stamina Cost: %d" % weapon_data.get("light_stamina_cost", 0)
+	if poise_label:
+		poise_label.text = "Poise Damage: %d" % weapon_data.get("poise_damage_light", 0)
 
 func _show_prep() -> void:
 	prep_screen.visible = true
@@ -295,7 +331,15 @@ func _on_upgrade_card_selected(index: int) -> void:
 	upgrade_selected.emit(selected)
 	upgrade_draw_panel.visible = false
 	_refresh_upgrade_display()
+	_show_upgrade_toast(str(selected.get("name", "")))
 	extract_pressed.emit()
+
+func _show_upgrade_toast(upgrade_name: String) -> void:
+	upgrade_toast.text = "Applied: %s" % upgrade_name
+	upgrade_toast.visible = true
+	var tween := create_tween()
+	tween.tween_interval(2.0)
+	tween.tween_callback(func() -> void: upgrade_toast.visible = false)
 
 func _refresh_upgrade_display() -> void:
 	if GameState.active_upgrades.is_empty():
@@ -333,3 +377,22 @@ func show_credits() -> void:
 func _on_begin_new_journey_pressed() -> void:
 	credits_panel.visible = false
 	on_idle_ready()
+
+func _on_back_to_menu_pressed() -> void:
+	credits_panel.visible = false
+	back_to_menu_requested.emit()
+
+func _on_visit_vendor_pressed() -> void:
+	var vendor_scene := load("res://scenes/ui/vendor.tscn")
+	if not vendor_scene:
+		push_error("vendor.tscn not found")
+		return
+	_vendor_instance = vendor_scene.instantiate()
+	_vendor_instance.closed.connect(_on_vendor_closed)
+	add_child(_vendor_instance)
+
+func _on_vendor_closed() -> void:
+	if _vendor_instance:
+		_vendor_instance.queue_free()
+		_vendor_instance = null
+	_refresh_ring_selector()
