@@ -447,4 +447,6 @@ func _on_vendor_closed() -> void:
 	if _vendor_instance:
 		_vendor_instance.queue_free()
 		_vendor_instance = null
+	var _SaveSystem := load("res://scripts/systems/save_system.gd")
+	_SaveSystem.save_state(GameState.to_save_state())
 	_refresh_ring_selector()

@@ -76,6 +76,10 @@ func apply_upgrade(upgrade: Dictionary) -> void:
 				stamina_regen_per_sec *= float(value)
 			else:
 				stamina_regen_per_sec += float(value)
+		"xp_multiplier":
+			GameState.xp_gain_multiplier = max(GameState.xp_gain_multiplier + float(value), 0.1)
+		"warden_map_owned":
+			GameState.warden_map_unlocked = true
 
 func reload_weapon_stats() -> void:
 	var weapons_list: Array = DataStore.weapons.get("weapons", [])
@@ -106,7 +110,7 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("ui_select"):
 		try_dodge()
 
-	var next_guarding := Input.is_action_pressed("ui_cancel")
+	var next_guarding := Input.is_action_pressed("guard")
 	if next_guarding != guarding:
 		set_guarding(next_guarding)
 

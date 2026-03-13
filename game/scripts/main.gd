@@ -210,13 +210,14 @@ func _on_die_pressed() -> void:
 	if GameState.current_ring == "sanctuary":
 		return
 	var xp_at_risk: int = GameState.unbanked_xp
+	var loot_at_risk: int = GameState.unbanked_loot
 	GameState.die_in_run()
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
 	contract_system.fail_active_contract()
 	# Show objective failure before death panel so contract fail state is visible
 	flow_ui.on_objective_failed(contract_system.get_contract())
-	flow_ui.on_died(xp_at_risk, GameState.unbanked_loot)
+	flow_ui.on_died(xp_at_risk, loot_at_risk)
 	_save_state()
 	# Return to sanctuary music after dying
 	_play_music("music_sanctuary")
@@ -236,11 +237,12 @@ func _on_combat_player_died() -> void:
 	if GameState.current_ring == "sanctuary":
 		return
 	var xp_at_risk: int = GameState.unbanked_xp
+	var loot_at_risk: int = GameState.unbanked_loot
 	GameState.die_in_run()
 	contract_system.fail_active_contract()
 	# Show objective failure before death panel so contract fail state is visible
 	flow_ui.on_objective_failed(contract_system.get_contract())
-	flow_ui.on_died(xp_at_risk, GameState.unbanked_loot)
+	flow_ui.on_died(xp_at_risk, loot_at_risk)
 	_save_state()
 
 func _ensure_combat_arena() -> void:

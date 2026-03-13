@@ -26,6 +26,8 @@ var pending_run_upgrades: Array = []
 var permanent_upgrades: Array = []
 var prologue_seen: bool = false
 var first_run_complete: bool = false
+var xp_gain_multiplier: float = 1.0
+var warden_map_unlocked: bool = false
 var telemetry := Telemetry.new()
 
 func default_save_state() -> Dictionary:
@@ -109,7 +111,7 @@ func start_run(seed: int, ring_id: String) -> void:
 	run_started.emit(seed)
 
 func add_unbanked(xp_value: int, loot_value: int) -> void:
-	unbanked_xp += xp_value
+	unbanked_xp += int(xp_value * xp_gain_multiplier)
 	unbanked_loot += loot_value
 	encounters_cleared += 1
 	telemetry.log_event("encounter_completed", {
@@ -194,6 +196,8 @@ func reset_for_new_game() -> void:
 	active_seed = 0
 	encounters_cleared = 0
 	selected_weapon_id = "blade_iron"
+	xp_gain_multiplier = 1.0
+	warden_map_unlocked = false
 	prologue_seen = true  # preserve: prologue is a one-time player experience, not run state
 	# Delete the save file so no stale state persists
 	if FileAccess.file_exists(_SaveSystem.SAVE_PATH):
