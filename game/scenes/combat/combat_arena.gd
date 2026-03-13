@@ -29,6 +29,7 @@ signal player_died()
 @onready var _combat_tutorial_overlay: Panel = $TutorialLayer/CombatTutorialOverlay
 @onready var enemy_hud_container: VBoxContainer = $HUD/EnemyHUDContainer
 @onready var action_feedback: Label = $HUD/ActionFeedback
+@onready var wardan_phase_label: Label = $HUD/WardanPhaseLabel
 
 var _tutorial_showing: bool = false
 var _dismiss_frame: int = -1
@@ -242,6 +243,16 @@ func _update_enemy_hud() -> void:
 				enemy_hp_bar.value = enemy.health
 		else:
 			slot.visible = false
+	if is_boss_encounter and not enemies.is_empty():
+		var boss_enemy := enemies[0]
+		var phase: int = boss_enemy._current_phase
+		if GameState.warden_map_unlocked:
+			wardan_phase_label.text = "Phase %d / 3  (Phase 2: 840HP | Phase 3: 420HP)" % phase
+		else:
+			wardan_phase_label.text = "Phase %d / 3" % phase
+		wardan_phase_label.visible = not encounter_completed
+	else:
+		wardan_phase_label.visible = false
 
 func _show_action_feedback(text: String) -> void:
 	if _feedback_tween:
@@ -349,6 +360,11 @@ func start_boss_encounter(boss_id: String) -> void:
 		_load_enemy_sprites([{"role": "elite"}])
 	_update_enemy_hud()
 	_update_status()
+	if GameState.warden_map_unlocked:
+		wardan_phase_label.text = "Phase 1 / 3  (Phase 2: 840HP | Phase 3: 420HP)"
+	else:
+		wardan_phase_label.text = "Phase 1 / 3"
+	wardan_phase_label.visible = true
 
 func _player_zone() -> int:
 	var zone := int(round(player.position.x / 160.0))

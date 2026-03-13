@@ -114,6 +114,14 @@ horizontal_alignment = 1
 vertical_alignment = 1
 text = ""
 
+[node name="WardanPhaseLabel" type="Label" parent="HUD"]
+offset_left = 24.0
+offset_top = 100.0
+offset_right = 400.0
+offset_bottom = 122.0
+visible = false
+text = ""
+
 [node name="StaminaHints" type="Label" parent="HUD"]
 offset_left = 560.0
 offset_top = 505.0

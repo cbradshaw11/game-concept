@@ -31,6 +31,7 @@ func _load_and_populate() -> void:
 
 	# Pick 3-4 random items to offer, seeded by run count for consistency
 	var pool: Array = _all_items.duplicate()
+	seed(GameState.active_seed + GameState.rings_cleared.size() * 1000)
 	pool.shuffle()
 	var offer_count: int = randi_range(3, 4)
 	_offered_items = pool.slice(0, min(offer_count, pool.size()))

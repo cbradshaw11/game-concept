@@ -243,7 +243,7 @@ func _refresh_weapon_stats(weapon_id: String) -> void:
 	var stamina_label: Label = weapon_stat_panel.get_node_or_null("StaminaCost")
 	var poise_label: Label = weapon_stat_panel.get_node_or_null("PoiseDamage")
 	if name_label:
-		name_label.text = str(weapon_data.get("id", ""))
+		name_label.text = str(weapon_data.get("display_name", weapon_data.get("id", "")))
 	if light_dmg_label:
 		light_dmg_label.text = "Damage: %d" % weapon_data.get("light_damage", 0)
 	if heavy_dmg_label:
@@ -270,12 +270,12 @@ func on_run_started(seed: int) -> void:
 	_refresh_upgrade_display()
 
 func _refresh_ring_display() -> void:
-	var ring_names := {
-		"inner": "Ring 1 - The Inner Way",
-		"mid": "Ring 2 - The Mid Path",
-		"outer": "Ring 3 - The Outer Reaches",
-	}
-	ring_display.text = ring_names.get(GameState.current_ring, "")
+	var display_text: String = GameState.current_ring
+	for r in DataStore.rings.get("rings", []):
+		if r.get("id") == GameState.current_ring:
+			display_text = r.get("display_name", GameState.current_ring)
+			break
+	ring_display.text = display_text
 
 func set_available_loadouts(weapons: Array) -> void:
 	loadout_select.clear()
@@ -337,8 +337,12 @@ func on_extracted(total_xp: int, total_loot: int) -> void:
 	_refresh_ring_selector()
 
 func on_died(unbanked_xp: int, unbanked_loot: int) -> void:
-	var ring_names := {"inner": "Ring 1 - The Inner Reaches", "mid": "Ring 2 - The Mid Wastes", "outer": "Ring 3 - The Outer Void"}
-	ring_label.text = "Ring Reached: %s" % ring_names.get(GameState.current_ring, GameState.current_ring)
+	var ring_display_name: String = GameState.current_ring
+	for r in DataStore.rings.get("rings", []):
+		if r.get("id") == GameState.current_ring:
+			ring_display_name = r.get("display_name", GameState.current_ring)
+			break
+	ring_label.text = "Ring Reached: %s" % ring_display_name
 	encounters_label.text = "Encounters Cleared: %d" % GameState.encounters_cleared
 	var xp_kept: int = int(unbanked_xp * 0.5)
 	var xp_lost: int = unbanked_xp - xp_kept
@@ -410,6 +414,7 @@ func _show_upgrade_draw() -> void:
 	available.shuffle()
 	_current_draw = available.slice(0, 3)
 	if _current_draw.size() < 3:
+		_show_upgrade_toast("Upgrade pool exhausted -- no cards available.")
 		extract_pressed.emit()
 		return
 	upgrade_card_0.text = "%s\n%s" % [_current_draw[0]["name"], _current_draw[0]["description"]]
