@@ -75,6 +75,7 @@ func _ready() -> void:
 	upgrade_card_1.pressed.connect(_play_ui_upgrade_select)
 	upgrade_card_2.pressed.connect(_on_upgrade_card_selected.bind(2))
 	upgrade_card_2.pressed.connect(_play_ui_upgrade_select)
+	vendor_button.pressed.connect(_on_visit_vendor_pressed)
 	vendor_button.pressed.connect(_play_ui_click)
 	history_button.pressed.connect(_play_ui_click)
 	upgrade_toast.visible = false
