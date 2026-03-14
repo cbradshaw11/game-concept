@@ -115,6 +115,16 @@
       "damage": 22,
       "poise_damage": 14,
       "behavior_profile": "kite_volley"
+    },
+    {
+      "id": "warden_herald",
+      "role": "elite",
+      "rings": ["outer"],
+      "health": 169,
+      "poise": 30,
+      "damage": 21,
+      "poise_damage": 26,
+      "behavior_profile": "elite_pressure"
     }
   ],
   "bosses": [
