@@ -49,12 +49,12 @@
       "value": 1.25
     },
     {
-      "id": "deep_reserves",
-      "name": "Deep Reserves",
-      "description": "+15 maximum stamina.",
-      "stat": "max_stamina",
+      "id": "battle_rhythm",
+      "name": "Battle Rhythm",
+      "description": "Heavy attack stamina cost reduced by 8.",
+      "stat": "heavy_stamina_cost",
       "modifier_type": "add",
-      "value": 15
+      "value": -8
     },
     {
       "id": "iron_skin",

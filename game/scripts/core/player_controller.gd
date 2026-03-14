@@ -85,6 +85,8 @@ func apply_upgrade(upgrade: Dictionary) -> void:
 				stamina_regen_per_sec += float(value)
 		"xp_multiplier":
 			GameState.xp_gain_multiplier = max(GameState.xp_gain_multiplier + float(value), 0.1)
+		"heavy_stamina_cost":
+			heavy_stamina_cost = max(4.0, heavy_stamina_cost + float(value))
 		"warden_map_owned":
 			GameState.warden_map_unlocked = true
 
