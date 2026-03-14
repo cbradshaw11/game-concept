@@ -78,3 +78,22 @@ _None._
 # Adversarial Log -- M13: Last Measure
 
 _Bugs will be appended here after adversarial testing._
+
+## M13 Adversarial Round -- 2026-03-14
+
+### CRIT
+- [FIXED] [CRIT] shop_items.json:6-9 -- All 4 new per-run items used wrong stat names; items were purchased for loot but applied nothing. dodge_salve: dodge_cost_reduction→dodge_stamina_cost (value +5→-5); poise_splint: max_poise_bonus→max_poise; swift_tincture: stamina_regen_multiplier→stamina_regen_rate + added modifier_type:multiply + value 0.20→1.20; loot_compass: loot_per_encounter_bonus→loot_per_encounter
+
+### HIGH
+- [FIXED] [HIGH] upgrades.json:136 -- quick_draw description "Reduce light attack stamina cost" wrong; stat is dodge_stamina_cost. Description corrected.
+- [FIXED] [HIGH] upgrades.json:152 -- executioner description "enemies below 25% health" wrong; conditional_health_pct checks PLAYER health. Description corrected.
+- [FIXED] [HIGH] upgrades.json:161 -- poise_wall description "Gain 10 poise when guard breaks attack" wrong; implementation is flat max_poise += 10 at card selection. Description corrected.
+- [ACCEPTED] [HIGH] on_died() default ring_id parameter -- FALSE POSITIVE. main.gd captures ring_at_death before die_in_run() in both die paths. ring_id always passed explicitly.
+
+### MED / LOW
+- [FIXED] [MED] combat_arena.gd:349 -- push_warning for unknown profiles fired on every frontline_basic enemy (default profile not in match). Added explicit frontline_basic: pass case.
+- [FIXED] [MED] combat_arena.gd:472,486 -- stamina_on_kill restore did not emit stamina_changed signal; stamina bar had one-frame visual lag after kill restore. Emit added at both kill paths.
+- [DEFERRED] [HIGH-3] stamina regen stacking (swift_tincture + swift_recovery + relentless) has no cap. Accepted risk -- combination requires specific multi-system choices; add cap in M14.
+- [DEFERRED] [MED] death_flavor appended to loot_label rather than dedicated label -- cosmetically suboptimal, functionally correct. Defer M14 UI polish.
+- [DEFERRED] [LOW] poise stacking no cap (poise_splint + poise_anchor variants). Design decision needed. Defer M14.
+- [DEFERRED] [LOW] vendor.gd parses shop_items.json directly via FileAccess rather than using DataStore.shop_items. Risk surface only. Defer M14.
