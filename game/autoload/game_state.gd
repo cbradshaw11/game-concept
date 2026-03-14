@@ -30,10 +30,12 @@ var xp_gain_multiplier: float = 1.0
 var warden_map_unlocked: bool = false
 var run_history: Array = []
 var weapons_unlocked: Array = ["blade_iron"]
+var permanent_purchases: Array[String] = []
 var _run_outcome_recorded: bool = false
 var telemetry := Telemetry.new()
 var active_modifiers: Array = []
 var pending_modifier: Dictionary = {}
+var loot_per_encounter_modifier: int = 0
 
 func default_save_state() -> Dictionary:
 	return {
@@ -136,6 +138,7 @@ func apply_save_state(data: Dictionary) -> void:
 func start_run(seed: int, ring_id: String) -> void:
 	active_modifiers = []
 	xp_gain_multiplier = 1.0
+	loot_per_encounter_modifier = 0
 	if not pending_modifier.is_empty():
 		active_modifiers = [pending_modifier]
 		pending_modifier = {}
@@ -243,6 +246,7 @@ func abandon_run() -> void:
 	active_upgrades = []
 	active_modifiers = []
 	pending_modifier = {}
+	loot_per_encounter_modifier = 0
 	_run_outcome_recorded = false
 
 func record_warden_defeated() -> void:
@@ -265,7 +269,7 @@ func record_warden_defeated() -> void:
 		run_history = run_history.slice(-20)
 
 func get_loot_per_encounter_bonus() -> int:
-	var bonus: int = 0
+	var bonus: int = loot_per_encounter_modifier
 	for upgrade in active_upgrades:
 		if upgrade.get("stat", "") == "loot_per_encounter":
 			bonus += int(upgrade.get("value", 0))

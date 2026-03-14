@@ -124,6 +124,16 @@ func apply_modifier(modifier: Dictionary) -> void:
 			_last_rites_available = true
 		"scavenger_instinct":
 			pass  # Handled at reward calculation in main.gd
+		"lone_hunter":
+			GameState.loot_per_encounter_modifier += int(modifier.get("value_a", 0))
+			max_health = max(1, max_health + int(modifier.get("value_b", 0)))
+			current_health = min(current_health, max_health)
+			health_changed.emit(current_health, max_health)
+		"relentless":
+			stamina_regen_per_sec += float(modifier.get("value_a", 0.0))
+			guard_efficiency = clampf(guard_efficiency + float(modifier.get("value_b", 0.0)), 0.0, 0.95)
+		"death_wish":
+			pass  # Checked at runtime in get_effective_attack_damage()
 
 func reset_for_run() -> void:
 	# Restore base combat stats from data before upgrades/modifiers are applied.

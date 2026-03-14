@@ -5,6 +5,9 @@
     {"id": "swift",             "name": "Swift",              "description": "-20% light attack stamina cost this run.",     "modifier_type": "flat_stat", "stat": "light_stamina_cost_pct",      "value": -0.20},
     {"id": "burden",            "name": "Burden",             "description": "-10 max stamina, +25% XP gain this run.",      "modifier_type": "tradeoff",  "stat_a": "max_stamina", "value_a": -10, "stat_b": "xp_gain_pct", "value_b": 0.25},
     {"id": "last_rites",        "name": "Last Rites",         "description": "Survive one fatal blow at 1 HP. Once per run.","modifier_type": "mercy",     "uses": 1},
-    {"id": "scavenger_instinct","name": "Scavenger Instinct", "description": "Double loot from your first encounter.",       "modifier_type": "once_on_encounter", "trigger": "first_encounter", "stat": "loot_multiplier", "value": 2.0}
+    {"id": "scavenger_instinct","name": "Scavenger Instinct", "description": "Double loot from your first encounter.",       "modifier_type": "once_on_encounter", "trigger": "first_encounter", "stat": "loot_multiplier", "value": 2.0},
+    {"id": "lone_hunter",       "name": "Lone Hunter",        "description": "Find more loot, but venture with less health.", "modifier_type": "tradeoff",              "stat_a": "loot_per_encounter", "value_a": 8,    "stat_b": "max_health", "value_b": -20},
+    {"id": "relentless",        "name": "Relentless",         "description": "Stamina flows freely, but your guard wavers.", "modifier_type": "tradeoff",              "stat_a": "stamina_regen_rate", "value_a": 0.30, "stat_b": "guard_efficiency", "value_b": -0.15},
+    {"id": "death_wish",        "name": "Death Wish",         "description": "On the edge of death, your attacks become ferocious.", "modifier_type": "conditional_damage_pct", "threshold": 0.25, "value": 0.25}
   ]
 }
