@@ -34,7 +34,7 @@ func generate_encounter(
 	}
 
 func _combine_seed(seed: int, ring_id: String) -> int:
-	return int(seed + ring_id.hash())
+	return abs(int(seed + ring_id.hash()))
 
 func _generate_template_encounter(
 	seed: int,
