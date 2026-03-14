@@ -335,7 +335,7 @@ func _apply_behavior_profile(enemy: EnemyController, profile: String) -> void:
 		"guard_counter":
 			enemy.chase_range = 4.5
 			var pc = player
-			enemy.guard_query = func() -> bool: return pc.guarding
+			enemy.guard_query = func() -> bool: return is_instance_valid(pc) and pc.guarding
 		"zone_control":
 			enemy.chase_range = 6.0
 			enemy.attack_cooldown = 1.8

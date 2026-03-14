@@ -412,18 +412,22 @@ func _show_story_modal(text: String, on_dismiss: Callable) -> void:
 	_story_modal.custom_minimum_size = Vector2(400.0, 200.0)
 	_story_modal.name = "StoryModal"
 	var vbox := VBoxContainer.new()
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0.0, 120.0)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var log_label := Label.new()
 	log_label.text = text
 	log_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	scroll.add_child(log_label)
 	var dismiss_btn := Button.new()
 	dismiss_btn.text = "Continue"
 	dismiss_btn.pressed.connect(func() -> void:
 		if is_instance_valid(_story_modal):
 			_story_modal.queue_free()
 			_story_modal = null
-		on_dismiss.call()
+			on_dismiss.call()
 	)
-	vbox.add_child(log_label)
+	vbox.add_child(scroll)
 	vbox.add_child(dismiss_btn)
 	_story_modal.add_child(vbox)
 	add_child(_story_modal)

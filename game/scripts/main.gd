@@ -74,6 +74,22 @@ func _play_music(track_name: String, fade_in: float = 0.5) -> void:
 	_music_tween = create_tween()
 	_music_tween.tween_property(_music_player, "volume_db", 0.0, fade_in)
 
+func _play_music_from_path(path: String, fade_in: float = 0.5) -> void:
+	if not ResourceLoader.exists(path):
+		push_warning("Music track not found: " + path)
+		return
+	var stream = load(path)
+	if stream == null:
+		push_warning("Failed to load music track: " + path)
+		return
+	_music_player.stream = stream
+	_music_player.volume_db = -80.0
+	_music_player.play()
+	if _music_tween:
+		_music_tween.kill()
+	_music_tween = create_tween()
+	_music_tween.tween_property(_music_player, "volume_db", 0.0, fade_in)
+
 func _stop_music(fade_out: float = 0.5) -> void:
 	if not _music_player.playing:
 		return
@@ -197,19 +213,10 @@ func _on_start_run_pressed() -> void:
 		for modifier in GameState.active_modifiers:
 			combat_arena.player.apply_modifier(modifier)
 	flow_ui.set_current_loadout(GameState.selected_weapon_id)
-	# Switch to combat music when run starts -- ring-differentiated path with fallback
+	# Switch to combat music when run starts: fade out sanctuary, then fade in ring-specific combat track
 	var _combat_path := _get_combat_music_path(GameState.current_ring)
-	var _combat_stream = load(_combat_path)
-	if _combat_stream != null:
-		_music_player.stream = _combat_stream
-		_music_player.volume_db = -80.0
-		_music_player.play()
-		if _music_tween:
-			_music_tween.kill()
-		_music_tween = create_tween()
-		_music_tween.tween_property(_music_player, "volume_db", 0.0, 0.5)
-	else:
-		push_warning("Failed to load combat music: " + _combat_path)
+	_stop_music(0.3)
+	_music_tween.tween_callback(func() -> void: _play_music_from_path(_combat_path))
 	_stop_ambience()
 
 func _on_resolve_encounter_pressed() -> void:

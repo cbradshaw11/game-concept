@@ -92,7 +92,7 @@ func tick(distance_to_player: float, delta: float) -> EnemyState:
 			wind_up_timer = WIND_UP_DURATION
 			wind_up_started.emit()
 		else:
-			state = EnemyState.ATTACK
+			state = EnemyState.CHASE
 	elif distance_to_player <= chase_range:
 		state = EnemyState.CHASE
 	else:

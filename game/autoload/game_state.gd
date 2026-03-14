@@ -205,7 +205,7 @@ func extract() -> void:
 			"seed": active_seed,
 			"upgrades": active_upgrades.map(func(u): return u.get("id", "")),
 			"modifiers": active_modifiers.map(func(m): return m.get("id", "")),
-			"run_number": run_history.size() + 1,
+			"run_number": total_runs + 1,
 		}
 		run_history.append(record)
 		if run_history.size() > 20:
@@ -239,7 +239,7 @@ func die_in_run() -> void:
 			"seed": active_seed,
 			"upgrades": active_upgrades.map(func(u): return u.get("id", "")),
 			"modifiers": active_modifiers.map(func(m): return m.get("id", "")),
-			"run_number": run_history.size() + 1,
+			"run_number": total_runs + 1,
 		}
 		run_history.append(record)
 		if run_history.size() > 20:
@@ -283,7 +283,7 @@ func record_warden_defeated() -> void:
 		"seed": active_seed,
 		"upgrades": active_upgrades.map(func(u): return u.get("id", "")),
 		"modifiers": active_modifiers.map(func(m): return m.get("id", "")),
-		"run_number": run_history.size() + 1,
+		"run_number": total_runs + 1,
 	}
 	run_history.append(record)
 	if run_history.size() > 20:
