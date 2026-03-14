@@ -12,6 +12,7 @@ enum EnemyState {
 
 signal attack_resolved(damage_amount: int)
 signal wind_up_started
+signal phase_changed(new_phase: int)
 
 var state: EnemyState = EnemyState.IDLE
 var health: int
@@ -51,6 +52,7 @@ func _update_boss_phase() -> void:
 	if target_phase <= _current_phase:
 		return
 	_current_phase = target_phase
+	phase_changed.emit(_current_phase)
 	if _current_phase == 2:
 		damage_multiplier = 1.25
 		attack_cooldown = 0.6

@@ -36,6 +36,7 @@ var _dismiss_frame: int = -1
 var _feedback_tween: Tween = null
 var _poise_flash_tween: Tween = null
 var _shake_tween: Tween = null
+var _phase_flash_tween: Tween = null
 var _shake_origin: Vector2 = Vector2.ZERO
 
 const _ENEMY_TEXTURES: Dictionary = {
@@ -375,6 +376,7 @@ func start_boss_encounter(boss_id: String) -> void:
 	if boss == null:
 		return
 	enemies.append(boss)
+	boss.phase_changed.connect(_on_warden_phase_changed)
 	encounter_enemy_count = 1
 	player.set_guarding(false)
 	var bosses = DataStore.enemies.get("bosses", [])
@@ -529,3 +531,12 @@ func _on_stamina_changed(current: float, maximum: int) -> void:
 func _on_poise_changed(current: int, maximum: int) -> void:
 	poise_bar.max_value = maximum
 	poise_bar.value = current
+
+func _on_warden_phase_changed(_new_phase: int) -> void:
+	_dodge_guard_player.play()
+	if _phase_flash_tween:
+		_phase_flash_tween.kill()
+	wardan_phase_label.modulate = Color(1.0, 1.0, 1.0, 1.0)
+	_phase_flash_tween = create_tween()
+	_phase_flash_tween.tween_property(wardan_phase_label, "modulate", Color(1.0, 0.5, 0.2, 1.0), 0.05)
+	_phase_flash_tween.tween_property(wardan_phase_label, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.35)
