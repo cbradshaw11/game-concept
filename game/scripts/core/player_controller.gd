@@ -101,6 +101,8 @@ func _recalculate_conditional_bonuses() -> void:
 			var threshold: float = float(upgrade.get("threshold", 1.0))
 			if health_pct < threshold:
 				var stat: String = upgrade.get("stat", "")
+				if stat.is_empty():
+					continue
 				var val: float = float(upgrade.get("value", 0))
 				_conditional_bonuses[stat] = _conditional_bonuses.get(stat, 0.0) + val
 
@@ -202,6 +204,7 @@ func take_poise_damage(amount: int) -> void:
 		_trigger_stagger()
 
 func _trigger_stagger() -> void:
+	_recalculate_conditional_bonuses()
 	is_staggered = true
 	player_staggered.emit()
 	await get_tree().create_timer(stagger_duration).timeout

@@ -67,14 +67,14 @@
     {
       "id": "whetstone_edge",
       "name": "Whetstone Edge",
-      "description": "+4 attack damage.",
+      "description": "+4 heavy attack damage.",
       "stat": "attack_damage",
       "modifier_type": "add",
       "value": 4
     },
     {
       "id": "poise_anchor_ii",
-      "name": "Poise Anchor",
+      "name": "Poise Anchor II",
       "description": "+15 maximum poise.",
       "stat": "max_poise",
       "modifier_type": "add",
@@ -83,7 +83,7 @@
     {
       "id": "blood_edge",
       "name": "Blood Edge",
-      "description": "+6 attack damage when below 50% health.",
+      "description": "+6 heavy attack damage when below 50% health.",
       "stat": "attack_damage",
       "modifier_type": "conditional_health_pct",
       "threshold": 0.5,

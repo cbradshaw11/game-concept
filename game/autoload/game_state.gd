@@ -30,6 +30,7 @@ var xp_gain_multiplier: float = 1.0
 var warden_map_unlocked: bool = false
 var run_history: Array = []
 var weapons_unlocked: Array = ["blade_iron"]
+var _run_outcome_recorded: bool = false
 var telemetry := Telemetry.new()
 
 func default_save_state() -> Dictionary:
@@ -49,6 +50,8 @@ func default_save_state() -> Dictionary:
 		"selected_weapon_id": "blade_iron",
 		"run_history": [],
 		"weapons_unlocked": ["blade_iron"],
+		"xp_gain_multiplier": 1.0,
+		"warden_map_unlocked": false,
 		"save_version": 4,
 	}
 
@@ -69,6 +72,8 @@ func to_save_state() -> Dictionary:
 		"selected_weapon_id": selected_weapon_id,
 		"run_history": run_history,
 		"weapons_unlocked": weapons_unlocked,
+		"xp_gain_multiplier": xp_gain_multiplier,
+		"warden_map_unlocked": warden_map_unlocked,
 		"save_version": 4,
 	}
 
@@ -103,10 +108,13 @@ func apply_save_state(data: Dictionary) -> void:
 	# TASK-701 migration guard: only restore run_history/weapons_unlocked if save_version >= 4
 	if data.get("save_version", 0) >= 4:
 		run_history = Array(data.get("run_history", []))
-		weapons_unlocked = Array(data.get("weapons_unlocked", ["blade_iron"]))
+		weapons_unlocked = Array(data.get("weapons_unlocked", ["blade_iron"]), TYPE_STRING, "", null)
 	else:
 		run_history = []
 		weapons_unlocked = ["blade_iron"]
+	# xp_gain_multiplier and warden_map_unlocked: always read with defaults (present in v4+)
+	xp_gain_multiplier = float(data.get("xp_gain_multiplier", 1.0))
+	warden_map_unlocked = bool(data.get("warden_map_unlocked", false))
 
 func start_run(seed: int, ring_id: String) -> void:
 	active_seed = seed
@@ -114,6 +122,7 @@ func start_run(seed: int, ring_id: String) -> void:
 	unbanked_xp = 0
 	unbanked_loot = 0
 	encounters_cleared = 0
+	_run_outcome_recorded = false
 	# Carry pending per_run shop purchases into the new run, then clear the queue
 	active_upgrades = pending_run_upgrades.duplicate()
 	pending_run_upgrades = []
@@ -142,19 +151,22 @@ func extract() -> void:
 	banked_xp += unbanked_xp
 	banked_loot += unbanked_loot
 	# Append run record BEFORE clearing unbanked values so fields are still valid
-	var record := {
-		"ring_reached": current_ring,
-		"encounters_cleared": encounters_cleared,
-		"outcome": "extracted",
-		"loot_banked": banked_loot,
-		"xp_banked": banked_xp,
-		"seed": active_seed,
-		"upgrades": active_upgrades.map(func(u): return u.get("id", "")),
-		"run_number": run_history.size() + 1,
-	}
-	run_history.append(record)
-	if run_history.size() > 20:
-		run_history = run_history.slice(-20)
+	# Guard: skip if warden_defeated already recorded an outcome for this run
+	if not _run_outcome_recorded:
+		_run_outcome_recorded = true
+		var record := {
+			"ring_reached": current_ring,
+			"encounters_cleared": encounters_cleared,
+			"outcome": "extracted",
+			"loot_banked": banked_loot,
+			"xp_banked": banked_xp,
+			"seed": active_seed,
+			"upgrades": active_upgrades.map(func(u): return u.get("id", "")),
+			"run_number": run_history.size() + 1,
+		}
+		run_history.append(record)
+		if run_history.size() > 20:
+			run_history = run_history.slice(-20)
 	unbanked_xp = 0
 	unbanked_loot = 0
 	current_ring = "sanctuary"
@@ -171,19 +183,21 @@ func die_in_run() -> void:
 	var retained: int = int(unbanked_loot * 0.25)
 	banked_loot += retained
 	# Append run record BEFORE zeroing run state so ring_reached/encounters_cleared are valid
-	var record := {
-		"ring_reached": current_ring,
-		"encounters_cleared": encounters_cleared,
-		"outcome": "died",
-		"loot_banked": banked_loot,
-		"xp_banked": banked_xp,
-		"seed": active_seed,
-		"upgrades": active_upgrades.map(func(u): return u.get("id", "")),
-		"run_number": run_history.size() + 1,
-	}
-	run_history.append(record)
-	if run_history.size() > 20:
-		run_history = run_history.slice(-20)
+	if not _run_outcome_recorded:
+		_run_outcome_recorded = true
+		var record := {
+			"ring_reached": current_ring,
+			"encounters_cleared": encounters_cleared,
+			"outcome": "died",
+			"loot_banked": banked_loot,
+			"xp_banked": banked_xp,
+			"seed": active_seed,
+			"upgrades": active_upgrades.map(func(u): return u.get("id", "")),
+			"run_number": run_history.size() + 1,
+		}
+		run_history.append(record)
+		if run_history.size() > 20:
+			run_history = run_history.slice(-20)
 	unbanked_xp = int(unbanked_xp * 0.5)
 	unbanked_loot = 0
 	encounters_cleared = 0
@@ -196,6 +210,9 @@ func die_in_run() -> void:
 	player_died.emit()
 
 func record_warden_defeated() -> void:
+	if _run_outcome_recorded:
+		return
+	_run_outcome_recorded = true
 	var record := {
 		"ring_reached": current_ring,
 		"encounters_cleared": encounters_cleared,

@@ -12,6 +12,7 @@ var _all_items: Array = []
 var _offered_items: Array = []
 var _purchasing: bool = false
 var _feedback_timer: SceneTreeTimer = null
+var _rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	close_button.pressed.connect(_on_close_pressed)
@@ -29,11 +30,16 @@ func _load_and_populate() -> void:
 		push_error("shop_items.json parsed but contains no items")
 		return
 
-	# Pick 3-4 random items to offer, seeded by run count for consistency
-	var pool: Array = _all_items.duplicate()
-	seed(GameState.active_seed + GameState.rings_cleared.size() * 1000)
-	pool.shuffle()
-	var offer_count: int = randi_range(3, 4)
+	# Pick 3-4 random items to offer, seeded by run state for consistency
+	# Exclude weapon_unlock items -- those are only purchasable from the prep screen with XP
+	_rng.seed = GameState.active_seed + GameState.rings_cleared.size() * 1000
+	var pool: Array = _all_items.filter(func(i): return i.get("type", "") != "weapon_unlock")
+	for i in range(pool.size() - 1, 0, -1):
+		var j: int = _rng.randi() % (i + 1)
+		var tmp = pool[i]
+		pool[i] = pool[j]
+		pool[j] = tmp
+	var offer_count: int = _rng.randi_range(3, 4)
 	_offered_items = pool.slice(0, min(offer_count, pool.size()))
 
 	_refresh_loot_label()
@@ -110,10 +116,11 @@ func _on_buy_pressed(item_id: String) -> void:
 
 	GameState.banked_loot -= cost
 	GameState.apply_shop_item(item)
+	_purchasing = false
 	SaveSystem.save_state(GameState.to_save_state())
 	_refresh_loot_label()
+	_populate_item_list()
 	_show_feedback("Purchased: %s" % str(item.get("name", "")))
-	_purchasing = false
 
 func _show_feedback(message: String) -> void:
 	feedback_label.text = message

@@ -15,10 +15,10 @@ func _initialize() -> void:
 		if defaults.has(key):
 			failures.append("default_save_state() should not include volume/settings key '%s'" % key)
 
-	# Test 3: save_version is 3 in default_save_state()
+	# Test 3: save_version is 4 in default_save_state() (M7 bump)
 	var save_version = defaults.get("save_version", -1)
-	if save_version != 3:
-		failures.append("Expected save_version == 3 in default_save_state(), got %s" % str(save_version))
+	if save_version != 4:
+		failures.append("Expected save_version == 4 in default_save_state(), got %s" % str(save_version))
 
 	# Test 4: M4 save (no save_version) migrates cleanly -- permanent_upgrades defaults to []
 	var m4_save := {

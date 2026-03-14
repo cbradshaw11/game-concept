@@ -25,7 +25,7 @@ func _populate() -> void:
 		var label := Label.new()
 		var ring_names := {"inner": "Ring 1", "mid": "Ring 2", "outer": "Ring 3"}
 		var ring_display: String = ring_names.get(record.get("ring_reached", ""), record.get("ring_reached", "?"))
-		var outcome: String = str(record.get("outcome", "?")).capitalize()
+		var outcome: String = str(record.get("outcome", "?")).replace("_", " ").capitalize()
 		var loot: int = int(record.get("loot_banked", 0))
 		var xp: int = int(record.get("xp_banked", 0))
 		var run_num: int = int(record.get("run_number", i + 1))

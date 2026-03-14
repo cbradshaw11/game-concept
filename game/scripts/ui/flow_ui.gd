@@ -336,11 +336,11 @@ func on_extracted(total_xp: int, total_loot: int) -> void:
 	]
 	_refresh_ring_selector()
 
-func on_died(unbanked_xp: int, unbanked_loot: int) -> void:
-	var ring_display_name: String = GameState.current_ring
+func on_died(unbanked_xp: int, unbanked_loot: int, ring_id: String = GameState.current_ring) -> void:
+	var ring_display_name: String = ring_id
 	for r in DataStore.rings.get("rings", []):
-		if r.get("id") == GameState.current_ring:
-			ring_display_name = r.get("display_name", GameState.current_ring)
+		if r.get("id") == ring_id:
+			ring_display_name = r.get("display_name", ring_id)
 			break
 	ring_label.text = "Ring Reached: %s" % ring_display_name
 	encounters_label.text = "Encounters Cleared: %d" % GameState.encounters_cleared
@@ -501,6 +501,7 @@ func _on_vendor_closed() -> void:
 	var _SaveSystem := load("res://scripts/systems/save_system.gd")
 	_SaveSystem.save_state(GameState.to_save_state())
 	_refresh_ring_selector()
+	_refresh_permanent_upgrades_display()
 
 func _on_history_button_pressed() -> void:
 	var history_scene := load("res://scenes/ui/run_history.tscn")
@@ -544,13 +545,15 @@ func _refresh_weapon_unlock_panel() -> void:
 		var btn := Button.new()
 		btn.text = "%s -- %d XP" % [item.get("name", weapon_id), cost_xp]
 		btn.disabled = not GameState.can_afford_weapon_unlock(cost_xp)
-		btn.pressed.connect(_on_unlock_weapon_pressed.bind(item))
+		btn.pressed.connect(_on_unlock_weapon_pressed.bind(btn, item))
 		panel.add_child(btn)
 
-func _on_unlock_weapon_pressed(item: Dictionary) -> void:
+func _on_unlock_weapon_pressed(btn: Button, item: Dictionary) -> void:
+	btn.disabled = true
 	var cost_xp: int = int(item.get("cost_xp", 999))
 	var weapon_id: String = str(item.get("value", ""))
 	if not GameState.can_afford_weapon_unlock(cost_xp):
+		btn.disabled = false
 		return
 	GameState.spend_xp(cost_xp)
 	GameState.unlock_weapon(weapon_id)

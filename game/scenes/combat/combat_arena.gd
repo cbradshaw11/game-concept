@@ -183,6 +183,8 @@ func _on_heavy_attack_triggered(dmg: int) -> void:
 	_apply_damage_to_front_enemy(dmg)
 	_hit_land_player.play()
 	_flash_front_enemy_sprite()
+	_show_action_feedback("HEAVY +%d" % dmg)
+	_update_enemy_hud()
 	_update_status()
 
 func _on_dodge_triggered() -> void:

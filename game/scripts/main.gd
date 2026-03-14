@@ -213,13 +213,14 @@ func _on_die_pressed() -> void:
 		return
 	var xp_at_risk: int = GameState.unbanked_xp
 	var loot_at_risk: int = GameState.unbanked_loot
+	var ring_at_death: String = GameState.current_ring
 	GameState.die_in_run()
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
 	contract_system.fail_active_contract()
 	# Show objective failure before death panel so contract fail state is visible
 	flow_ui.on_objective_failed(contract_system.get_contract())
-	flow_ui.on_died(xp_at_risk, loot_at_risk)
+	flow_ui.on_died(xp_at_risk, loot_at_risk, ring_at_death)
 	_save_state()
 	# Return to sanctuary music after dying
 	_play_music("music_sanctuary")
@@ -240,11 +241,12 @@ func _on_combat_player_died() -> void:
 		return
 	var xp_at_risk: int = GameState.unbanked_xp
 	var loot_at_risk: int = GameState.unbanked_loot
+	var ring_at_death: String = GameState.current_ring
 	GameState.die_in_run()
 	contract_system.fail_active_contract()
 	# Show objective failure before death panel so contract fail state is visible
 	flow_ui.on_objective_failed(contract_system.get_contract())
-	flow_ui.on_died(xp_at_risk, loot_at_risk)
+	flow_ui.on_died(xp_at_risk, loot_at_risk, ring_at_death)
 	_save_state()
 
 func _ensure_combat_arena() -> void:
@@ -284,6 +286,11 @@ func _on_warden_defeated() -> void:
 	GameState.game_completed = true
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
+	# Bank any unbanked XP/loot from the warden fight before recording the run
+	GameState.banked_xp += GameState.unbanked_xp
+	GameState.banked_loot += GameState.unbanked_loot
+	GameState.unbanked_xp = 0
+	GameState.unbanked_loot = 0
 	# Record warden defeated run (TASK-701 adds this method -- call if available)
 	if GameState.has_method("record_warden_defeated"):
 		GameState.record_warden_defeated()
@@ -291,7 +298,8 @@ func _on_warden_defeated() -> void:
 	# Show victory screen instead of going directly to credits
 	_victory_instance = VictoryScene.instantiate() as CanvasLayer
 	add_child(_victory_instance)
-	_victory_instance.populate(
+	# Call populate deferred so @onready vars on victory.gd are initialized by _ready() first
+	_victory_instance.populate.call_deferred(
 		GameState.rings_cleared.size(),
 		GameState.banked_loot,
 		GameState.banked_xp,
@@ -307,6 +315,7 @@ func _on_victory_new_journey() -> void:
 	if is_instance_valid(_victory_instance):
 		_victory_instance.queue_free()
 		_victory_instance = null
+	GameState.reset_for_new_game()
 	flow_ui.on_idle_ready()
 
 func _on_victory_return_to_menu() -> void:

@@ -73,10 +73,10 @@ func _initialize() -> void:
 	if GameState.permanent_upgrades.size() == 0:
 		failures.append("apply_save_state with save_version=3 reset permanent_upgrades to [] instead of restoring")
 
-	# Test 5: save_version in to_save_state() output == 3
+	# Test 5: save_version in to_save_state() output == 4 (M7 bump)
 	var save_out := GameState.to_save_state()
-	if save_out.get("save_version", -1) != 3:
-		failures.append("Expected save_version == 3 in to_save_state(), got %s" % str(save_out.get("save_version", -1)))
+	if save_out.get("save_version", -1) != 4:
+		failures.append("Expected save_version == 4 in to_save_state(), got %s" % str(save_out.get("save_version", -1)))
 
 	if failures.is_empty():
 		print("PASS: test_m6_save_migration")
