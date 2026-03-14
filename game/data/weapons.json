@@ -34,7 +34,8 @@
       "heavy_stamina_cost": 24,
       "guard_efficiency": 0.35,
       "poise_damage_light": 6,
-      "poise_damage_heavy": 14
+      "poise_damage_heavy": 14,
+      "ranged_priority": true
     }
   ],
   "global_combat": {

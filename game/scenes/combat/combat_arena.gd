@@ -171,18 +171,18 @@ func _on_attack_triggered() -> void:
 	if _dismiss_frame >= 0 and Engine.get_process_frames() <= _dismiss_frame:
 		return
 	attack_count += 1
-	_apply_damage_to_front_enemy(weapon_data.get("light_damage", 14))
+	var hit_idx := _apply_damage_to_front_enemy(weapon_data.get("light_damage", 14))
 	_hit_land_player.play()
-	_flash_front_enemy_sprite()
+	_flash_enemy_sprite(hit_idx)
 	_show_action_feedback("HIT +%d" % weapon_data.get("light_damage", 14))
 	attack_hook_triggered.emit()
 	_update_enemy_hud()
 	_update_status()
 
 func _on_heavy_attack_triggered(dmg: int) -> void:
-	_apply_damage_to_front_enemy(dmg)
+	var hit_idx := _apply_damage_to_front_enemy(dmg)
 	_hit_land_player.play()
-	_flash_front_enemy_sprite()
+	_flash_enemy_sprite(hit_idx)
 	_show_action_feedback("HEAVY +%d" % dmg)
 	_update_enemy_hud()
 	_update_status()
@@ -372,14 +372,27 @@ func _player_zone() -> int:
 	var zone := int(round(player.position.x / 160.0))
 	return clampi(zone, 0, max(0, enemies.size() - 1))
 
-func _apply_damage_to_front_enemy(damage: int) -> void:
-	for enemy in enemies:
-		if enemy.state != EnemyController.EnemyState.DEAD:
-			var prev_state := enemy.state
-			enemy.apply_damage(damage, true)
-			if prev_state != EnemyController.EnemyState.STAGGER and enemy.state == EnemyController.EnemyState.STAGGER:
-				_show_action_feedback("STAGGERED")
-			return
+func _apply_damage_to_front_enemy(damage: int) -> int:
+	var use_ranged_priority: bool = weapon_data.get("ranged_priority", false)
+	if use_ranged_priority:
+		var i := enemies.size() - 1
+		while i >= 0:
+			if enemies[i].state != EnemyController.EnemyState.DEAD:
+				var prev_state := enemies[i].state
+				enemies[i].apply_damage(damage, true)
+				if prev_state != EnemyController.EnemyState.STAGGER and enemies[i].state == EnemyController.EnemyState.STAGGER:
+					_show_action_feedback("STAGGERED")
+				return i
+			i -= 1
+	else:
+		for idx in enemies.size():
+			if enemies[idx].state != EnemyController.EnemyState.DEAD:
+				var prev_state := enemies[idx].state
+				enemies[idx].apply_damage(damage, true)
+				if prev_state != EnemyController.EnemyState.STAGGER and enemies[idx].state == EnemyController.EnemyState.STAGGER:
+					_show_action_feedback("STAGGERED")
+				return idx
+	return -1
 
 func _all_enemies_defeated() -> bool:
 	for enemy in enemies:
@@ -450,11 +463,9 @@ func _apply_hit_flash(sprite: Sprite2D) -> void:
 	var tween := create_tween()
 	tween.tween_property(sprite, "modulate", Color(1.0, 1.0, 1.0), 0.1)
 
-func _flash_front_enemy_sprite() -> void:
-	for i in enemies.size():
-		if i < _enemy_sprites.size() and enemies[i].state != EnemyController.EnemyState.DEAD:
-			_apply_hit_flash(_enemy_sprites[i])
-			return
+func _flash_enemy_sprite(index: int) -> void:
+	if index >= 0 and index < _enemy_sprites.size():
+		_apply_hit_flash(_enemy_sprites[index])
 
 func _screen_shake(duration: float, magnitude: float) -> void:
 	var camera := get_viewport().get_camera_2d() if get_viewport() else null
