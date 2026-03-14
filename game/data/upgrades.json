@@ -129,6 +129,47 @@
       "stat": "stamina_on_kill",
       "modifier_type": "add",
       "value": 12
+    },
+    {
+      "id": "quick_draw",
+      "name": "Quick Draw",
+      "description": "Reduce light attack stamina cost by 4.",
+      "stat": "dodge_stamina_cost",
+      "modifier_type": "add",
+      "value": -4
+    },
+    {
+      "id": "killing_rhythm",
+      "name": "Killing Rhythm",
+      "description": "Gain 8 stamina on kill.",
+      "stat": "stamina_on_kill",
+      "modifier_type": "add",
+      "value": 8
+    },
+    {
+      "id": "executioner",
+      "name": "Executioner",
+      "description": "Deal 8 bonus heavy damage to enemies below 25% health.",
+      "stat": "attack_damage",
+      "modifier_type": "conditional_health_pct",
+      "threshold": 0.25,
+      "value": 8
+    },
+    {
+      "id": "poise_wall",
+      "name": "Poise Wall",
+      "description": "Gain 10 poise when your guard breaks an attack.",
+      "stat": "max_poise",
+      "modifier_type": "add",
+      "value": 10
+    },
+    {
+      "id": "tempered_blade",
+      "name": "Tempered Blade",
+      "description": "+15% guard damage reduction.",
+      "stat": "guard_damage_reduction",
+      "modifier_type": "add",
+      "value": 0.15
     }
   ]
 }
