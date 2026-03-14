@@ -300,12 +300,7 @@ func set_available_loadouts(weapons: Array) -> void:
 				break
 
 func _get_weapon_unlock_cost(weapon_id: String) -> int:
-	var items: Array = []
-	var f := FileAccess.open("res://data/shop_items.json", FileAccess.READ)
-	if f:
-		var parsed = JSON.parse_string(f.get_as_text())
-		if parsed is Dictionary:
-			items = parsed.get("items", [])
+	var items: Array = DataStore.shop_items.get("items", [])
 	for item in items:
 		if item.get("type") == "weapon_unlock" and item.get("value") == weapon_id:
 			return int(item.get("cost_xp", 999))
@@ -396,16 +391,7 @@ func on_objective_failed(contract: Dictionary) -> void:
 	_refresh_run_status()
 
 func _show_upgrade_draw() -> void:
-	var f := FileAccess.open("res://data/upgrades.json", FileAccess.READ)
-	var upgrades_data: Array = []
-	if f:
-		var parsed = JSON.parse_string(f.get_as_text())
-		if parsed is Dictionary:
-			upgrades_data = parsed.get("upgrades", [])
-	else:
-		push_error("upgrades.json not found — skipping upgrade draw")
-		extract_pressed.emit()
-		return
+	var upgrades_data: Array = DataStore.upgrades.get("upgrades", [])
 	if upgrades_data.is_empty():
 		push_error("upgrades.json parsed but contains no upgrades — skipping upgrade draw")
 		extract_pressed.emit()
@@ -551,12 +537,7 @@ func _refresh_weapon_unlock_panel() -> void:
 		return
 	for child in panel.get_children():
 		child.queue_free()
-	var items: Array = []
-	var f := FileAccess.open("res://data/shop_items.json", FileAccess.READ)
-	if f:
-		var parsed = JSON.parse_string(f.get_as_text())
-		if parsed is Dictionary:
-			items = parsed.get("items", [])
+	var items: Array = DataStore.shop_items.get("items", [])
 	for item in items:
 		if item.get("type") != "weapon_unlock":
 			continue
