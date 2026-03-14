@@ -20,7 +20,8 @@
       "contract_target": 3,
       "description": "Low threat frontier with basic enemies.",
       "briefing": "The city's edge. Former checkpoints, now feral territory. The scouts who came back don't talk about what they saw.",
-      "extraction_flavor": "You take what you can carry. The inner frontier closes behind you."
+      "extraction_flavor": "You take what you can carry. The inner frontier closes behind you.",
+      "first_extraction_log": "You find a fragment of the old survey map, half-burned. The outer rings are real. Someone was here before you."
     },
     {
       "id": "mid",
@@ -33,7 +34,8 @@
       "contract_target": 4,
       "description": "Mixed packs and hazard pressure.",
       "briefing": "The Mid Wastes. The previous expedition's gear litters the ground here. Their logs end mid-sentence.",
-      "extraction_flavor": "The Wastes don't mourn the living. You count yourself fortunate."
+      "extraction_flavor": "The Wastes don't mourn the living. You count yourself fortunate.",
+      "first_extraction_log": "Two factions left their marks on this ring -- and each other. Whatever they were looking for, they did not find it cleanly."
     },
     {
       "id": "outer",
@@ -46,7 +48,8 @@
       "contract_target": 4,
       "description": "Elite threats and Warden approach path.",
       "briefing": "The Void's threshold. The Warden waits somewhere ahead. You feel its weight before you see it.",
-      "extraction_flavor": "The Void releases you. The weight of what you've witnessed stays behind."
+      "extraction_flavor": "The Void releases you. The weight of what you've witnessed stays behind.",
+      "first_extraction_log": "The Warden's signal is close. The map shard points here. Whatever the Long Walk was for, the answer is behind that door."
     }
   ]
 }

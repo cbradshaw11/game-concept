@@ -36,6 +36,8 @@ var telemetry := Telemetry.new()
 var active_modifiers: Array = []
 var pending_modifier: Dictionary = {}
 var loot_per_encounter_modifier: int = 0
+var rings_story_seen: Array = []
+var total_runs: int = 0
 
 func default_save_state() -> Dictionary:
 	return {
@@ -58,7 +60,9 @@ func default_save_state() -> Dictionary:
 		"warden_map_unlocked": false,
 		"active_modifiers": [],
 		"permanent_purchases": [],
-		"save_version": 5,
+		"rings_story_seen": [],
+		"total_runs": 0,
+		"save_version": 6,
 	}
 
 func to_save_state() -> Dictionary:
@@ -82,7 +86,9 @@ func to_save_state() -> Dictionary:
 		"warden_map_unlocked": warden_map_unlocked,
 		"active_modifiers": active_modifiers,
 		"permanent_purchases": permanent_purchases,
-		"save_version": 5,
+		"rings_story_seen": rings_story_seen,
+		"total_runs": total_runs,
+		"save_version": 6,
 	}
 
 func apply_save_state(data: Dictionary) -> void:
@@ -138,6 +144,13 @@ func apply_save_state(data: Dictionary) -> void:
 	else:
 		active_modifiers = []
 		permanent_purchases = []
+	# TASK-1103 migration guard: only restore rings_story_seen/total_runs if save_version >= 6
+	if data.get("save_version", 0) >= 6:
+		rings_story_seen = Array(data.get("rings_story_seen", []))
+		total_runs = int(data.get("total_runs", 0))
+	else:
+		rings_story_seen = []
+		total_runs = run_history.size()
 
 func start_run(seed: int, ring_id: String) -> void:
 	active_modifiers = []
@@ -197,6 +210,7 @@ func extract() -> void:
 		run_history.append(record)
 		if run_history.size() > 20:
 			run_history = run_history.slice(-20)
+		total_runs += 1
 	unbanked_xp = 0
 	unbanked_loot = 0
 	current_ring = "sanctuary"
@@ -230,6 +244,7 @@ func die_in_run() -> void:
 		run_history.append(record)
 		if run_history.size() > 20:
 			run_history = run_history.slice(-20)
+		total_runs += 1
 	unbanked_xp = int(unbanked_xp * 0.5)
 	unbanked_loot = 0
 	encounters_cleared = 0
@@ -273,6 +288,7 @@ func record_warden_defeated() -> void:
 	run_history.append(record)
 	if run_history.size() > 20:
 		run_history = run_history.slice(-20)
+	total_runs += 1
 
 func get_loot_per_encounter_bonus() -> int:
 	var bonus: int = loot_per_encounter_modifier

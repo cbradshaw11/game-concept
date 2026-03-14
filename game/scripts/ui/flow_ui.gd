@@ -50,6 +50,7 @@ var _vendor_instance: Node = null
 var _history_instance: Node = null
 var _modifier_draw_instance: Node = null
 var _current_modifier_draw: Array = []
+var _story_modal: PanelContainer = null
 
 var _ui_sfx_player: AudioStreamPlayer = null
 var _ui_click_stream: AudioStream = null
@@ -365,8 +366,26 @@ func on_encounter_resolved(xp_gain: int, loot_gain: int) -> void:
 	_refresh_warden_option()
 
 func on_extracted(total_xp: int, total_loot: int, ring_id: String = "") -> void:
-	_show_prep()
 	var cleared_ring_id: String = ring_id if ring_id != "" else (GameState.rings_cleared[-1] if not GameState.rings_cleared.is_empty() else "?")
+	# Check for first-extraction story beat before showing prep screen
+	if cleared_ring_id != "" and cleared_ring_id not in GameState.rings_story_seen:
+		var story_log: String = ""
+		for r in DataStore.rings.get("rings", []):
+			if r.get("id", "") == cleared_ring_id:
+				story_log = r.get("first_extraction_log", "")
+				break
+		if story_log != "":
+			GameState.rings_story_seen.append(cleared_ring_id)
+			var _SaveSystem := load("res://scripts/systems/save_system.gd")
+			_SaveSystem.save_state(GameState.to_save_state())
+			_show_story_modal(story_log, func() -> void:
+				_finish_extraction(total_xp, total_loot, cleared_ring_id)
+			)
+			return
+	_finish_extraction(total_xp, total_loot, cleared_ring_id)
+
+func _finish_extraction(total_xp: int, total_loot: int, cleared_ring_id: String) -> void:
+	_show_prep()
 	var extraction_flavor: String = ""
 	for r in DataStore.rings.get("rings", []):
 		if r.get("id", "") == cleared_ring_id:
@@ -382,6 +401,28 @@ func on_extracted(total_xp: int, total_loot: int, ring_id: String = "") -> void:
 	prep_status.text = status_text
 	_refresh_ring_selector()
 	_refresh_permanent_upgrades_display()
+
+func _show_story_modal(text: String, on_dismiss: Callable) -> void:
+	if is_instance_valid(_story_modal):
+		_story_modal.queue_free()
+	_story_modal = PanelContainer.new()
+	_story_modal.name = "StoryModal"
+	var vbox := VBoxContainer.new()
+	var log_label := Label.new()
+	log_label.text = text
+	log_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var dismiss_btn := Button.new()
+	dismiss_btn.text = "Continue"
+	dismiss_btn.pressed.connect(func() -> void:
+		if is_instance_valid(_story_modal):
+			_story_modal.queue_free()
+			_story_modal = null
+		on_dismiss.call()
+	)
+	vbox.add_child(log_label)
+	vbox.add_child(dismiss_btn)
+	_story_modal.add_child(vbox)
+	add_child(_story_modal)
 
 func on_died(unbanked_xp: int, unbanked_loot: int, ring_id: String = GameState.current_ring) -> void:
 	var ring_display_name: String = ring_id
