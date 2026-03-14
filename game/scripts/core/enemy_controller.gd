@@ -60,7 +60,7 @@ func _update_boss_phase() -> void:
 			GameState.warden_phase_reached = 2
 	elif _current_phase == 3:
 		damage_multiplier = 1.5
-		attack_cooldown = 0.4
+		attack_cooldown = 0.5
 		preferred_min_range = 0.0
 		if GameState.warden_phase_reached < 3:
 			GameState.warden_phase_reached = 3
