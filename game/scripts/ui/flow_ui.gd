@@ -54,6 +54,7 @@ var _current_modifier_draw: Array = []
 var _ui_sfx_player: AudioStreamPlayer = null
 var _ui_click_stream: AudioStream = null
 var _ui_upgrade_stream: AudioStream = null
+var _pool_exhaustion_tween: Tween = null
 
 func _ready() -> void:
 	_setup_ui_audio()
@@ -210,6 +211,8 @@ func _refresh_ring_briefing() -> void:
 			break
 	if briefing != "":
 		prep_status.text = briefing
+	else:
+		prep_status.text = "Sanctuary: choose your loadout and begin the next run."
 
 func _on_start_run_button_pressed() -> void:
 	_play_ui_click()
@@ -408,9 +411,11 @@ func on_idle_ready() -> void:
 	_show_prep()
 	death_panel.visible = false
 	upgrade_draw_panel.visible = false
+	if is_instance_valid(_pool_exhaustion_tween) and _pool_exhaustion_tween.is_running():
+		_pool_exhaustion_tween.kill()
+		_pool_exhaustion_tween = null
 	run_base_status = ""
 	objective_status = ""
-	prep_status.text = "Sanctuary: choose loadout and start run"
 	_refresh_ring_selector()
 	_refresh_ring_briefing()
 	_refresh_permanent_upgrades_display()
@@ -457,9 +462,9 @@ func _show_upgrade_draw() -> void:
 	if _current_draw.size() < 3:
 		upgrade_toast.text = "Upgrade pool exhausted -- no cards available."
 		upgrade_toast.visible = true
-		var tween := create_tween()
-		tween.tween_interval(2.0)
-		tween.tween_callback(func() -> void:
+		_pool_exhaustion_tween = create_tween()
+		_pool_exhaustion_tween.tween_interval(2.0)
+		_pool_exhaustion_tween.tween_callback(func() -> void:
 			upgrade_toast.visible = false
 			extract_pressed.emit()
 		)
