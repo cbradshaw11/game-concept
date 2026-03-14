@@ -346,6 +346,9 @@ func _apply_behavior_profile(enemy: EnemyController, profile: String) -> void:
 		"elite_pressure":
 			enemy.chase_range = 4.5
 			enemy.attack_cooldown = 0.7
+		"sniper_volley":
+			enemy.preferred_min_range = 2.5
+			enemy.attack_range = 4.5
 		"frontline_basic":
 			pass  # Default profile -- no overrides applied.
 		_:

@@ -136,6 +136,11 @@
       "enemy_ids": ["rift_sentinel", "rift_sentinel", "warden_hunter"]
     },
     {
+      "id": "warden_approach_solo",
+      "ring": "outer",
+      "enemy_ids": ["warden_herald"]
+    },
+    {
       "id": "warden_approach_01",
       "ring": "outer",
       "enemy_ids": ["warden_herald", "rift_sentinel"]

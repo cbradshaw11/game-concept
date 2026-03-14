@@ -114,7 +114,7 @@
       "poise": 20,
       "damage": 22,
       "poise_damage": 14,
-      "behavior_profile": "kite_volley"
+      "behavior_profile": "sniper_volley"
     },
     {
       "id": "warden_herald",
