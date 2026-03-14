@@ -346,6 +346,8 @@ func _apply_behavior_profile(enemy: EnemyController, profile: String) -> void:
 		"elite_pressure":
 			enemy.chase_range = 4.5
 			enemy.attack_cooldown = 0.7
+		"frontline_basic":
+			pass  # Default profile -- no overrides applied.
 		_:
 			push_warning("Unknown behavior profile: %s" % profile)
 
@@ -468,6 +470,7 @@ func _apply_damage_to_front_enemy(damage: int, poise_dmg: int = 0) -> int:
 					_show_action_feedback("STAGGERED")
 				if enemies[i].state == EnemyController.EnemyState.DEAD and player.stamina_on_kill > 0:
 					player.stamina = min(player.stamina + player.stamina_on_kill, float(player.max_stamina))
+					player.stamina_changed.emit(player.stamina, player.max_stamina)
 					_update_status()
 				return i
 			i -= 1
@@ -482,6 +485,7 @@ func _apply_damage_to_front_enemy(damage: int, poise_dmg: int = 0) -> int:
 					_show_action_feedback("STAGGERED")
 				if enemies[idx].state == EnemyController.EnemyState.DEAD and player.stamina_on_kill > 0:
 					player.stamina = min(player.stamina + player.stamina_on_kill, float(player.max_stamina))
+					player.stamina_changed.emit(player.stamina, player.max_stamina)
 					_update_status()
 				return idx
 	return -1

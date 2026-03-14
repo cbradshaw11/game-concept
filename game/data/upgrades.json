@@ -133,7 +133,7 @@
     {
       "id": "quick_draw",
       "name": "Quick Draw",
-      "description": "Reduce light attack stamina cost by 4.",
+      "description": "Reduce dodge stamina cost by 4.",
       "stat": "dodge_stamina_cost",
       "modifier_type": "add",
       "value": -4
@@ -149,7 +149,7 @@
     {
       "id": "executioner",
       "name": "Executioner",
-      "description": "Deal 8 bonus heavy damage to enemies below 25% health.",
+      "description": "Deal 8 bonus heavy damage when you are below 25% health.",
       "stat": "attack_damage",
       "modifier_type": "conditional_health_pct",
       "threshold": 0.25,
@@ -158,7 +158,7 @@
     {
       "id": "poise_wall",
       "name": "Poise Wall",
-      "description": "Gain 10 poise when your guard breaks an attack.",
+      "description": "Increase maximum poise by 10.",
       "stat": "max_poise",
       "modifier_type": "add",
       "value": 10
