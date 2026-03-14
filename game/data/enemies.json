@@ -118,11 +118,11 @@
     },
     {
       "id": "warden_herald",
-      "role": "elite",
+      "role": "mini_boss",
       "rings": ["outer"],
       "health": 169,
       "poise": 30,
-      "damage": 21,
+      "damage": 17,
       "poise_damage": 26,
       "behavior_profile": "elite_pressure"
     }

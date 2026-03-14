@@ -73,9 +73,9 @@ func _initialize() -> void:
 	if GameState.permanent_upgrades.size() == 0:
 		failures.append("apply_save_state with save_version=3 reset permanent_upgrades to [] instead of restoring")
 
-	# Test 5: save_version in to_save_state() output == 4 (M7 bump)
+	# Test 5: save_version in to_save_state() output == 6 (M11 bump)
 	var save_out := GameState.to_save_state()
-	if save_out.get("save_version", -1) != 4:
+	if save_out.get("save_version", -1) != 6:
 		failures.append("Expected save_version == 4 in to_save_state(), got %s" % str(save_out.get("save_version", -1)))
 
 	if failures.is_empty():

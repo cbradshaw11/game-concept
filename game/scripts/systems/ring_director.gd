@@ -14,13 +14,13 @@ func generate_encounter(
 
 	var candidates: Array = []
 	for enemy in enemies_data.get("enemies", []):
-		if ring_id in enemy.get("rings", []):
+		if ring_id in enemy.get("rings", []) and enemy.get("role", "") != "mini_boss":
 			candidates.append(enemy)
 	if candidates.is_empty():
 		return {"ring": ring_id, "enemies": []}
 
 	var rng := RandomNumberGenerator.new()
-	rng.seed = _combine_seed(seed, ring_id)
+	rng.seed = _combine_seed(seed + GameState.encounters_cleared, ring_id)
 	var count := clampi(rng.randi_range(1, 3), 1, candidates.size())
 	var selected: Array = []
 	for i in range(count):

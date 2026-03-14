@@ -146,7 +146,7 @@ func apply_save_state(data: Dictionary) -> void:
 		permanent_purchases = []
 	# TASK-1103 migration guard: only restore rings_story_seen/total_runs if save_version >= 6
 	if data.get("save_version", 0) >= 6:
-		rings_story_seen = Array(data.get("rings_story_seen", []))
+		rings_story_seen = Array(data.get("rings_story_seen", []), TYPE_STRING, "", null)
 		total_runs = int(data.get("total_runs", 0))
 	else:
 		rings_story_seen = []

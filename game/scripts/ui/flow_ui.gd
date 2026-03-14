@@ -78,6 +78,7 @@ func _ready() -> void:
 	upgrade_card_2.pressed.connect(_play_ui_upgrade_select)
 	vendor_button.pressed.connect(_on_visit_vendor_pressed)
 	vendor_button.pressed.connect(_play_ui_click)
+	history_button.pressed.connect(_on_history_button_pressed)
 	history_button.pressed.connect(_play_ui_click)
 	upgrade_toast.visible = false
 	_populate_ring_selector()
@@ -435,9 +436,11 @@ func on_died(unbanked_xp: int, unbanked_loot: int, ring_id: String = GameState.c
 	var xp_kept: int = int(unbanked_xp * 0.5)
 	var xp_lost: int = unbanked_xp - xp_kept
 	xp_label.text = "XP: Lost %d | Kept %d (50%% retention)" % [xp_lost, xp_kept]
-	var loot_kept: int = int(unbanked_loot * 0.25)
+	var loot_retention_pct: float = 0.35 if "deep_pockets" in GameState.permanent_purchases else 0.25
+	var loot_retention_display: int = 35 if "deep_pockets" in GameState.permanent_purchases else 25
+	var loot_kept: int = int(unbanked_loot * loot_retention_pct)
 	var loot_lost: int = unbanked_loot - loot_kept
-	loot_label.text = "Loot: Lost %d | Kept %d (25%% retention)\nTip: Extract at the Sanctuary to protect your loot." % [loot_lost, loot_kept]
+	loot_label.text = "Loot: Lost %d | Kept %d (%d%% retention)\nTip: Extract at the Sanctuary to protect your loot." % [loot_lost, loot_kept, loot_retention_display]
 	_refresh_upgrade_display()
 	run_screen.visible = false
 	death_panel.visible = true
@@ -584,6 +587,8 @@ func _on_back_to_menu_pressed() -> void:
 	back_to_menu_requested.emit()
 
 func _on_visit_vendor_pressed() -> void:
+	if is_instance_valid(_vendor_instance):
+		return
 	var vendor_scene := load("res://scenes/ui/vendor.tscn")
 	if not vendor_scene:
 		push_error("vendor.tscn not found")

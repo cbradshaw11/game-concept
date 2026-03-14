@@ -26,7 +26,6 @@ signal player_died()
 	$EnemySprite1,
 	$EnemySprite2,
 ]
-@onready var _combat_tutorial_overlay: Panel = $TutorialLayer/CombatTutorialOverlay
 @onready var enemy_hud_container: VBoxContainer = $HUD/EnemyHUDContainer
 @onready var action_feedback: Label = $HUD/ActionFeedback
 @onready var wardan_phase_label: Label = $HUD/WardanPhaseLabel
