@@ -94,6 +94,12 @@ if command -v godot4 >/dev/null 2>&1; then
   run_test res://scripts/tests/m6/test_settings_persistence.gd
   run_test res://scripts/tests/m6/test_title_screen_routing.gd
   run_test res://scripts/tests/m6/test_m6_save_migration.gd
+  run_test res://scripts/tests/m7/test_run_history.gd
+  run_test res://scripts/tests/m7/test_weapon_unlock.gd
+  run_test res://scripts/tests/m7/test_conditional_upgrades.gd
+  run_test res://scripts/tests/m7/test_template_variety.gd
+  run_test res://scripts/tests/m7/test_victory_state.gd
+  run_test res://scripts/tests/m7/test_m7_save_migration.gd
 else
   echo "godot4 not found in runner. Performing structural checks only."
   test -f game/scripts/tests/replay_test.gd
@@ -130,6 +136,12 @@ else
   test -f game/scripts/tests/m6/test_settings_persistence.gd
   test -f game/scripts/tests/m6/test_title_screen_routing.gd
   test -f game/scripts/tests/m6/test_m6_save_migration.gd
+  test -f game/scripts/tests/m7/test_run_history.gd
+  test -f game/scripts/tests/m7/test_weapon_unlock.gd
+  test -f game/scripts/tests/m7/test_conditional_upgrades.gd
+  test -f game/scripts/tests/m7/test_template_variety.gd
+  test -f game/scripts/tests/m7/test_victory_state.gd
+  test -f game/scripts/tests/m7/test_m7_save_migration.gd
 fi
 
 echo ""
