@@ -111,6 +111,26 @@ func apply_modifier(modifier: Dictionary) -> void:
 		"scavenger_instinct":
 			pass  # Handled at reward calculation in main.gd
 
+func reset_for_run() -> void:
+	# Restore base combat stats from data before upgrades/modifiers are applied.
+	# Called at run start to prevent stats accumulating across reused player node.
+	var combat_data: Dictionary = DataStore.weapons.get("global_combat", {})
+	max_health = combat_data.get("max_health", 100)
+	current_health = max_health
+	max_poise = combat_data.get("max_poise", 100)
+	current_poise = max_poise
+	max_stamina = 100  # @export default -- upgrades will add to this after reset
+	stamina = float(max_stamina)
+	is_staggered = false
+	is_invulnerable = false
+	_conditional_bonuses = {}
+	light_stamina_cost_multiplier = 1.0
+	_last_rites_available = false
+	reload_weapon_stats()  # reset guard_efficiency, heavy_damage, heavy_stamina_cost
+	health_changed.emit(current_health, max_health)
+	stamina_changed.emit(stamina, max_stamina)
+	poise_changed.emit(current_poise, max_poise)
+
 func reload_weapon_stats() -> void:
 	var weapons_list: Array = DataStore.weapons.get("weapons", [])
 	for w in weapons_list:

@@ -164,8 +164,10 @@ func _on_start_run_pressed() -> void:
 	_ensure_combat_arena()
 	combat_arena.set_context(GameState.current_ring, int(seed), int(active_encounter.get("enemy_count", 1)))
 	combat_arena.set_arena_active(true)
-	# Apply permanent upgrades first, then per-run upgrades, at run start
+	# Reset player to base stats, then apply permanent upgrades, per-run upgrades, modifiers.
+	# reset_for_run() prevents stat accumulation on the reused player node across runs.
 	if is_instance_valid(combat_arena) and is_instance_valid(combat_arena.player):
+		combat_arena.player.reset_for_run()
 		for upgrade in GameState.permanent_upgrades:
 			combat_arena.player.apply_upgrade(upgrade)
 		for upgrade in GameState.active_upgrades:
