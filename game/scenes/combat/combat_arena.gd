@@ -31,7 +31,6 @@ signal player_died()
 @onready var wardan_phase_label: Label = $HUD/WardanPhaseLabel
 
 var _tutorial_showing: bool = false
-var _dismiss_frame: int = -1
 var tutorial_page: int = 0
 var _tutorial_overlay: Panel = null
 var _tutorial_title: Label = null
@@ -215,7 +214,6 @@ func _dismiss_tutorial() -> void:
 	if not _tutorial_showing:
 		return
 	_tutorial_showing = false
-	_dismiss_frame = Engine.get_process_frames()
 	if is_instance_valid(_tutorial_overlay):
 		_tutorial_overlay.visible = false
 	GameState.first_run_complete = true
@@ -226,8 +224,6 @@ func _input(event: InputEvent) -> void:
 
 func _on_attack_triggered() -> void:
 	_dismiss_tutorial()
-	if _dismiss_frame >= 0 and Engine.get_process_frames() <= _dismiss_frame:
-		return
 	attack_count += 1
 	var light_dmg: int = weapon_data.get("light_damage", 14) + player.light_attack_bonus
 	var hit_idx := _apply_damage_to_front_enemy(light_dmg, player.poise_damage_bonus)

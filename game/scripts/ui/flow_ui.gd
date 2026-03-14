@@ -110,6 +110,8 @@ func _input(event: InputEvent) -> void:
 		_handle_pause_input()
 
 func _handle_pause_input() -> void:
+	if is_instance_valid(_story_modal):
+		return
 	if not run_screen.visible:
 		return
 	if upgrade_draw_panel.visible:
@@ -407,6 +409,7 @@ func _show_story_modal(text: String, on_dismiss: Callable) -> void:
 	if is_instance_valid(_story_modal):
 		_story_modal.queue_free()
 	_story_modal = PanelContainer.new()
+	_story_modal.custom_minimum_size = Vector2(400.0, 200.0)
 	_story_modal.name = "StoryModal"
 	var vbox := VBoxContainer.new()
 	var log_label := Label.new()

@@ -14,7 +14,7 @@ func _ready() -> void:
 func _compute_lifetime_stats() -> Dictionary:
 	var history: Array = GameState.run_history
 	var ring_rank := {"sanctuary": 0, "inner": 1, "mid": 2, "outer": 3}
-	var total_runs: int = history.size()
+	var total_runs: int = GameState.total_runs
 	var warden_defeats: int = 0
 	var deepest_ring: String = ""
 	var deepest_rank: int = -1
