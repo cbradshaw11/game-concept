@@ -367,6 +367,7 @@ func on_idle_ready() -> void:
 	prep_status.text = "Sanctuary: choose loadout and start run"
 	_refresh_ring_selector()
 	_refresh_permanent_upgrades_display()
+	set_available_loadouts(DataStore.weapons.get("weapons", []))
 	_refresh_weapon_unlock_panel()
 
 func on_objective_started(contract: Dictionary) -> void:
@@ -415,8 +416,14 @@ func _show_upgrade_draw() -> void:
 	available.shuffle()
 	_current_draw = available.slice(0, 3)
 	if _current_draw.size() < 3:
-		_show_upgrade_toast("Upgrade pool exhausted -- no cards available.")
-		extract_pressed.emit()
+		upgrade_toast.text = "Upgrade pool exhausted -- no cards available."
+		upgrade_toast.visible = true
+		var tween := create_tween()
+		tween.tween_interval(2.0)
+		tween.tween_callback(func() -> void:
+			upgrade_toast.visible = false
+			extract_pressed.emit()
+		)
 		return
 	upgrade_card_0.text = "%s\n%s" % [_current_draw[0].get("name", "?"), _current_draw[0].get("description", "")]
 	upgrade_card_1.text = "%s\n%s" % [_current_draw[1].get("name", "?"), _current_draw[1].get("description", "")]
@@ -540,6 +547,7 @@ func _refresh_permanent_upgrades_display() -> void:
 func _refresh_weapon_unlock_panel() -> void:
 	var panel: Node = get_node_or_null("PrepScreen/WeaponUnlockPanel")
 	if not panel:
+		push_warning("WeaponUnlockPanel not found in scene tree -- weapon unlock UI will not render")
 		return
 	for child in panel.get_children():
 		child.queue_free()

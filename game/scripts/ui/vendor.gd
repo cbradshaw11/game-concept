@@ -75,7 +75,7 @@ func _populate_item_list() -> void:
 		buy_btn.text = "Buy"
 		buy_btn.pressed.connect(_on_buy_pressed.bind(str(item.get("id", ""))))
 		if item.get("type") == "permanent":
-			var already_owned := GameState.permanent_upgrades.any(func(u): return u.get("stat", "") == item.get("stat", "NONE"))
+			var already_owned := GameState.permanent_upgrades.any(func(u): return u.get("id", "") == item.get("id", "NONE"))
 			if already_owned:
 				buy_btn.text = "Owned"
 				buy_btn.disabled = true

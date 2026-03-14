@@ -56,6 +56,12 @@ func apply_upgrade(upgrade: Dictionary) -> void:
 	var stat: String = upgrade.get("stat", "")
 	var mod_type: String = upgrade.get("modifier_type", "add")
 	var value = upgrade.get("value", 0)
+	# Conditional upgrades are tracked dynamically via _conditional_bonuses.
+	# Do not add them as flat stat changes -- just trigger a recalc so the
+	# bonus is active immediately if the player is already below the threshold.
+	if mod_type == "conditional_health_pct":
+		_recalculate_conditional_bonuses()
+		return
 	match stat:
 		"max_health":
 			max_health += int(value)
@@ -196,6 +202,8 @@ func take_damage(amount: int) -> void:
 		player_died.emit()
 
 func take_poise_damage(amount: int) -> void:
+	if is_invulnerable:
+		return
 	if is_staggered:
 		return
 	current_poise = max(0, current_poise - amount)
@@ -204,7 +212,6 @@ func take_poise_damage(amount: int) -> void:
 		_trigger_stagger()
 
 func _trigger_stagger() -> void:
-	_recalculate_conditional_bonuses()
 	is_staggered = true
 	player_staggered.emit()
 	await get_tree().create_timer(stagger_duration).timeout
