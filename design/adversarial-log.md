@@ -51,3 +51,6 @@ _Bugs will be appended here after adversarial testing._
 - [LOW] game/scripts/ui/flow_ui.gd:380 -- save_state return value discarded; silent failure on disk full
 - [LOW] game/scripts/ui/flow_ui.gd -- story modal has no min-size constraint; may render tiny on non-standard resolutions
 - [FIXED][LOW] game/scripts/ui/flow_ui.gd:609 -- history_button functional connection may be missing from _ready(); verify scene inspector has it
+# Adversarial Log -- M12: Close the Loop
+
+_Bugs will be appended here after adversarial testing._
