@@ -330,6 +330,10 @@ func _apply_behavior_profile(enemy: EnemyController, profile: String) -> void:
 			enemy.chase_range = 5.0
 			enemy.attack_cooldown = 0.9
 		"kite_volley":
+			# Intentional dead zone: zone 0 distance is always 0.5, which is below
+			# preferred_min_range = 1.5. Kite enemies in zone 0 will never satisfy the
+			# attack condition and will chase instead. This is by design -- kite enemies
+			# should evade at close range, forcing the player to manage distance actively.
 			enemy.preferred_min_range = 1.5
 			enemy.attack_range = 4.5
 		"guard_counter":
@@ -343,7 +347,7 @@ func _apply_behavior_profile(enemy: EnemyController, profile: String) -> void:
 			enemy.chase_range = 4.5
 			enemy.attack_cooldown = 0.7
 		_:
-			pass
+			push_warning("Unknown behavior profile: %s" % profile)
 
 func _spawn_enemies(count: int) -> void:
 	enemies.clear()
