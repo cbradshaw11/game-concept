@@ -108,6 +108,7 @@ if command -v godot4 >/dev/null 2>&1; then
   run_test res://scripts/tests/m9/test_last_rites_survival.gd
   run_test res://scripts/tests/m9/test_ring_narrative.gd
   run_test res://scripts/tests/m10/test_m10.gd
+  run_test res://scripts/tests/m11/test_m11.gd
 else
   echo "godot4 not found in runner. Performing structural checks only."
   test -f game/scripts/tests/replay_test.gd
@@ -158,6 +159,7 @@ else
   test -f game/scripts/tests/m9/test_last_rites_survival.gd
   test -f game/scripts/tests/m9/test_ring_narrative.gd
   test -f game/scripts/tests/m10/test_m10.gd
+  test -f game/scripts/tests/m11/test_m11.gd
 fi
 
 echo ""
