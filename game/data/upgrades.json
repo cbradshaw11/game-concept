@@ -57,22 +57,6 @@
       "value": -8
     },
     {
-      "id": "iron_skin",
-      "name": "Iron Skin",
-      "description": "+20 maximum health.",
-      "stat": "max_health",
-      "modifier_type": "add",
-      "value": 20
-    },
-    {
-      "id": "whetstone_edge",
-      "name": "Whetstone Edge",
-      "description": "+4 heavy attack damage.",
-      "stat": "attack_damage",
-      "modifier_type": "add",
-      "value": 4
-    },
-    {
       "id": "poise_anchor_ii",
       "name": "Poise Anchor II",
       "description": "+15 maximum poise.",
@@ -97,6 +81,54 @@
       "modifier_type": "conditional_health_pct",
       "threshold": 0.3,
       "value": 0.25
+    },
+    {
+      "id": "dodge_mastery",
+      "name": "Dodge Mastery",
+      "description": "Dodging costs less stamina.",
+      "stat": "dodge_stamina_cost",
+      "modifier_type": "add",
+      "value": -6
+    },
+    {
+      "id": "poise_breaker",
+      "name": "Poise Breaker",
+      "description": "Your attacks deal more poise damage.",
+      "stat": "poise_damage_bonus",
+      "modifier_type": "add",
+      "value": 8
+    },
+    {
+      "id": "stamina_siphon",
+      "name": "Stamina Siphon",
+      "description": "Stamina regenerates faster.",
+      "stat": "stamina_regen_rate",
+      "modifier_type": "multiply",
+      "value": 1.15
+    },
+    {
+      "id": "resilient_guard",
+      "name": "Resilient Guard",
+      "description": "Take less damage while guarding.",
+      "stat": "guard_damage_reduction",
+      "modifier_type": "add",
+      "value": 0.10
+    },
+    {
+      "id": "light_striker",
+      "name": "Light Striker",
+      "description": "Light attacks deal bonus damage.",
+      "stat": "light_attack_bonus",
+      "modifier_type": "add",
+      "value": 5
+    },
+    {
+      "id": "second_wind",
+      "name": "Second Wind",
+      "description": "Restore stamina on enemy kill.",
+      "stat": "stamina_on_kill",
+      "modifier_type": "add",
+      "value": 12
     }
   ]
 }

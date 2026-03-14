@@ -39,6 +39,10 @@ var dodge_cooldown_duration: float = 0.5
 var dodge_cooldown_timer: float = 0.0
 var light_stamina_cost_multiplier: float = 1.0
 var _last_rites_available: bool = false
+var poise_damage_bonus: int = 0
+var guard_damage_reduction: float = 0.0
+var light_attack_bonus: int = 0
+var stamina_on_kill: float = 0.0
 
 func _ready() -> void:
 	stamina = float(max_stamina)
@@ -91,6 +95,16 @@ func apply_upgrade(upgrade: Dictionary) -> void:
 			heavy_stamina_cost = max(4.0, heavy_stamina_cost + float(value))
 		"warden_map_owned":
 			GameState.warden_map_unlocked = true
+		"dodge_stamina_cost":
+			dodge_cost = max(1, dodge_cost + int(value))
+		"poise_damage_bonus":
+			poise_damage_bonus += int(value)
+		"guard_damage_reduction":
+			guard_damage_reduction = min(0.95, guard_damage_reduction + float(value))
+		"light_attack_bonus":
+			light_attack_bonus += int(value)
+		"stamina_on_kill":
+			stamina_on_kill += float(value)
 
 func apply_modifier(modifier: Dictionary) -> void:
 	var mod_id: String = modifier.get("id", "")
@@ -126,6 +140,10 @@ func reset_for_run() -> void:
 	_conditional_bonuses = {}
 	light_stamina_cost_multiplier = 1.0
 	_last_rites_available = false
+	poise_damage_bonus = 0
+	guard_damage_reduction = 0.0
+	light_attack_bonus = 0
+	stamina_on_kill = 0.0
 	reload_weapon_stats()  # reset guard_efficiency, heavy_damage, heavy_stamina_cost
 	health_changed.emit(current_health, max_health)
 	stamina_changed.emit(stamina, max_stamina)
