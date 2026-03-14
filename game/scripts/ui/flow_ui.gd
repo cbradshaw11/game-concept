@@ -130,7 +130,7 @@ func _on_quit_to_menu_pressed() -> void:
 	get_tree().paused = false
 	_is_paused = false
 	pause_menu.visible = false
-	GameState.die_in_run()
+	GameState.abandon_run()
 	var _SaveSystem := load("res://scripts/systems/save_system.gd")
 	_SaveSystem.save_state(GameState.to_save_state())
 	on_idle_ready()

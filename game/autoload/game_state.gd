@@ -209,6 +209,16 @@ func die_in_run() -> void:
 	})
 	player_died.emit()
 
+func abandon_run() -> void:
+	# Silently reset run state without recording a history entry or applying retention math.
+	# Use this for quit-to-menu, not for actual deaths.
+	unbanked_xp = 0
+	unbanked_loot = 0
+	encounters_cleared = 0
+	current_ring = "sanctuary"
+	active_upgrades = []
+	_run_outcome_recorded = false
+
 func record_warden_defeated() -> void:
 	if _run_outcome_recorded:
 		return

@@ -15,7 +15,6 @@ var ring_director := RingDirector.new()
 var reward_system := RewardSystem.new()
 var contract_system := ContractSystem.new()
 var active_encounter: Dictionary = {}
-var selected_weapon_id: String = "blade_iron"
 var combat_arena: CombatArena = null
 var _prologue_instance: CanvasLayer = null
 var _title_screen_instance: CanvasLayer = null
@@ -171,7 +170,7 @@ func _on_start_run_pressed() -> void:
 			combat_arena.player.apply_upgrade(upgrade)
 		for upgrade in GameState.active_upgrades:
 			combat_arena.player.apply_upgrade(upgrade)
-	flow_ui.set_current_loadout(selected_weapon_id)
+	flow_ui.set_current_loadout(GameState.selected_weapon_id)
 	# Switch to combat music when run starts
 	_play_music("music_combat")
 	_stop_ambience()
@@ -291,9 +290,7 @@ func _on_warden_defeated() -> void:
 	GameState.banked_loot += GameState.unbanked_loot
 	GameState.unbanked_xp = 0
 	GameState.unbanked_loot = 0
-	# Record warden defeated run (TASK-701 adds this method -- call if available)
-	if GameState.has_method("record_warden_defeated"):
-		GameState.record_warden_defeated()
+	GameState.record_warden_defeated()
 	_save_state()
 	# Show victory screen instead of going directly to credits
 	if is_instance_valid(_victory_instance):
@@ -335,18 +332,17 @@ func _on_victory_view_credits() -> void:
 func _initialize_loadouts() -> void:
 	var weapons: Array = DataStore.weapons.get("weapons", [])
 	if weapons.size() > 0:
-		selected_weapon_id = str(weapons[0].get("id", selected_weapon_id))
+		GameState.selected_weapon_id = str(weapons[0].get("id", GameState.selected_weapon_id))
 	flow_ui.set_available_loadouts(weapons)
-	flow_ui.set_current_loadout(selected_weapon_id)
+	flow_ui.set_current_loadout(GameState.selected_weapon_id)
 
 func _on_upgrade_selected(upgrade: Dictionary) -> void:
 	if is_instance_valid(combat_arena) and is_instance_valid(combat_arena.player):
 		combat_arena.player.apply_upgrade(upgrade)
 
 func _on_loadout_selected(weapon_id: String) -> void:
-	selected_weapon_id = weapon_id
 	GameState.selected_weapon_id = weapon_id
-	flow_ui.set_current_loadout(selected_weapon_id)
+	flow_ui.set_current_loadout(GameState.selected_weapon_id)
 	if is_instance_valid(combat_arena) and is_instance_valid(combat_arena.player):
 		combat_arena.player.reload_weapon_stats()
 
