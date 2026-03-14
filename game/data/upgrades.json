@@ -19,10 +19,10 @@
     {
       "id": "reckless_momentum",
       "name": "Reckless Momentum",
-      "description": "Heavy attacks deal 4 more damage.",
+      "description": "Heavy attacks deal 6 more damage.",
       "stat": "attack_damage",
       "modifier_type": "add",
-      "value": 4
+      "value": 6
     },
     {
       "id": "ironhide_stance",

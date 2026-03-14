@@ -39,7 +39,7 @@
     }
   ],
   "global_combat": {
-    "max_health": 100,
+    "max_health": 115,
     "max_stamina": 100,
     "max_poise": 100,
     "dodge_iframe_ms": 220,
