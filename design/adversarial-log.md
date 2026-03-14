@@ -74,3 +74,7 @@ _None._
 - [MED] ring_director.gd:70 -- Template with unknown enemy ID emits push_warning but silently produces shorter enemy list while returning original `selected.size()` count. `encounter_cleared.emit(encounter_enemy_count)` fires with wrong count, corrupting loot/reward calculation.
 - [LOW] combat_arena.gd:345 -- `_apply_behavior_profile` wildcard `_: pass` silently ignores unknown profile names. No push_warning emitted, making data typos invisible.
 - [LOW] game_state.gd:148-153 -- v5->v6 migration sets `total_runs = run_history.size()` (max 20). True run count irrecoverable for pre-v6 players with >20 runs. Known and accepted migration limitation.
+
+# Adversarial Log -- M13: Last Measure
+
+_Bugs will be appended here after adversarial testing._
