@@ -25,6 +25,18 @@ var _ambience_player: AudioStreamPlayer = null
 var _music_tween: Tween = null
 var _encounter_resolved: bool = false
 
+var _combat_track_map: Dictionary = {
+	"inner": "res://audio/music_combat_inner.wav",
+	"mid": "res://audio/music_combat_mid.wav",
+	"outer": "res://audio/music_combat_outer.wav",
+}
+
+func _get_combat_music_path(ring_id: String) -> String:
+	var ring_path: String = _combat_track_map.get(ring_id, "res://audio/music_combat.wav")
+	if ResourceLoader.exists(ring_path):
+		return ring_path
+	return "res://audio/music_combat.wav"  # fallback until ring assets exist -- TODO M13: add music_combat_inner/mid/outer.wav
+
 func _ready() -> void:
 	print("The Long Walk MVP Slice 1 booted")
 	_setup_audio_players()
@@ -185,8 +197,19 @@ func _on_start_run_pressed() -> void:
 		for modifier in GameState.active_modifiers:
 			combat_arena.player.apply_modifier(modifier)
 	flow_ui.set_current_loadout(GameState.selected_weapon_id)
-	# Switch to combat music when run starts
-	_play_music("music_combat")
+	# Switch to combat music when run starts -- ring-differentiated path with fallback
+	var _combat_path := _get_combat_music_path(GameState.current_ring)
+	var _combat_stream = load(_combat_path)
+	if _combat_stream != null:
+		_music_player.stream = _combat_stream
+		_music_player.volume_db = -80.0
+		_music_player.play()
+		if _music_tween:
+			_music_tween.kill()
+		_music_tween = create_tween()
+		_music_tween.tween_property(_music_player, "volume_db", 0.0, 0.5)
+	else:
+		push_warning("Failed to load combat music: " + _combat_path)
 	_stop_ambience()
 
 func _on_resolve_encounter_pressed() -> void:
