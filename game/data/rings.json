@@ -7,7 +7,8 @@
       "xp_multiplier": 0.0,
       "loot_multiplier": 0.0,
       "loot_gate_threshold": 0,
-      "description": "Safe home base for prep, shopping, and progression."
+      "description": "Safe home base for prep, shopping, and progression.",
+      "death_flavor": ""
     },
     {
       "id": "inner",
@@ -21,7 +22,8 @@
       "description": "Low threat frontier with basic enemies.",
       "briefing": "The city's edge. Former checkpoints, now feral territory. The scouts who came back don't talk about what they saw.",
       "extraction_flavor": "You take what you can carry. The inner frontier closes behind you.",
-      "first_extraction_log": "You find a fragment of the old survey map, half-burned. The outer rings are real. Someone was here before you."
+      "first_extraction_log": "You find a fragment of the old survey map, half-burned. The outer rings are real. Someone was here before you.",
+      "death_flavor": "The dust settles over you. No one will carry your name out of here."
     },
     {
       "id": "mid",
@@ -35,7 +37,8 @@
       "description": "Mixed packs and hazard pressure.",
       "briefing": "The Mid Wastes. The previous expedition's gear litters the ground here. Their logs end mid-sentence.",
       "extraction_flavor": "The Wastes don't mourn the living. You count yourself fortunate.",
-      "first_extraction_log": "Two factions left their marks on this ring -- and each other. Whatever they were looking for, they did not find it cleanly."
+      "first_extraction_log": "Two factions left their marks on this ring -- and each other. Whatever they were looking for, they did not find it cleanly.",
+      "death_flavor": "The ash plains claim another. You were not the last, and you will not be remembered."
     },
     {
       "id": "outer",
@@ -49,7 +52,8 @@
       "description": "Elite threats and Warden approach path.",
       "briefing": "The Void's threshold. The Warden waits somewhere ahead. You feel its weight before you see it.",
       "extraction_flavor": "The Void releases you. The weight of what you've witnessed stays behind.",
-      "first_extraction_log": "The Warden's signal is close. The map shard points here. Whatever the Long Walk was for, the answer is behind that door."
+      "first_extraction_log": "The Warden's signal is close. The map shard points here. Whatever the Long Walk was for, the answer is behind that door.",
+      "death_flavor": "The Warden's reach is long. The road beyond ends here."
     }
   ]
 }

@@ -448,6 +448,13 @@ func on_died(unbanked_xp: int, unbanked_loot: int, ring_id: String = GameState.c
 	var loot_kept: int = int(unbanked_loot * loot_retention_pct)
 	var loot_lost: int = unbanked_loot - loot_kept
 	loot_label.text = "Loot: Lost %d | Kept %d (%d%% retention)\nTip: Extract at the Sanctuary to protect your loot." % [loot_lost, loot_kept, loot_retention_display]
+	var death_flavor: String = ""
+	for r in DataStore.rings.get("rings", []):
+		if r.get("id") == ring_id:
+			death_flavor = r.get("death_flavor", "")
+			break
+	if death_flavor != "":
+		loot_label.text += "\n\n%s" % death_flavor
 	_refresh_upgrade_display()
 	run_screen.visible = false
 	death_panel.visible = true
