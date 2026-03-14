@@ -170,6 +170,8 @@ func _on_start_run_pressed() -> void:
 			combat_arena.player.apply_upgrade(upgrade)
 		for upgrade in GameState.active_upgrades:
 			combat_arena.player.apply_upgrade(upgrade)
+		for modifier in GameState.active_modifiers:
+			combat_arena.player.apply_modifier(modifier)
 	flow_ui.set_current_loadout(GameState.selected_weapon_id)
 	# Switch to combat music when run starts
 	_play_music("music_combat")
@@ -187,6 +189,10 @@ func _on_resolve_encounter_pressed() -> void:
 		int(active_encounter.get("enemy_count", 1))
 	)
 	var loot_bonus: int = GameState.get_loot_per_encounter_bonus()
+	var is_first_encounter := GameState.encounters_cleared == 0
+	for m in GameState.active_modifiers:
+		if m.get("id") == "scavenger_instinct" and is_first_encounter:
+			loot_bonus += int(rewards.get("loot", 0))
 	GameState.add_unbanked(int(rewards["xp"]), int(rewards["loot"]) + loot_bonus)
 	var contract := contract_system.record_encounter_completed()
 	flow_ui.on_objective_progress(contract)

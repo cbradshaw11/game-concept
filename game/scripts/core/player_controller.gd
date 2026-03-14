@@ -37,6 +37,8 @@ var _conditional_bonuses: Dictionary = {}  # stat -> bonus_value
 var dodge_iframe_duration: float = 0.22
 var dodge_cooldown_duration: float = 0.5
 var dodge_cooldown_timer: float = 0.0
+var light_stamina_cost_multiplier: float = 1.0
+var _last_rites_available: bool = false
 
 func _ready() -> void:
 	stamina = float(max_stamina)
@@ -90,6 +92,25 @@ func apply_upgrade(upgrade: Dictionary) -> void:
 		"warden_map_owned":
 			GameState.warden_map_unlocked = true
 
+func apply_modifier(modifier: Dictionary) -> void:
+	var mod_id: String = modifier.get("id", "")
+	match mod_id:
+		"ironclad":
+			guard_efficiency = min(0.95, guard_efficiency * (1.0 + modifier.get("value", 0.0)))
+		"swift":
+			light_stamina_cost_multiplier *= (1.0 + modifier.get("value", 0.0))
+		"bloodlust":
+			pass  # Checked at runtime in get_effective_attack_damage()
+		"burden":
+			max_stamina = max(10, max_stamina + int(modifier.get("value_a", 0)))
+			stamina = min(stamina, float(max_stamina))
+			stamina_changed.emit(stamina, max_stamina)
+			GameState.xp_gain_multiplier *= (1.0 + modifier.get("value_b", 0.0))
+		"last_rites":
+			_last_rites_available = true
+		"scavenger_instinct":
+			pass  # Handled at reward calculation in main.gd
+
 func reload_weapon_stats() -> void:
 	var weapons_list: Array = DataStore.weapons.get("weapons", [])
 	for w in weapons_list:
@@ -115,7 +136,14 @@ func _recalculate_conditional_bonuses() -> void:
 				_conditional_bonuses[stat] = _conditional_bonuses.get(stat, 0.0) + val
 
 func get_effective_attack_damage() -> int:
-	return heavy_damage + int(_conditional_bonuses.get("attack_damage", 0))
+	var base: int = heavy_damage + int(_conditional_bonuses.get("attack_damage", 0))
+	if max_health > 0:
+		var hp_pct: float = float(current_health) / float(max_health)
+		for m in GameState.active_modifiers:
+			if m.get("modifier_type", "") == "conditional_damage_pct":
+				if hp_pct < float(m.get("threshold", 1.0)):
+					base = int(float(base) * (1.0 + float(m.get("value", 0.0))))
+	return base
 
 func get_effective_guard_efficiency() -> float:
 	return min(guard_efficiency + float(_conditional_bonuses.get("guard_efficiency", 0.0)), 0.95)
@@ -151,9 +179,10 @@ func _physics_process(delta: float) -> void:
 func try_attack() -> bool:
 	if is_staggered:
 		return false
-	if stamina < attack_cost:
+	var effective_attack_cost: int = int(attack_cost * light_stamina_cost_multiplier)
+	if stamina < effective_attack_cost:
 		return false
-	stamina -= attack_cost
+	stamina -= effective_attack_cost
 	stamina_changed.emit(stamina, max_stamina)
 	attack_triggered.emit()
 	return true
@@ -201,6 +230,11 @@ func take_damage(amount: int) -> void:
 	_recalculate_conditional_bonuses()
 	health_changed.emit(current_health, max_health)
 	if current_health <= 0:
+		if _last_rites_available:
+			current_health = 1
+			_last_rites_available = false
+			health_changed.emit(current_health, max_health)
+			return
 		player_died.emit()
 
 func take_poise_damage(amount: int) -> void:
