@@ -296,6 +296,8 @@ func _on_warden_defeated() -> void:
 		GameState.record_warden_defeated()
 	_save_state()
 	# Show victory screen instead of going directly to credits
+	if is_instance_valid(_victory_instance):
+		return
 	_victory_instance = VictoryScene.instantiate() as CanvasLayer
 	add_child(_victory_instance)
 	# Call populate deferred so @onready vars on victory.gd are initialized by _ready() first

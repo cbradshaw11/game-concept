@@ -47,6 +47,7 @@ var objective_status: String = ""
 var _is_paused: bool = false
 var _current_draw: Array = []
 var _vendor_instance: Node = null
+var _history_instance: Node = null
 
 var _ui_sfx_player: AudioStreamPlayer = null
 var _ui_click_stream: AudioStream = null
@@ -71,9 +72,7 @@ func _ready() -> void:
 	upgrade_card_1.pressed.connect(_play_ui_upgrade_select)
 	upgrade_card_2.pressed.connect(_on_upgrade_card_selected.bind(2))
 	upgrade_card_2.pressed.connect(_play_ui_upgrade_select)
-	vendor_button.pressed.connect(_on_visit_vendor_pressed)
 	vendor_button.pressed.connect(_play_ui_click)
-	history_button.pressed.connect(_on_history_button_pressed)
 	history_button.pressed.connect(_play_ui_click)
 	upgrade_toast.visible = false
 	_populate_ring_selector()
@@ -335,6 +334,7 @@ func on_extracted(total_xp: int, total_loot: int) -> void:
 		total_loot
 	]
 	_refresh_ring_selector()
+	_refresh_permanent_upgrades_display()
 
 func on_died(unbanked_xp: int, unbanked_loot: int, ring_id: String = GameState.current_ring) -> void:
 	var ring_display_name: String = ring_id
@@ -351,6 +351,7 @@ func on_died(unbanked_xp: int, unbanked_loot: int, ring_id: String = GameState.c
 	var loot_lost: int = unbanked_loot - loot_kept
 	loot_label.text = "Loot: Lost %d | Kept %d (25%% retention)" % [loot_lost, loot_kept]
 	_refresh_upgrade_display()
+	run_screen.visible = false
 	death_panel.visible = true
 
 func _on_return_to_sanctuary() -> void:
@@ -417,9 +418,9 @@ func _show_upgrade_draw() -> void:
 		_show_upgrade_toast("Upgrade pool exhausted -- no cards available.")
 		extract_pressed.emit()
 		return
-	upgrade_card_0.text = "%s\n%s" % [_current_draw[0]["name"], _current_draw[0]["description"]]
-	upgrade_card_1.text = "%s\n%s" % [_current_draw[1]["name"], _current_draw[1]["description"]]
-	upgrade_card_2.text = "%s\n%s" % [_current_draw[2]["name"], _current_draw[2]["description"]]
+	upgrade_card_0.text = "%s\n%s" % [_current_draw[0].get("name", "?"), _current_draw[0].get("description", "")]
+	upgrade_card_1.text = "%s\n%s" % [_current_draw[1].get("name", "?"), _current_draw[1].get("description", "")]
+	upgrade_card_2.text = "%s\n%s" % [_current_draw[2].get("name", "?"), _current_draw[2].get("description", "")]
 	upgrade_card_0.disabled = false
 	upgrade_card_1.disabled = false
 	upgrade_card_2.disabled = false
@@ -429,6 +430,10 @@ func _on_upgrade_card_selected(index: int) -> void:
 	upgrade_card_0.disabled = true
 	upgrade_card_1.disabled = true
 	upgrade_card_2.disabled = true
+	if index < 0 or index >= _current_draw.size():
+		push_error("Upgrade card index %d out of bounds (draw size %d)" % [index, _current_draw.size()])
+		extract_pressed.emit()
+		return
 	var selected: Dictionary = _current_draw[index]
 	GameState.apply_upgrade(selected)
 	upgrade_selected.emit(selected)
@@ -503,11 +508,21 @@ func _on_vendor_closed() -> void:
 	_refresh_ring_selector()
 	_refresh_permanent_upgrades_display()
 
+func _on_history_closed() -> void:
+	if is_instance_valid(_history_instance):
+		_history_instance.queue_free()
+		_history_instance = null
+
 func _on_history_button_pressed() -> void:
+	if is_instance_valid(_history_instance):
+		return
 	var history_scene := load("res://scenes/ui/run_history.tscn")
-	var history_instance := history_scene.instantiate()
-	add_child(history_instance)
-	history_instance.closed.connect(history_instance.queue_free)
+	if not history_scene:
+		push_error("run_history.tscn not found")
+		return
+	_history_instance = history_scene.instantiate()
+	add_child(_history_instance)
+	_history_instance.closed.connect(_on_history_closed)
 
 func _refresh_permanent_upgrades_display() -> void:
 	if not is_instance_valid(permanent_upgrades_label):
