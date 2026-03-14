@@ -127,6 +127,7 @@ func apply_save_state(data: Dictionary) -> void:
 
 func start_run(seed: int, ring_id: String) -> void:
 	active_modifiers = []
+	xp_gain_multiplier = 1.0
 	if not pending_modifier.is_empty():
 		active_modifiers = [pending_modifier]
 		pending_modifier = {}

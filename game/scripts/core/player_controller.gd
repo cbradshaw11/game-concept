@@ -96,7 +96,7 @@ func apply_modifier(modifier: Dictionary) -> void:
 	var mod_id: String = modifier.get("id", "")
 	match mod_id:
 		"ironclad":
-			guard_efficiency = min(0.95, guard_efficiency * (1.0 + modifier.get("value", 0.0)))
+			guard_efficiency = min(0.95, guard_efficiency + modifier.get("value", 0.0))
 		"swift":
 			light_stamina_cost_multiplier *= (1.0 + modifier.get("value", 0.0))
 		"bloodlust":
