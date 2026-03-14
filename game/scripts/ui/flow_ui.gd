@@ -205,18 +205,13 @@ func _on_start_run_button_pressed() -> void:
 	_show_modifier_draw()
 
 func _show_modifier_draw() -> void:
-	var f := FileAccess.open("res://data/modifiers.json", FileAccess.READ)
-	if f == null:
-		push_error("modifier_draw: could not open modifiers.json")
+	if is_instance_valid(_modifier_draw_instance):
+		return
+	var pool: Array = DataStore.modifiers.get("modifiers", []).duplicate()
+	if pool.size() < 2:
+		push_warning("modifier_draw: pool has fewer than 2 modifiers -- skipping draw")
 		start_run_pressed.emit()
 		return
-	var parsed = JSON.parse_string(f.read_as_text())
-	f.close()
-	if parsed == null or not parsed.has("modifiers"):
-		push_error("modifier_draw: invalid modifiers.json")
-		start_run_pressed.emit()
-		return
-	var pool: Array = parsed["modifiers"].duplicate()
 	pool.shuffle()
 	_current_modifier_draw = pool.slice(0, 2)
 	var modifier_draw_scene := load("res://scenes/ui/modifier_draw.tscn")
@@ -387,6 +382,9 @@ func _on_return_to_sanctuary() -> void:
 	on_idle_ready()
 
 func on_idle_ready() -> void:
+	if is_instance_valid(_modifier_draw_instance):
+		_modifier_draw_instance.queue_free()
+		_modifier_draw_instance = null
 	_show_prep()
 	death_panel.visible = false
 	upgrade_draw_panel.visible = false
@@ -396,6 +394,7 @@ func on_idle_ready() -> void:
 	_refresh_ring_selector()
 	_refresh_permanent_upgrades_display()
 	set_available_loadouts(DataStore.weapons.get("weapons", []))
+	set_current_loadout(GameState.selected_weapon_id)
 	_refresh_weapon_unlock_panel()
 
 func on_objective_started(contract: Dictionary) -> void:

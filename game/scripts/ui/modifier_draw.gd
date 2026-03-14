@@ -8,6 +8,10 @@ signal modifier_selected(modifier: Dictionary)
 var _draws: Array = []
 
 func populate(draws: Array) -> void:
+	if draws.size() < 2:
+		push_error("modifier_draw: populate() requires at least 2 entries, got %d" % draws.size())
+		queue_free()
+		return
 	_draws = draws
 	modifier_card_0.text = draws[0].get("name", "?") + "\n\n" + draws[0].get("description", "")
 	modifier_card_1.text = draws[1].get("name", "?") + "\n\n" + draws[1].get("description", "")

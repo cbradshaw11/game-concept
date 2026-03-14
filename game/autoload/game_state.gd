@@ -121,7 +121,7 @@ func apply_save_state(data: Dictionary) -> void:
 	warden_map_unlocked = bool(data.get("warden_map_unlocked", false))
 	# TASK-802 migration guard: only restore active_modifiers if save_version >= 5
 	if data.get("save_version", 0) >= 5:
-		active_modifiers = Array(data.get("active_modifiers", []))
+		active_modifiers = Array(data.get("active_modifiers", [])).filter(func(e): return e is Dictionary)
 	else:
 		active_modifiers = []
 
@@ -175,6 +175,7 @@ func extract() -> void:
 			"xp_banked": banked_xp,
 			"seed": active_seed,
 			"upgrades": active_upgrades.map(func(u): return u.get("id", "")),
+			"modifiers": active_modifiers.map(func(m): return m.get("id", "")),
 			"run_number": run_history.size() + 1,
 		}
 		run_history.append(record)
@@ -206,6 +207,7 @@ func die_in_run() -> void:
 			"xp_banked": banked_xp,
 			"seed": active_seed,
 			"upgrades": active_upgrades.map(func(u): return u.get("id", "")),
+			"modifiers": active_modifiers.map(func(m): return m.get("id", "")),
 			"run_number": run_history.size() + 1,
 		}
 		run_history.append(record)
@@ -231,6 +233,7 @@ func abandon_run() -> void:
 	current_ring = "sanctuary"
 	active_upgrades = []
 	active_modifiers = []
+	pending_modifier = {}
 	_run_outcome_recorded = false
 
 func record_warden_defeated() -> void:
@@ -245,6 +248,7 @@ func record_warden_defeated() -> void:
 		"xp_banked": banked_xp,
 		"seed": active_seed,
 		"upgrades": active_upgrades.map(func(u): return u.get("id", "")),
+		"modifiers": active_modifiers.map(func(m): return m.get("id", "")),
 		"run_number": run_history.size() + 1,
 	}
 	run_history.append(record)
@@ -302,6 +306,8 @@ func reset_for_new_game() -> void:
 	active_upgrades = []
 	pending_run_upgrades = []
 	permanent_upgrades = []
+	active_modifiers = []
+	pending_modifier = {}
 	active_seed = 0
 	encounters_cleared = 0
 	selected_weapon_id = "blade_iron"

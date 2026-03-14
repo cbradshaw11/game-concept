@@ -172,7 +172,8 @@ func _on_attack_triggered() -> void:
 		return
 	attack_count += 1
 	var hit_idx := _apply_damage_to_front_enemy(weapon_data.get("light_damage", 14))
-	_hit_land_player.play()
+	if hit_idx >= 0:
+		_hit_land_player.play()
 	_flash_enemy_sprite(hit_idx)
 	_show_action_feedback("HIT +%d" % weapon_data.get("light_damage", 14))
 	attack_hook_triggered.emit()
@@ -181,7 +182,8 @@ func _on_attack_triggered() -> void:
 
 func _on_heavy_attack_triggered(dmg: int) -> void:
 	var hit_idx := _apply_damage_to_front_enemy(dmg)
-	_hit_land_player.play()
+	if hit_idx >= 0:
+		_hit_land_player.play()
 	_flash_enemy_sprite(hit_idx)
 	_show_action_feedback("HEAVY +%d" % dmg)
 	_update_enemy_hud()
