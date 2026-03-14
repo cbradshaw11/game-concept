@@ -103,6 +103,7 @@ if command -v godot4 >/dev/null 2>&1; then
   run_test res://scripts/tests/m8/test_bow_targeting.gd
   run_test res://scripts/tests/m8/test_modifier_draw.gd
   run_test res://scripts/tests/m8/test_abandon_run.gd
+  run_test res://scripts/tests/m8/test_prestige_shop.gd
   run_test res://scripts/tests/m9/test_modifier_mechanics.gd
   run_test res://scripts/tests/m9/test_last_rites_survival.gd
   run_test res://scripts/tests/m9/test_ring_narrative.gd
@@ -151,6 +152,7 @@ else
   test -f game/scripts/tests/m8/test_bow_targeting.gd
   test -f game/scripts/tests/m8/test_modifier_draw.gd
   test -f game/scripts/tests/m8/test_abandon_run.gd
+  test -f game/scripts/tests/m8/test_prestige_shop.gd
   test -f game/scripts/tests/m9/test_modifier_mechanics.gd
   test -f game/scripts/tests/m9/test_last_rites_survival.gd
   test -f game/scripts/tests/m9/test_ring_narrative.gd
