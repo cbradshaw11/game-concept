@@ -29,7 +29,15 @@ func _populate() -> void:
 		var loot: int = int(record.get("loot_banked", 0))
 		var xp: int = int(record.get("xp_banked", 0))
 		var run_num: int = int(record.get("run_number", i + 1))
-		label.text = "Run %d | %s | %s | Loot: %d | XP: %d" % [run_num, ring_display, outcome, loot, xp]
+		var mod_names: Array = []
+		var all_mods: Array = DataStore.modifiers.get("modifiers", [])
+		for mod_id in record.get("modifiers", []):
+			for m in all_mods:
+				if m.get("id") == mod_id:
+					mod_names.append(m.get("name", mod_id))
+					break
+		var mod_text := "" if mod_names.is_empty() else " | Mod: " + ", ".join(mod_names)
+		label.text = "Run %d | %s | %s | Loot: %d | XP: %d" % [run_num, ring_display, outcome, loot, xp] + mod_text
 		run_list.add_child(label)
 
 func _on_close_pressed() -> void:
