@@ -5,12 +5,59 @@ signal closed
 
 @onready var run_list: VBoxContainer = $PanelContainer/VBoxContainer/ScrollContainer/RunList
 @onready var close_button: Button = $PanelContainer/VBoxContainer/CloseButton
+@onready var stats_label: Label = $PanelContainer/VBoxContainer/StatsLabel
 
 func _ready() -> void:
 	close_button.pressed.connect(_on_close_pressed)
 	_populate()
 
+func _compute_lifetime_stats() -> Dictionary:
+	var history: Array = GameState.run_history
+	var ring_rank := {"sanctuary": 0, "inner": 1, "mid": 2, "outer": 3}
+	var total_runs: int = history.size()
+	var warden_defeats: int = 0
+	var deepest_ring: String = ""
+	var deepest_rank: int = -1
+	var total_loot: int = 0
+	var total_xp: int = 0
+	var total_encounters: int = 0
+	for record in history:
+		if record.get("outcome", "") == "warden_defeated":
+			warden_defeats += 1
+		var ring: String = str(record.get("ring_reached", ""))
+		var rank: int = ring_rank.get(ring, -1)
+		if rank > deepest_rank:
+			deepest_rank = rank
+			deepest_ring = ring
+		total_loot += int(record.get("loot_banked", 0))
+		total_xp += int(record.get("xp_banked", 0))
+		total_encounters += int(record.get("encounters_cleared", 0))
+	return {
+		"total_runs": total_runs,
+		"warden_defeats": warden_defeats,
+		"deepest_ring": deepest_ring,
+		"total_loot": total_loot,
+		"total_xp": total_xp,
+		"total_encounters": total_encounters,
+	}
+
+func _populate_stats(stats: Dictionary) -> void:
+	if stats.get("total_runs", 0) == 0:
+		stats_label.text = "No runs recorded yet."
+		return
+	var ring_names := {"sanctuary": "Sanctuary", "inner": "Ring 1", "mid": "Ring 2", "outer": "Ring 3"}
+	var deepest: String = ring_names.get(stats.get("deepest_ring", ""), str(stats.get("deepest_ring", "?")))
+	stats_label.text = "Lifetime Stats  |  Runs: %d  |  Warden Defeats: %d  |  Deepest: %s  |  Total Loot: %d  |  Total XP: %d  |  Encounters: %d" % [
+		stats.get("total_runs", 0),
+		stats.get("warden_defeats", 0),
+		deepest,
+		stats.get("total_loot", 0),
+		stats.get("total_xp", 0),
+		stats.get("total_encounters", 0),
+	]
+
 func _populate() -> void:
+	_populate_stats(_compute_lifetime_stats())
 	for child in run_list.get_children():
 		child.queue_free()
 	var history: Array = GameState.run_history
