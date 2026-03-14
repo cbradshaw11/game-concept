@@ -18,7 +18,9 @@
       "loot_multiplier": 1.0,
       "loot_gate_threshold": 0,
       "contract_target": 3,
-      "description": "Low threat frontier with basic enemies."
+      "description": "Low threat frontier with basic enemies.",
+      "briefing": "The city's edge. Former checkpoints, now feral territory. The scouts who came back don't talk about what they saw.",
+      "extraction_flavor": "You take what you can carry. The inner frontier closes behind you."
     },
     {
       "id": "mid",
@@ -29,7 +31,9 @@
       "loot_multiplier": 1.45,
       "loot_gate_threshold": 50,
       "contract_target": 4,
-      "description": "Mixed packs and hazard pressure."
+      "description": "Mixed packs and hazard pressure.",
+      "briefing": "The Mid Wastes. The previous expedition's gear litters the ground here. Their logs end mid-sentence.",
+      "extraction_flavor": "The Wastes don't mourn the living. You count yourself fortunate."
     },
     {
       "id": "outer",
@@ -40,7 +44,9 @@
       "loot_multiplier": 2.2,
       "loot_gate_threshold": 150,
       "contract_target": 4,
-      "description": "Elite threats and Warden approach path."
+      "description": "Elite threats and Warden approach path.",
+      "briefing": "The Void's threshold. The Warden waits somewhere ahead. You feel its weight before you see it.",
+      "extraction_flavor": "The Void releases you. The weight of what you've witnessed stays behind."
     }
   ]
 }

@@ -199,6 +199,17 @@ func _on_ring_selected(index: int) -> void:
 	var ring_ids = ["inner", "mid", "outer"]
 	if index < ring_ids.size():
 		GameState.current_ring = ring_ids[index]
+	_refresh_ring_briefing()
+
+func _refresh_ring_briefing() -> void:
+	var rings_data: Array = DataStore.rings.get("rings", [])
+	var briefing: String = ""
+	for r in rings_data:
+		if r.get("id", "") == GameState.current_ring:
+			briefing = r.get("briefing", "")
+			break
+	if briefing != "":
+		prep_status.text = briefing
 
 func _on_start_run_button_pressed() -> void:
 	_play_ui_click()
@@ -351,11 +362,20 @@ func on_encounter_resolved(xp_gain: int, loot_gain: int) -> void:
 
 func on_extracted(total_xp: int, total_loot: int) -> void:
 	_show_prep()
-	prep_status.text = "Extracted!\nRing Cleared: %s\nXP Banked: %d  |  Loot Banked: %d" % [
-		GameState.rings_cleared[-1] if not GameState.rings_cleared.is_empty() else "?",
+	var cleared_ring_id: String = GameState.rings_cleared[-1] if not GameState.rings_cleared.is_empty() else "?"
+	var extraction_flavor: String = ""
+	for r in DataStore.rings.get("rings", []):
+		if r.get("id", "") == cleared_ring_id:
+			extraction_flavor = r.get("extraction_flavor", "")
+			break
+	var status_text: String = "Extracted!\nRing Cleared: %s\nXP Banked: %d  |  Loot Banked: %d" % [
+		cleared_ring_id,
 		total_xp,
 		total_loot
 	]
+	if extraction_flavor != "":
+		status_text += "\n\n%s" % extraction_flavor
+	prep_status.text = status_text
 	_refresh_ring_selector()
 	_refresh_permanent_upgrades_display()
 
@@ -392,6 +412,7 @@ func on_idle_ready() -> void:
 	objective_status = ""
 	prep_status.text = "Sanctuary: choose loadout and start run"
 	_refresh_ring_selector()
+	_refresh_ring_briefing()
 	_refresh_permanent_upgrades_display()
 	set_available_loadouts(DataStore.weapons.get("weapons", []))
 	set_current_loadout(GameState.selected_weapon_id)
