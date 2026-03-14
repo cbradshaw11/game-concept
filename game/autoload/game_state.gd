@@ -6,7 +6,7 @@ const _SaveSystem = preload("res://scripts/systems/save_system.gd")
 
 signal run_started(seed: int)
 signal encounter_completed(reward_xp: int, reward_loot: int)
-signal extracted(total_xp: int, total_loot: int)
+signal extracted(total_xp: int, total_loot: int, ring_id: String)
 signal player_died()
 
 var current_ring: String = "sanctuary"
@@ -191,7 +191,7 @@ func extract() -> void:
 		"banked_xp": banked_xp,
 		"banked_loot": banked_loot,
 	})
-	extracted.emit(banked_xp, banked_loot)
+	extracted.emit(banked_xp, banked_loot, event_ring)
 
 func die_in_run() -> void:
 	var event_ring := current_ring

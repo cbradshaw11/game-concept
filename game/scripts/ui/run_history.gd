@@ -32,9 +32,10 @@ func _populate() -> void:
 		var mod_names: Array = []
 		var all_mods: Array = DataStore.modifiers.get("modifiers", [])
 		for mod_id in record.get("modifiers", []):
+			var mod_id_str: String = str(mod_id)
 			for m in all_mods:
-				if m.get("id") == mod_id:
-					mod_names.append(m.get("name", mod_id))
+				if m.get("id") == mod_id_str:
+					mod_names.append(str(m.get("name", mod_id_str)))
 					break
 		var mod_text := "" if mod_names.is_empty() else " | Mod: " + ", ".join(mod_names)
 		label.text = "Run %d | %s | %s | Loot: %d | XP: %d" % [run_num, ring_display, outcome, loot, xp] + mod_text

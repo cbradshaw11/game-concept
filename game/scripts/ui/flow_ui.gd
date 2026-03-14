@@ -360,9 +360,9 @@ func on_encounter_resolved(xp_gain: int, loot_gain: int) -> void:
 	_refresh_run_status()
 	_refresh_warden_option()
 
-func on_extracted(total_xp: int, total_loot: int) -> void:
+func on_extracted(total_xp: int, total_loot: int, ring_id: String = "") -> void:
 	_show_prep()
-	var cleared_ring_id: String = GameState.rings_cleared[-1] if not GameState.rings_cleared.is_empty() else "?"
+	var cleared_ring_id: String = ring_id if ring_id != "" else (GameState.rings_cleared[-1] if not GameState.rings_cleared.is_empty() else "?")
 	var extraction_flavor: String = ""
 	for r in DataStore.rings.get("rings", []):
 		if r.get("id", "") == cleared_ring_id:
