@@ -23,6 +23,7 @@ var _victory_instance: CanvasLayer = null
 var _music_player: AudioStreamPlayer = null
 var _ambience_player: AudioStreamPlayer = null
 var _music_tween: Tween = null
+var _encounter_resolved: bool = false
 
 func _ready() -> void:
 	print("The Long Walk MVP Slice 1 booted")
@@ -155,6 +156,7 @@ func _on_start_run_pressed() -> void:
 	var contract_target: int = ring_data.get("contract_target", 3)
 	var contract := contract_system.start_contract("ring_clearance", GameState.current_ring, contract_target)
 	flow_ui.on_objective_started(contract)
+	_encounter_resolved = false
 	active_encounter = ring_director.generate_encounter(
 		int(seed),
 		GameState.current_ring,
@@ -184,6 +186,9 @@ func _on_resolve_encounter_pressed() -> void:
 		return
 	if active_encounter.get("enemies", []).is_empty():
 		return
+	if _encounter_resolved:
+		return
+	_encounter_resolved = true
 
 	var rewards := reward_system.calculate_rewards(
 		GameState.current_ring,
@@ -195,6 +200,7 @@ func _on_resolve_encounter_pressed() -> void:
 	for m in GameState.active_modifiers:
 		if m.get("id") == "scavenger_instinct" and is_first_encounter:
 			loot_bonus += int(rewards.get("loot", 0))
+			break
 	GameState.add_unbanked(int(rewards["xp"]), int(rewards["loot"]) + loot_bonus)
 	var contract := contract_system.record_encounter_completed()
 	flow_ui.on_objective_progress(contract)

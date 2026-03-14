@@ -199,7 +199,7 @@ func _physics_process(delta: float) -> void:
 func try_attack() -> bool:
 	if is_staggered:
 		return false
-	var effective_attack_cost: int = int(attack_cost * light_stamina_cost_multiplier)
+	var effective_attack_cost: int = max(1, int(attack_cost * light_stamina_cost_multiplier))
 	if stamina < effective_attack_cost:
 		return false
 	stamina -= effective_attack_cost

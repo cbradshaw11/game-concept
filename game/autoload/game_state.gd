@@ -122,6 +122,14 @@ func apply_save_state(data: Dictionary) -> void:
 	# TASK-802 migration guard: only restore active_modifiers if save_version >= 5
 	if data.get("save_version", 0) >= 5:
 		active_modifiers = Array(data.get("active_modifiers", [])).filter(func(e): return e is Dictionary)
+		var _seen_mod_ids: Dictionary = {}
+		active_modifiers = active_modifiers.filter(func(e):
+			var mid: String = e.get("id", "")
+			if mid.is_empty() or _seen_mod_ids.has(mid):
+				return false
+			_seen_mod_ids[mid] = true
+			return true
+		)
 	else:
 		active_modifiers = []
 
