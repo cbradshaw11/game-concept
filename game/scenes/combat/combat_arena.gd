@@ -174,17 +174,18 @@ func _on_attack_triggered() -> void:
 	if _dismiss_frame >= 0 and Engine.get_process_frames() <= _dismiss_frame:
 		return
 	attack_count += 1
-	var hit_idx := _apply_damage_to_front_enemy(weapon_data.get("light_damage", 14))
+	var light_dmg: int = weapon_data.get("light_damage", 14) + player.light_attack_bonus
+	var hit_idx := _apply_damage_to_front_enemy(light_dmg, player.poise_damage_bonus)
 	if hit_idx >= 0:
 		_hit_land_player.play()
 	_flash_enemy_sprite(hit_idx)
-	_show_action_feedback("HIT +%d" % weapon_data.get("light_damage", 14))
+	_show_action_feedback("HIT +%d" % light_dmg)
 	attack_hook_triggered.emit()
 	_update_enemy_hud()
 	_update_status()
 
 func _on_heavy_attack_triggered(dmg: int) -> void:
-	var hit_idx := _apply_damage_to_front_enemy(dmg)
+	var hit_idx := _apply_damage_to_front_enemy(dmg, player.poise_damage_bonus)
 	if hit_idx >= 0:
 		_hit_land_player.play()
 	_flash_enemy_sprite(hit_idx)
@@ -368,6 +369,7 @@ func _spawn_boss(boss_id: String) -> EnemyController:
 
 func start_boss_encounter(boss_id: String) -> void:
 	enemies.clear()
+	encounter_enemy_list = []
 	encounter_completed = false
 	is_boss_encounter = true
 	attack_count = 0
@@ -397,7 +399,7 @@ func _player_zone() -> int:
 	var zone := int(round(player.position.x / 160.0))
 	return clampi(zone, 0, max(0, enemies.size() - 1))
 
-func _apply_damage_to_front_enemy(damage: int) -> int:
+func _apply_damage_to_front_enemy(damage: int, poise_dmg: int = 0) -> int:
 	var use_ranged_priority: bool = weapon_data.get("ranged_priority", false)
 	if use_ranged_priority:
 		var i := enemies.size() - 1
@@ -405,8 +407,13 @@ func _apply_damage_to_front_enemy(damage: int) -> int:
 			if enemies[i].state != EnemyController.EnemyState.DEAD:
 				var prev_state := enemies[i].state
 				enemies[i].apply_damage(damage, true)
+				if poise_dmg > 0:
+					enemies[i].apply_poise_damage(poise_dmg)
 				if prev_state != EnemyController.EnemyState.STAGGER and enemies[i].state == EnemyController.EnemyState.STAGGER:
 					_show_action_feedback("STAGGERED")
+				if enemies[i].state == EnemyController.EnemyState.DEAD and player.stamina_on_kill > 0:
+					player.stamina = min(player.stamina + player.stamina_on_kill, float(player.max_stamina))
+					_update_status()
 				return i
 			i -= 1
 	else:
@@ -414,8 +421,13 @@ func _apply_damage_to_front_enemy(damage: int) -> int:
 			if enemies[idx].state != EnemyController.EnemyState.DEAD:
 				var prev_state := enemies[idx].state
 				enemies[idx].apply_damage(damage, true)
+				if poise_dmg > 0:
+					enemies[idx].apply_poise_damage(poise_dmg)
 				if prev_state != EnemyController.EnemyState.STAGGER and enemies[idx].state == EnemyController.EnemyState.STAGGER:
 					_show_action_feedback("STAGGERED")
+				if enemies[idx].state == EnemyController.EnemyState.DEAD and player.stamina_on_kill > 0:
+					player.stamina = min(player.stamina + player.stamina_on_kill, float(player.max_stamina))
+					_update_status()
 				return idx
 	return -1
 

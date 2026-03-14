@@ -130,7 +130,7 @@ func apply_modifier(modifier: Dictionary) -> void:
 			current_health = min(current_health, max_health)
 			health_changed.emit(current_health, max_health)
 		"relentless":
-			stamina_regen_per_sec += float(modifier.get("value_a", 0.0))
+			stamina_regen_per_sec *= (1.0 + float(modifier.get("value_a", 0.0)))
 			guard_efficiency = clampf(guard_efficiency + float(modifier.get("value_b", 0.0)), 0.0, 0.95)
 		"death_wish":
 			pass  # Checked at runtime in get_effective_attack_damage()
@@ -145,6 +145,8 @@ func reset_for_run() -> void:
 	current_poise = max_poise
 	max_stamina = 100  # @export default -- upgrades will add to this after reset
 	stamina = float(max_stamina)
+	dodge_cost = 22
+	stamina_regen_per_sec = 18.0
 	is_staggered = false
 	is_invulnerable = false
 	_conditional_bonuses = {}
@@ -274,6 +276,7 @@ func take_damage(amount: int) -> void:
 			effective_damage = amount - GUARD_BREAK_THRESHOLD
 		else:
 			effective_damage = int(amount * (1.0 - get_effective_guard_efficiency()))
+			effective_damage = max(0, effective_damage - int(guard_damage_reduction))
 	current_health = max(0, current_health - effective_damage)
 	_recalculate_conditional_bonuses()
 	health_changed.emit(current_health, max_health)
