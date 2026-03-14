@@ -164,7 +164,7 @@ func _on_start_run_pressed() -> void:
 		DataStore.encounter_templates
 	)
 	_ensure_combat_arena()
-	combat_arena.set_context(GameState.current_ring, int(seed), int(active_encounter.get("enemy_count", 1)))
+	combat_arena.set_context(GameState.current_ring, int(seed), int(active_encounter.get("enemy_count", 1)), active_encounter.get("enemies", []))
 	combat_arena.set_arena_active(true)
 	# Reset player to base stats, then apply permanent upgrades, per-run upgrades, modifiers.
 	# reset_for_run() prevents stat accumulation on the reused player node across runs.

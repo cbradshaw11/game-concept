@@ -54,6 +54,7 @@ var dodge_count: int = 0
 var guard_active: bool = false
 var enemies: Array[EnemyController] = []
 var encounter_enemy_count: int = 0
+var encounter_enemy_list: Array = []
 var encounter_completed: bool = false
 var weapon_data: Dictionary = {}
 var is_boss_encounter: bool = false
@@ -99,13 +100,14 @@ func _load_weapon_data() -> void:
 			return
 	weapon_data = {"light_damage": 14}
 
-func set_context(next_ring_id: String, next_seed: int, enemy_count: int = 1) -> void:
+func set_context(next_ring_id: String, next_seed: int, enemy_count: int = 1, enemy_list: Array = []) -> void:
 	ring_id = next_ring_id
 	seed = next_seed
 	attack_count = 0
 	dodge_count = 0
 	guard_active = false
 	encounter_enemy_count = max(1, enemy_count)
+	encounter_enemy_list = enemy_list
 	encounter_completed = false
 	is_boss_encounter = false
 	_load_weapon_data()
@@ -292,32 +294,51 @@ func _apply_behavior_profile(enemy: EnemyController, profile: String) -> void:
 
 func _spawn_enemies(count: int) -> void:
 	enemies.clear()
-	var ring = GameState.current_ring
-	var all_enemies: Array = DataStore.enemies.get("enemies", [])
-	var enemy_pool: Array = all_enemies.filter(func(e: Dictionary) -> bool:
-		return e.get("ring_availability", e.get("rings", [ring])[0]) == ring or e.get("rings", []).has(ring)
-	)
-	if enemy_pool.is_empty():
-		enemy_pool = all_enemies
 	var spawned_data: Array = []
-	for i in range(count):
-		var enemy_data: Dictionary = enemy_pool[i % enemy_pool.size()]
-		spawned_data.append(enemy_data)
-		var enemy := EnemyController.new(
-			enemy_data.get("health", 60),
-			3.5,
-			1.2,
-			enemy_data.get("damage", 10)
+	if not encounter_enemy_list.is_empty():
+		for enemy_data in encounter_enemy_list:
+			spawned_data.append(enemy_data)
+			var enemy := EnemyController.new(
+				enemy_data.get("health", 60),
+				3.5,
+				1.2,
+				enemy_data.get("damage", 10)
+			)
+			var poise_dmg: int = enemy_data.get("poise_damage", 0)
+			enemy.attack_resolved.connect(func(amount: int) -> void:
+				_apply_damage_to_player(amount, poise_dmg)
+			)
+			enemy.wind_up_started.connect(_on_enemy_wind_up)
+			var profile: String = enemy_data.get("behavior_profile", "frontline_basic")
+			_apply_behavior_profile(enemy, profile)
+			enemy.enemy_display_name = enemy_data.get("role", "enemy").capitalize()
+			enemies.append(enemy)
+	else:
+		var ring = GameState.current_ring
+		var all_enemies: Array = DataStore.enemies.get("enemies", [])
+		var enemy_pool: Array = all_enemies.filter(func(e: Dictionary) -> bool:
+			return e.get("ring_availability", e.get("rings", [ring])[0]) == ring or e.get("rings", []).has(ring)
 		)
-		var poise_dmg: int = enemy_data.get("poise_damage", 0)
-		enemy.attack_resolved.connect(func(amount: int) -> void:
-			_apply_damage_to_player(amount, poise_dmg)
-		)
-		enemy.wind_up_started.connect(_on_enemy_wind_up)
-		var profile: String = enemy_data.get("behavior_profile", "frontline_basic")
-		_apply_behavior_profile(enemy, profile)
-		enemy.enemy_display_name = enemy_data.get("role", "enemy").capitalize()
-		enemies.append(enemy)
+		if enemy_pool.is_empty():
+			enemy_pool = all_enemies
+		for i in range(count):
+			var enemy_data: Dictionary = enemy_pool[i % enemy_pool.size()]
+			spawned_data.append(enemy_data)
+			var enemy := EnemyController.new(
+				enemy_data.get("health", 60),
+				3.5,
+				1.2,
+				enemy_data.get("damage", 10)
+			)
+			var poise_dmg: int = enemy_data.get("poise_damage", 0)
+			enemy.attack_resolved.connect(func(amount: int) -> void:
+				_apply_damage_to_player(amount, poise_dmg)
+			)
+			enemy.wind_up_started.connect(_on_enemy_wind_up)
+			var profile: String = enemy_data.get("behavior_profile", "frontline_basic")
+			_apply_behavior_profile(enemy, profile)
+			enemy.enemy_display_name = enemy_data.get("role", "enemy").capitalize()
+			enemies.append(enemy)
 	_load_enemy_sprites(spawned_data)
 	_update_enemy_hud()
 
