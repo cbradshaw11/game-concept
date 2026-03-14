@@ -66,6 +66,8 @@ func _generate_template_encounter(
 		var key := str(enemy_id)
 		if by_id.has(key):
 			selected.append(by_id[key])
+		else:
+			push_warning("ring_director: template '%s' references unknown enemy id '%s'" % [template.get("id", "?"), key])
 
 	if selected.is_empty():
 		return {}

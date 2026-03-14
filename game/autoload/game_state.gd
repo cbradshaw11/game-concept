@@ -57,6 +57,7 @@ func default_save_state() -> Dictionary:
 		"xp_gain_multiplier": 1.0,
 		"warden_map_unlocked": false,
 		"active_modifiers": [],
+		"permanent_purchases": [],
 		"save_version": 5,
 	}
 
@@ -232,6 +233,7 @@ func die_in_run() -> void:
 	unbanked_xp = int(unbanked_xp * 0.5)
 	unbanked_loot = 0
 	encounters_cleared = 0
+	loot_per_encounter_modifier = 0
 	current_ring = "sanctuary"
 	telemetry.log_event("player_died", {
 		"seed": active_seed,

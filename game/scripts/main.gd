@@ -174,7 +174,12 @@ func _on_start_run_pressed() -> void:
 			combat_arena.player.apply_upgrade(upgrade)
 		# Apply permanent_xp prestige purchases
 		if "veteran_spirit" in GameState.permanent_purchases:
-			combat_arena.player.apply_upgrade({"stat": "max_stamina", "modifier_type": "add", "value": 20})
+			var _vs_value: int = 20
+			for _si in DataStore.shop_items.get("items", []):
+				if _si.get("id", "") == "veteran_spirit":
+					_vs_value = int(_si.get("value", 20))
+					break
+			combat_arena.player.apply_upgrade({"stat": "max_stamina", "modifier_type": "add", "value": _vs_value})
 		for upgrade in GameState.active_upgrades:
 			combat_arena.player.apply_upgrade(upgrade)
 		for modifier in GameState.active_modifiers:

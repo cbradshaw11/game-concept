@@ -165,6 +165,8 @@ func _on_buy_pressed(item_id: String) -> void:
 	_show_feedback("Purchased: %s" % str(item.get("name", "")))
 
 func _on_buy_prestige_pressed(item_id: String) -> void:
+	if GameState.has_purchased(item_id):
+		return
 	if _purchasing:
 		return
 	_purchasing = true
