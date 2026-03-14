@@ -13,7 +13,37 @@
     {
       "id": "inner_ranged_mix",
       "ring": "inner",
-      "enemy_ids": ["scavenger_grunt", "ridge_archer"]
+      "enemy_ids": ["siege_crossbowman", "scavenger_grunt"]
+    },
+    {
+      "id": "inner_runner_pack",
+      "ring": "inner",
+      "enemy_ids": ["dust_runner", "dust_runner", "scavenger_grunt"]
+    },
+    {
+      "id": "inner_crossbow_screen",
+      "ring": "inner",
+      "enemy_ids": ["siege_crossbowman", "shieldbearer"]
+    },
+    {
+      "id": "inner_defender_hold",
+      "ring": "inner",
+      "enemy_ids": ["shieldbearer", "shieldbearer"]
+    },
+    {
+      "id": "inner_rush_mob",
+      "ring": "inner",
+      "enemy_ids": ["dust_runner", "scavenger_grunt", "shieldbearer"]
+    },
+    {
+      "id": "inner_crossbow_rush",
+      "ring": "inner",
+      "enemy_ids": ["siege_crossbowman", "siege_crossbowman", "dust_runner"]
+    },
+    {
+      "id": "inner_mixed_line",
+      "ring": "inner",
+      "enemy_ids": ["shieldbearer", "siege_crossbowman", "scavenger_grunt"]
     },
     {
       "id": "mid_patrol_a",
@@ -21,9 +51,89 @@
       "enemy_ids": ["ash_flanker", "ridge_archer", "shieldbearer"]
     },
     {
+      "id": "mid_flank_pair",
+      "ring": "mid",
+      "enemy_ids": ["ash_flanker", "ash_flanker"]
+    },
+    {
+      "id": "mid_mixed_advance",
+      "ring": "mid",
+      "enemy_ids": ["shieldbearer", "ash_flanker"]
+    },
+    {
+      "id": "mid_vanguard_push",
+      "ring": "mid",
+      "enemy_ids": ["iron_vanguard", "ash_flanker"]
+    },
+    {
+      "id": "mid_vanguard_screen",
+      "ring": "mid",
+      "enemy_ids": ["iron_vanguard", "ridge_archer"]
+    },
+    {
+      "id": "mid_flanker_swarm",
+      "ring": "mid",
+      "enemy_ids": ["ash_flanker", "ash_flanker", "ash_flanker"]
+    },
+    {
+      "id": "mid_sniper_guard",
+      "ring": "mid",
+      "enemy_ids": ["ridge_archer", "ridge_archer", "shieldbearer"]
+    },
+    {
+      "id": "mid_vanguard_pair",
+      "ring": "mid",
+      "enemy_ids": ["iron_vanguard", "iron_vanguard"]
+    },
+    {
+      "id": "mid_mixed_elite",
+      "ring": "mid",
+      "enemy_ids": ["iron_vanguard", "ash_flanker", "ridge_archer"]
+    },
+    {
       "id": "outer_elite_a",
       "ring": "outer",
       "enemy_ids": ["warden_hunter", "rift_caster"]
+    },
+    {
+      "id": "outer_rift_assault",
+      "ring": "outer",
+      "enemy_ids": ["rift_caster", "rift_caster"]
+    },
+    {
+      "id": "outer_hunter_advance",
+      "ring": "outer",
+      "enemy_ids": ["warden_hunter", "ash_flanker"]
+    },
+    {
+      "id": "outer_sentinel_pair",
+      "ring": "outer",
+      "enemy_ids": ["rift_sentinel", "void_sniper"]
+    },
+    {
+      "id": "outer_sniper_volley",
+      "ring": "outer",
+      "enemy_ids": ["void_sniper", "void_sniper"]
+    },
+    {
+      "id": "outer_hunter_pair",
+      "ring": "outer",
+      "enemy_ids": ["warden_hunter", "warden_hunter"]
+    },
+    {
+      "id": "outer_caster_screen",
+      "ring": "outer",
+      "enemy_ids": ["rift_caster", "rift_caster", "rift_sentinel"]
+    },
+    {
+      "id": "outer_sniper_ambush",
+      "ring": "outer",
+      "enemy_ids": ["void_sniper", "void_sniper", "ash_flanker"]
+    },
+    {
+      "id": "outer_elite_rush",
+      "ring": "outer",
+      "enemy_ids": ["rift_sentinel", "rift_sentinel", "warden_hunter"]
     }
   ]
 }

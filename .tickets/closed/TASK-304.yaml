@@ -1,0 +1,93 @@
+id: TASK-304
+title: Guard damage reduction
+type: feature
+priority: p1
+area: combat
+risk: low
+milestone: M3 Combat Model
+status: done
+
+problem: >
+  Guard input is tracked as a boolean (guarding) in PlayerController but does
+  nothing to combat outcomes. guard_efficiency per weapon in weapons.json is
+  never read. Guard is a cosmetic toggle.
+
+desired_outcome: >
+  While guard is active, incoming damage is multiplied by (1 - guard_efficiency).
+  A guard break fires when a single hit exceeds a threshold, dropping guard and
+  applying the remainder at full value.
+
+scope_in:
+  - _apply_damage_to_player checks player.guarding and applies guard_efficiency reduction
+  - Guard break: if raw damage > GUARD_BREAK_THRESHOLD, guard drops and remainder deals full
+  - guard_broken signal emitted on guard break
+  - guard_efficiency read from equipped weapon data (CombatArena already has weapon_data from TASK-303)
+
+scope_out:
+  - Stamina drain while holding guard
+  - Dodge (TASK-305)
+  - Poise interaction with guard
+
+dependencies:
+  blockers:
+    - TASK-301
+    - TASK-302
+    - TASK-303
+  unblocks:
+    - TASK-310
+
+acceptance_criteria:
+  - id: ac1
+    description: Damage received while guarding is less than unguarded for same hit
+    verify: "grep -n 'guard_efficiency\\|guarding' game/scenes/combat/combat_arena.gd"
+  - id: ac2
+    description: guard_broken signal defined and emitted on threshold breach
+    verify: "grep -n 'guard_broken' game/scenes/combat/combat_arena.gd"
+  - id: ac3
+    description: Unit test passes — guarded damage < unguarded damage; guard_broken fires at threshold
+    verify: "bash scripts/ci/headless_tests.sh 2>&1 | grep -E 'PASS.*guard_reduction|guard_reduction.*PASS'"
+
+verification_required:
+  - "grep -n 'guard_efficiency\\|guard_broken' game/scenes/combat/combat_arena.gd"
+  - "bash scripts/ci/headless_tests.sh 2>&1 | grep -E 'PASS.*guard_reduction|guard_reduction.*PASS'"
+
+slices:
+  - id: s1
+    name: Implement guard reduction and guard break in _apply_damage_to_player
+    files_create: []
+    files_modify:
+      - game/scenes/combat/combat_arena.gd
+    files_read_only:
+      - game/scripts/core/player_controller.gd
+      - game/data/weapons.json
+    evidence: []
+  - id: s2
+    name: Write guard unit test
+    files_create:
+      - game/scripts/tests/combat/test_guard_reduction.gd
+    files_modify: []
+    files_read_only: []
+    evidence: []
+
+context_refs:
+  - .plans/TASK-304-execution-plan.md
+  - game/scenes/combat/combat_arena.gd
+  - game/scripts/core/player_controller.gd
+  - game/data/weapons.json
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: "2026-03-10"
+  completed_at: "2026-03-10"
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  blade_iron guard_efficiency=0.7 (30% damage taken), polearm_iron=0.78 (22%),
+  bow_iron=0.35 (65%). GUARD_BREAK_THRESHOLD = 30 is a reasonable starting value
+  (can be tuned in TASK-309). CombatArena already has weapon_data after TASK-303
+  lands, so guard_efficiency is accessible as weapon_data.get("guard_efficiency", 0.5).

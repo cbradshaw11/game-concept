@@ -1,0 +1,54 @@
+id: TASK-106
+title: Apply branch protection for main required checks
+type: chore
+priority: p1
+area: infra
+risk: medium
+milestone: M1 Foundation
+status: done
+
+problem: Main branch had no protection rules, allowing direct pushes and merges without CI passing.
+desired_outcome: Main is protected; all required CI checks must pass before merge.
+
+scope_in:
+  - Apply branch protection rules to main
+  - Require status checks from CI workflows
+scope_out:
+  - CI workflow definitions (TASK-104)
+  - Merge policy (TASK-105)
+
+dependencies:
+  blockers:
+    - TASK-104
+    - TASK-105
+  unblocks:
+    - TASK-107
+
+acceptance_criteria:
+  - id: ac1
+    description: Branch protection rules applied to main
+    verify: "gh api repos/{owner}/{repo}/branches/main/protection"
+
+verification_required:
+  - "gh api repos/{owner}/{repo}/branches/main/protection"
+
+slices:
+  - id: s1
+    name: Apply branch protection
+    files_create: []
+    files_modify: []
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: Completed as part of M1 Foundation milestone.

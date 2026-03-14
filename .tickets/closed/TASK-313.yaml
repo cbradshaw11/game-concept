@@ -1,0 +1,70 @@
+id: TASK-313
+title: Add missing poise_damage to ash_flanker in enemies.json
+type: bug
+priority: p2
+area: data
+risk: low
+milestone: M3 Combat Model
+status: done
+
+problem: >
+  ash_flanker has no poise_damage field. CombatArena._spawn_enemies() reads
+  .get("poise_damage", 0) and the if poise_damage > 0 guard means
+  take_poise_damage() is never called for ash_flanker attacks. A mid/outer ring
+  flanker with 12 base damage applies zero poise threat — almost certainly
+  unintentional given scavenger_grunt (6 dmg) has poise_damage=15.
+  Found by static verifier (WARN-2).
+
+desired_outcome: >
+  ash_flanker has a poise_damage value appropriate to its flanker archetype.
+  The poise system is exercised by ash_flanker attacks at runtime.
+
+scope_in:
+  - Add poise_damage field to ash_flanker entry in enemies.json
+  - Value should be consistent with flanker archetype (suggest 10-18 range)
+
+scope_out:
+  - Any other enemy changes
+  - Code changes
+
+dependencies:
+  blockers: []
+  unblocks: []
+
+acceptance_criteria:
+  - id: ac1
+    description: ash_flanker has poise_damage field greater than 0
+    verify: "python3 -c \"import json; e=json.load(open('game/data/enemies.json')); a=[x for x in e['enemies'] if x['id']=='ash_flanker'][0]; print('poise_damage:', a.get('poise_damage', 'MISSING'))\""
+
+verification_required:
+  - "python3 -c \"import json; e=json.load(open('game/data/enemies.json')); a=[x for x in e['enemies'] if x['id']=='ash_flanker'][0]; assert a.get('poise_damage',0)>0; print('PASS poise_damage:', a['poise_damage'])\""
+
+slices:
+  - id: s1
+    name: Add poise_damage to ash_flanker
+    files_create: []
+    files_modify:
+      - game/data/enemies.json
+    files_read_only: []
+    evidence: []
+
+context_refs:
+  - .memory/M3-combat-model/verification.md
+  - game/data/enemies.json
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: "2026-03-10"
+  completed_at: "2026-03-10"
+  verification:
+    required_passed: true
+    commands_run:
+      - "python3 -c \"import json; e=json.load(open('game/data/enemies.json')); a=[x for x in e['enemies'] if x['id']=='ash_flanker'][0]; assert a.get('poise_damage',0)>0; print('PASS poise_damage:', a['poise_damage'])\""
+    evidence_refs: []
+
+notes: >
+  Data-only fix. Flanker archetype is fast and aggressive — poise damage of
+  10-18 fits the archetype (less than shieldbearer at 20, more than ridge_archer).
+  Set to 14, between ridge_archer's 12 and shieldbearer's 20.

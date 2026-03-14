@@ -58,8 +58,8 @@ func _generate_template_encounter(
 		by_id[str(enemy.get("id", ""))] = enemy
 
 	var rng := RandomNumberGenerator.new()
-	rng.seed = _combine_seed(seed, ring_id)
-	var template := ring_templates[rng.randi_range(0, ring_templates.size() - 1)]
+	rng.seed = _combine_seed(seed + GameState.encounters_cleared, ring_id)
+	var template: Variant = ring_templates[rng.randi_range(0, ring_templates.size() - 1)]
 
 	var selected: Array = []
 	for enemy_id in template.get("enemy_ids", []):

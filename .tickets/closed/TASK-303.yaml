@@ -1,0 +1,107 @@
+id: TASK-303
+title: Weapon stat integration
+type: feature
+priority: p1
+area: combat
+risk: medium
+milestone: M3 Combat Model
+status: done
+
+problem: >
+  _apply_damage_to_front_enemy hardcodes damage as 40 regardless of weapon.
+  selected_weapon_id in main.gd is never passed to CombatArena. Weapon
+  selection in the Sanctuary loadout has no mechanical consequence.
+
+desired_outcome: >
+  CombatArena reads the equipped weapon's light_damage from weapons.json.
+  Switching weapons in the prep screen changes how much damage each attack deals.
+  The hardcoded 40 is gone.
+
+scope_in:
+  - GameState stores selected_weapon_id (move from main.gd or sync on run start)
+  - CombatArena exposes set_weapon(weapon_data: Dictionary) or reads from GameState
+  - _apply_damage_to_front_enemy uses weapon.light_damage instead of 40
+  - All 3 weapons (blade_iron=14, polearm_iron=12, bow_iron=11) produce correct damage
+
+scope_out:
+  - Heavy attack implementation (light attack only for M3)
+  - Weapon-specific poise damage per attack (TASK-306)
+  - Guard efficiency per weapon (TASK-304)
+
+dependencies:
+  blockers: []
+  unblocks:
+    - TASK-304
+    - TASK-309
+
+acceptance_criteria:
+  - id: ac1
+    description: Hardcoded constant 40 removed from _apply_damage_to_front_enemy
+    verify: "grep -n '40' game/scenes/combat/combat_arena.gd | grep -v '//' | grep -v '#'"
+  - id: ac2
+    description: CombatArena has a weapon_data field set from the selected weapon
+    verify: "grep -n 'weapon_data\\|selected_weapon\\|light_damage' game/scenes/combat/combat_arena.gd"
+  - id: ac3
+    description: GameState stores and exposes selected_weapon_id
+    verify: "grep -n 'selected_weapon_id\\|weapon_id' game/autoload/game_state.gd"
+  - id: ac4
+    description: Unit test — equip each weapon, assert attack damage matches weapons.json value
+    verify: "bash scripts/ci/headless_tests.sh 2>&1 | grep -E 'PASS.*weapon_stats|weapon_stats.*PASS'"
+
+verification_required:
+  - "grep -n 'light_damage' game/scenes/combat/combat_arena.gd"
+  - "grep -n 'selected_weapon_id' game/autoload/game_state.gd"
+  - "bash scripts/ci/headless_tests.sh 2>&1 | grep -E 'PASS.*weapon_stats|weapon_stats.*PASS'"
+
+slices:
+  - id: s1
+    name: Move weapon selection into GameState and thread to CombatArena
+    files_create: []
+    files_modify:
+      - game/autoload/game_state.gd
+      - game/scripts/main.gd
+      - game/scenes/combat/combat_arena.gd
+    files_read_only:
+      - game/data/weapons.json
+      - game/autoload/data_store.gd
+    evidence: []
+  - id: s2
+    name: Replace hardcoded 40 with weapon.light_damage
+    files_create: []
+    files_modify:
+      - game/scenes/combat/combat_arena.gd
+    files_read_only: []
+    evidence: []
+  - id: s3
+    name: Write weapon stats unit test
+    files_create:
+      - game/scripts/tests/combat/test_weapon_stats.gd
+    files_modify: []
+    files_read_only:
+      - game/data/weapons.json
+    evidence: []
+
+context_refs:
+  - .plans/TASK-303-execution-plan.md
+  - game/scenes/combat/combat_arena.gd
+  - game/autoload/game_state.gd
+  - game/scripts/main.gd
+  - game/data/weapons.json
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: "2026-03-10"
+  completed_at: "2026-03-10"
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  main.gd already has selected_weapon_id and _on_loadout_selected(). The cleanest
+  approach: add selected_weapon_id + set_selected_weapon(id) to GameState so it's
+  globally accessible. CombatArena reads DataStore.weapons on set_context() to
+  find the matching weapon record by id. Replace the literal 40 with
+  weapon_data.get("light_damage", 14).

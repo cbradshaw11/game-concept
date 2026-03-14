@@ -1,0 +1,119 @@
+id: TASK-301
+title: Player HP and death state
+type: feature
+priority: p1
+area: combat
+risk: medium
+milestone: M3 Combat Model
+status: done
+
+problem: >
+  PlayerController has no health variable. Players cannot die from enemy attacks.
+  The game cannot be lost, making combat meaningless.
+
+desired_outcome: >
+  PlayerController tracks current and max HP. Taking damage reduces HP. At 0,
+  a player_died signal chain fires, GameState.die_in_run() clears unbanked
+  rewards, and the death flow in main.gd/FlowUI activates.
+
+scope_in:
+  - Add current_health and max_health to PlayerController, initialized from weapons.json global_combat.max_health
+  - Add take_damage(amount) method that emits health_depleted when HP reaches 0
+  - Add health_changed(current, max_hp) signal to PlayerController
+  - Add player_died signal to CombatArena; emit when player.health_depleted fires
+  - Connect combat_arena.player_died in main._ensure_combat_arena() to trigger die flow
+  - main._on_combat_player_died() mirrors _on_die_pressed logic (GameState.die_in_run, contract fail, save)
+
+scope_out:
+  - Combat HUD display (TASK-307)
+  - Enemy damage wiring to player (TASK-302)
+  - Guard or dodge damage modifiers (TASK-304, TASK-305)
+  - Poise system (TASK-306)
+
+dependencies:
+  blockers: []
+  unblocks:
+    - TASK-302
+    - TASK-304
+    - TASK-305
+    - TASK-306
+    - TASK-307
+    - TASK-308
+
+acceptance_criteria:
+  - id: ac1
+    description: PlayerController has current_health and max_health initialized from weapons.json global_combat.max_health (100)
+    verify: "grep -n 'current_health\\|max_health' game/scripts/core/player_controller.gd"
+  - id: ac2
+    description: take_damage(amount) reduces health and emits health_depleted at 0
+    verify: "grep -n 'take_damage\\|health_depleted' game/scripts/core/player_controller.gd"
+  - id: ac3
+    description: CombatArena emits player_died signal when player health depletes
+    verify: "grep -n 'player_died' game/scenes/combat/combat_arena.gd"
+  - id: ac4
+    description: main.gd connects combat_arena.player_died and handles death flow
+    verify: "grep -n 'player_died\\|_on_combat_player_died' game/scripts/main.gd"
+  - id: ac5
+    description: Unit test passes — two damage events summing to > max_health fire player_died
+    verify: "bash scripts/ci/headless_tests.sh 2>&1 | grep -E 'PASS.*player_hp|player_hp.*PASS'"
+
+verification_required:
+  - "grep -n 'current_health\\|max_health' game/scripts/core/player_controller.gd"
+  - "grep -n 'take_damage\\|health_depleted' game/scripts/core/player_controller.gd"
+  - "grep -n 'player_died' game/scenes/combat/combat_arena.gd"
+  - "grep -n 'player_died\\|_on_combat_player_died' game/scripts/main.gd"
+  - "bash scripts/ci/headless_tests.sh 2>&1 | grep -E 'PASS.*player_hp|player_hp.*PASS'"
+
+slices:
+  - id: s1
+    name: Add HP to PlayerController
+    files_create: []
+    files_modify:
+      - game/scripts/core/player_controller.gd
+      - game/autoload/data_store.gd
+    files_read_only:
+      - game/data/weapons.json
+    evidence: []
+  - id: s2
+    name: Wire death signal through CombatArena and main.gd
+    files_create: []
+    files_modify:
+      - game/scenes/combat/combat_arena.gd
+      - game/scripts/main.gd
+    files_read_only:
+      - game/autoload/game_state.gd
+      - game/scripts/systems/contract_system.gd
+    evidence: []
+  - id: s3
+    name: Write player HP unit test
+    files_create:
+      - game/scripts/tests/combat/test_player_hp.gd
+    files_modify: []
+    files_read_only:
+      - game/scripts/core/player_controller.gd
+    evidence: []
+
+context_refs:
+  - .plans/TASK-301-execution-plan.md
+  - game/scripts/core/player_controller.gd
+  - game/scenes/combat/combat_arena.gd
+  - game/scripts/main.gd
+  - game/autoload/game_state.gd
+  - game/data/weapons.json
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: "2026-03-10"
+  completed_at: "2026-03-10"
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  GameState.player_died signal and main._on_player_died() already exist and are
+  wired. GameState.die_in_run() also exists. The missing piece is triggering this
+  chain from real HP depletion rather than the manual die_pressed button.
+  CombatArena needs a new player_died signal connected in _ensure_combat_arena().

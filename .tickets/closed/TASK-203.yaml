@@ -1,0 +1,53 @@
+id: TASK-203
+title: Save/load system for banked progression
+type: feature
+priority: p1
+area: progression
+risk: medium
+milestone: M2 Ring1 Slice
+status: done
+
+problem: Player progression (banked rewards, ring unlocks) was not persisted between sessions.
+desired_outcome: Save/load system correctly persists and restores banked progression state.
+
+scope_in:
+  - Save and load functions for banked progression state
+  - Serialization format for progression data
+scope_out:
+  - Combat state persistence
+  - Loadout UI (TASK-201)
+
+dependencies:
+  blockers:
+    - TASK-108
+  unblocks:
+    - TASK-207
+
+acceptance_criteria:
+  - id: ac1
+    description: Save/load system passes integrity tests
+    verify: "bash scripts/ci/task_specific_tests.sh"
+
+verification_required:
+  - "bash scripts/ci/task_specific_tests.sh"
+
+slices:
+  - id: s1
+    name: Banked progression save/load
+    files_create: []
+    files_modify: []
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: Completed as part of M2 Ring1 Slice milestone.

@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"id": "blade_whetstone", "name": "Blade Whetstone", "description": "Sharpens your weapon. +3 attack damage this run.", "cost": 20, "type": "per_run", "stat": "attack_damage", "value": 3},
+    {"id": "iron_tonic", "name": "Iron Tonic", "description": "Restores 30 maximum health for this run.", "cost": 15, "type": "per_run", "stat": "max_health", "value": 30},
+    {"id": "scavenger_kit", "name": "Scavenger Kit", "description": "Gain +10 loot from every encounter this run.", "cost": 25, "type": "per_run", "stat": "loot_per_encounter", "value": 10},
+    {"id": "ancestral_shard", "name": "Ancestral Shard", "description": "Permanently increases banked XP gain by 10%.", "cost": 60, "type": "permanent", "stat": "xp_multiplier", "value": 0.10},
+    {"id": "warden_map", "name": "Warden Map", "description": "Reveals Warden phase HP thresholds during the boss fight.", "cost": 40, "type": "permanent", "stat": "warden_map_owned", "value": 1},
+    {"id": "heavy_rations", "name": "Heavy Rations", "description": "Start each run with 20 extra maximum stamina.", "cost": 50, "type": "permanent", "stat": "max_stamina", "value": 20},
+    {"id": "unlock_polearm", "name": "Master the Polearm", "description": "Unlocks the iron polearm. High damage, high stamina cost, good poise damage.", "cost_xp": 150, "type": "weapon_unlock", "stat": "weapon_unlocked", "value": "polearm_iron"},
+    {"id": "unlock_bow", "name": "Master the Bow", "description": "Unlocks the short bow. Rapid attacks, ranged advantage, low poise damage.", "cost_xp": 200, "type": "weapon_unlock", "stat": "weapon_unlocked", "value": "bow_iron"}
+  ]
+}

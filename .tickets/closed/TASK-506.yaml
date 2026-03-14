@@ -1,0 +1,73 @@
+id: TASK-506
+title: Bank on Death: Partial Loot Retention
+type: feature
+priority: p2
+area: progression
+risk: low
+milestone: M5 Into the Dark
+status: done
+
+problem: >
+  die_in_run() currently loses all unbanked loot. With loot gates at 50 (mid)
+  and 150 (outer), players who die before extracting make zero progress toward
+  ring unlocks. Failed runs feel punishing and disconnected from progression,
+  which discourages the repeated attempts needed for the 8-12h arc.
+
+desired_outcome: >
+  die_in_run() retains 25% of unbanked_loot into banked_loot before clearing
+  run state. Failed runs contribute to the loot gate threshold, making each
+  attempt feel meaningful even on death.
+
+scope_in:
+  - Modify die_in_run() in game_state.gd to compute retained = int(unbanked_loot * 0.25)
+  - Add retained to banked_loot before existing die_in_run cleanup logic
+scope_out:
+  - Retention rate tuning (25% is the initial value; balance is M5+ concern)
+  - UI showing "you kept X loot" on death screen (nice to have, not required)
+  - XP retention (only loot is retained; XP behavior unchanged)
+
+dependencies:
+  blockers: []
+  unblocks:
+    - TASK-508
+
+acceptance_criteria:
+  - id: ac1
+    description: Retention logic present inside die_in_run()
+    verify: "grep -n '0.25\\|retained\\|die_in_run' game/autoload/game_state.gd"
+  - id: ac2
+    description: rings_cleared unchanged by die_in_run() (regression check)
+    verify: "grep -n 'rings_cleared' game/autoload/game_state.gd"
+  - id: ac3
+    description: banked_loot accumulates retained amount
+    verify: "grep -n 'banked_loot.*retained\\|retained.*banked_loot\\|banked_loot +=' game/autoload/game_state.gd"
+
+verification_required:
+  - "grep -n '0.25\\|retained' game/autoload/game_state.gd"
+  - "grep -n 'die_in_run' game/autoload/game_state.gd"
+
+slices:
+  - id: s1
+    name: Add 25% loot retention to die_in_run()
+    files_create: []
+    files_modify:
+      - game/autoload/game_state.gd
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: false
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  Implementation is under 5 lines. Read game_state.gd die_in_run() first to
+  understand where to insert the retention logic (before existing cleanup).
+  The retained amount must be computed BEFORE unbanked_loot is cleared to zero.
+  Read the execution plan at .plans/TASK-506-execution-plan.md before implementing.

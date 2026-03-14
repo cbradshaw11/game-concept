@@ -1,0 +1,72 @@
+id: TASK-311
+title: Fix encounters_cleared never incremented
+type: bug
+priority: p1
+area: combat
+risk: low
+milestone: M3 Combat Model
+status: done
+
+problem: >
+  GameState.encounters_cleared is declared and initialized to 0 but is never
+  incremented anywhere in the codebase. The death screen always shows
+  "Encounters Cleared: 0" regardless of how many encounters the player cleared.
+  Found by static verifier (CRIT-1).
+
+desired_outcome: >
+  encounters_cleared increments by 1 each time an encounter is resolved.
+  Resets to 0 on start_run() and die_in_run(). Death screen displays correct value.
+
+scope_in:
+  - Add encounters_cleared += 1 in GameState.add_unbanked() or the encounter-clear path
+  - Add encounters_cleared = 0 in GameState.start_run() and die_in_run()
+
+scope_out:
+  - Displaying encounters_cleared anywhere except the existing death screen label
+
+dependencies:
+  blockers: []
+  unblocks: []
+
+acceptance_criteria:
+  - id: ac1
+    description: encounters_cleared increments on encounter resolution
+    verify: "grep -n 'encounters_cleared' game/autoload/game_state.gd"
+  - id: ac2
+    description: encounters_cleared resets on run start and death
+    verify: "grep -n 'encounters_cleared' game/autoload/game_state.gd"
+
+verification_required:
+  - "grep -n 'encounters_cleared' game/autoload/game_state.gd"
+
+slices:
+  - id: s1
+    name: Increment and reset encounters_cleared in GameState
+    files_create: []
+    files_modify:
+      - game/autoload/game_state.gd
+    files_read_only:
+      - game/scripts/main.gd
+    evidence: []
+
+context_refs:
+  - .memory/M3-combat-model/verification.md
+  - game/autoload/game_state.gd
+  - game/scripts/main.gd
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: "2026-03-10"
+  completed_at: "2026-03-10"
+  verification:
+    required_passed: true
+    commands_run:
+      - "grep -n 'encounters_cleared' game/autoload/game_state.gd"
+    evidence_refs: []
+
+notes: >
+  Verifier found zero writes to GameState.encounters_cleared across the entire
+  codebase. add_unbanked() is the encounter-clear path — add the increment there.
+  Also reset in start_run() and die_in_run() to avoid stale values across runs.

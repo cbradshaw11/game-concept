@@ -1,0 +1,60 @@
+id: TASK-104
+title: Add CI workflows for required status checks
+type: chore
+priority: p1
+area: infra
+risk: medium
+milestone: M1 Foundation
+status: done
+
+problem: No CI workflows enforced required checks on PRs, allowing untested code to merge.
+desired_outcome: Required CI status checks run on every PR and push to main.
+
+scope_in:
+  - Add .github/workflows/lint.yml
+  - Add .github/workflows/smoke-scene.yml
+  - Add .github/workflows/task-specific-tests.yml
+  - Add .github/workflows/headless-tests.yml
+scope_out:
+  - Branch protection rules (TASK-106)
+  - Script implementation
+
+dependencies:
+  blockers:
+    - TASK-103
+  unblocks:
+    - TASK-105
+    - TASK-106
+
+acceptance_criteria:
+  - id: ac1
+    description: CI workflow files exist for lint, smoke, task tests, and headless tests
+    verify: "ls .github/workflows/"
+
+verification_required:
+  - "ls .github/workflows/"
+
+slices:
+  - id: s1
+    name: Add CI workflow files
+    files_create:
+      - .github/workflows/lint.yml
+      - .github/workflows/smoke-scene.yml
+      - .github/workflows/task-specific-tests.yml
+      - .github/workflows/headless-tests.yml
+    files_modify: []
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: Completed as part of M1 Foundation milestone.

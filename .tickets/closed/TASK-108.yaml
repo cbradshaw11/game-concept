@@ -1,0 +1,62 @@
+id: TASK-108
+title: Seed M2 Ring1 slice backlog with atomic tasks
+type: chore
+priority: p2
+area: infra
+risk: low
+milestone: M1 Foundation
+status: done
+
+problem: M2 milestone had no decomposed task backlog; work could not begin in parallel lanes.
+desired_outcome: M2 Ring1 Slice backlog seeded with atomic tasks covering all required areas.
+
+scope_in:
+  - Create task files for TASK-201 through TASK-209 in tasks/backlog/
+  - Seed QUEUE.md with M2 backlog entries
+scope_out:
+  - Implementing any M2 tasks
+  - Milestone exit criteria validation
+
+dependencies:
+  blockers:
+    - TASK-107
+  unblocks:
+    - TASK-201
+    - TASK-202
+    - TASK-203
+    - TASK-204
+    - TASK-205
+    - TASK-206
+    - TASK-207
+    - TASK-208
+    - TASK-209
+
+acceptance_criteria:
+  - id: ac1
+    description: M2 tasks seeded in backlog
+    verify: "cat tasks/QUEUE.md"
+
+verification_required:
+  - "cat tasks/QUEUE.md"
+
+slices:
+  - id: s1
+    name: Seed M2 backlog tasks
+    files_create:
+      - tasks/QUEUE.md
+    files_modify: []
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: Completed as part of M1 Foundation milestone.

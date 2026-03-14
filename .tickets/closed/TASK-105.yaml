@@ -1,0 +1,52 @@
+id: TASK-105
+title: Configure squash-only merge policy and manual merge mode
+type: chore
+priority: p2
+area: infra
+risk: low
+milestone: M1 Foundation
+status: done
+
+problem: Repository allowed non-squash merges, leading to noisy commit history.
+desired_outcome: Only squash merges permitted; commit history stays linear and clean.
+
+scope_in:
+  - Configure squash-only merge policy on the repository
+scope_out:
+  - Branch protection rules (TASK-106)
+  - CI workflows
+
+dependencies:
+  blockers:
+    - TASK-104
+  unblocks:
+    - TASK-106
+
+acceptance_criteria:
+  - id: ac1
+    description: Squash merge is the only allowed merge method
+    verify: "gh repo view --json mergeCommitAllowed,squashMergeAllowed,rebaseMergeAllowed"
+
+verification_required:
+  - "gh repo view --json mergeCommitAllowed,squashMergeAllowed,rebaseMergeAllowed"
+
+slices:
+  - id: s1
+    name: Configure merge policy
+    files_create: []
+    files_modify: []
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: Completed as part of M1 Foundation milestone.

@@ -1,0 +1,81 @@
+id: TASK-507
+title: Per-Ring Contract Targets (Data-Driven)
+type: feature
+priority: p2
+area: data
+risk: low
+milestone: M5 Into the Dark
+status: done
+
+problem: >
+  The encounter contract target is hardcoded to 3 in main.gd. Inner ring
+  (learning ring) and outer ring (elite encounters) should require different
+  encounter counts to reflect their difficulty and session length targets.
+  Hardcoding prevents designers from tuning ring pacing via data.
+
+desired_outcome: >
+  contract_target field added to rings.json (inner=3, mid=4, outer=4).
+  main.gd reads the value from rings.json instead of hardcoding 3.
+  Outer ring runs require one more encounter, scaling session length appropriately.
+
+scope_in:
+  - Add contract_target to inner (3), mid (4), outer (4) entries in rings.json
+  - Update main.gd start_contract call to read ring_data.get("contract_target", 3)
+scope_out:
+  - Dynamic contract target changes mid-run
+  - Contract types beyond clearance (boss contracts, escort contracts)
+  - Sanctuary contract_target (sanctuary is not a combat ring)
+
+dependencies:
+  blockers: []
+  unblocks:
+    - TASK-508
+
+acceptance_criteria:
+  - id: ac1
+    description: rings.json has contract_target per combat ring
+    verify: "python3 -c \"import json; r=json.load(open('game/data/rings.json')); [print(x['id'], x.get('contract_target','MISSING')) for x in r['rings']]\""
+  - id: ac2
+    description: main.gd uses data-driven target (no hardcoded 3 in start_contract call)
+    verify: "grep -n 'contract_target\\|start_contract' game/scripts/main.gd"
+  - id: ac3
+    description: inner=3, mid=4, outer=4
+    verify: "python3 -c \"import json; r=json.load(open('game/data/rings.json')); targets={x['id']:x.get('contract_target') for x in r['rings']}; assert targets.get('inner')==3 and targets.get('mid')==4 and targets.get('outer')==4, targets; print('PASS')\""
+
+verification_required:
+  - "python3 -c \"import json; r=json.load(open('game/data/rings.json')); [print(x['id'], x.get('contract_target','MISSING')) for x in r['rings']]\""
+  - "grep -n 'contract_target\\|start_contract' game/scripts/main.gd"
+
+slices:
+  - id: s1
+    name: Add contract_target to rings.json
+    files_create: []
+    files_modify:
+      - game/data/rings.json
+    files_read_only: []
+    evidence: []
+  - id: s2
+    name: Read contract_target from ring data in main.gd
+    files_create: []
+    files_modify:
+      - game/scripts/main.gd
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: false
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  This is a small data + one-line code change. Read main.gd to find the
+  start_contract call and understand how ring_data is accessed (whether rings.json
+  is read inline or via DataStore). The fallback default of 3 in .get("contract_target", 3)
+  ensures backward compatibility if sanctuary or other non-combat rings are passed.
+  Read the execution plan at .plans/TASK-507-execution-plan.md before implementing.

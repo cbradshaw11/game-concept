@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/ui/flow_ui.gd" id="1_jn33y"]
 
 [node name="FlowUI" type="CanvasLayer"]
+process_mode = 3
 script = ExtResource("1_jn33y")
 
 [node name="PrepScreen" type="VBoxContainer" parent="."]
@@ -25,8 +26,45 @@ text = "Weapon Loadout"
 [node name="LoadoutSummary" type="Label" parent="PrepScreen"]
 text = ""
 
+[node name="WeaponStatPanel" type="VBoxContainer" parent="PrepScreen"]
+visible = false
+
+[node name="WeaponName" type="Label" parent="PrepScreen/WeaponStatPanel"]
+text = ""
+
+[node name="LightDamage" type="Label" parent="PrepScreen/WeaponStatPanel"]
+text = ""
+
+[node name="HeavyDamage" type="Label" parent="PrepScreen/WeaponStatPanel"]
+text = ""
+
+[node name="StaminaCost" type="Label" parent="PrepScreen/WeaponStatPanel"]
+text = ""
+
+[node name="PoiseDamage" type="Label" parent="PrepScreen/WeaponStatPanel"]
+text = ""
+
+[node name="RingSelectorLabel" type="Label" parent="PrepScreen"]
+text = "Select Ring"
+
+[node name="RingSelector" type="OptionButton" parent="PrepScreen"]
+
 [node name="StartRunButton" type="Button" parent="PrepScreen"]
 text = "Enter Ring 1"
+
+[node name="VendorButton" type="Button" parent="PrepScreen"]
+text = "Visit Vendor"
+
+[node name="HistoryButton" type="Button" parent="PrepScreen"]
+text = "Run History"
+
+[node name="PermanentUpgradesList" type="Label" parent="PrepScreen"]
+text = ""
+
+[node name="WeaponUnlockPanel" type="VBoxContainer" parent="PrepScreen"]
+
+[node name="WeaponUnlocksHeader" type="Label" parent="PrepScreen/WeaponUnlockPanel"]
+text = "Weapon Unlocks"
 
 [node name="RunScreen" type="VBoxContainer" parent="."]
 visible = false
@@ -53,8 +91,171 @@ text = "Extract to Sanctuary"
 [node name="DieButton" type="Button" parent="RunScreen"]
 text = "Simulate Death"
 
+[node name="DescendWardenButton" type="Button" parent="RunScreen"]
+visible = false
+text = "Descend to Warden"
+
+[node name="RingDisplay" type="Label" parent="RunScreen"]
+text = ""
+
+[node name="UpgradeListLabel" type="Label" parent="RunScreen"]
+text = ""
+
+[node name="PauseMenu" type="PanelContainer" parent="."]
+visible = false
+process_mode = 3
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PauseMenu"]
+layout_mode = 2
+
+[node name="PausedLabel" type="Label" parent="PauseMenu/VBoxContainer"]
+layout_mode = 2
+text = "Paused"
+
+[node name="ResumeButton" type="Button" parent="PauseMenu/VBoxContainer"]
+layout_mode = 2
+text = "Resume"
+
+[node name="QuitButton" type="Button" parent="PauseMenu/VBoxContainer"]
+layout_mode = 2
+text = "Quit to Main Menu"
+
+[node name="SettingsButton" type="Button" parent="PauseMenu/VBoxContainer"]
+layout_mode = 2
+text = "Settings"
+
+[node name="UpgradeDrawPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UpgradeDrawPanel"]
+layout_mode = 2
+
+[node name="ChooseLabel" type="Label" parent="UpgradeDrawPanel/VBoxContainer"]
+layout_mode = 2
+text = "Choose an Upgrade"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UpgradeDrawPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="UpgradeCard0" type="Button" parent="UpgradeDrawPanel/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = ""
+
+[node name="UpgradeCard1" type="Button" parent="UpgradeDrawPanel/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = ""
+
+[node name="UpgradeCard2" type="Button" parent="UpgradeDrawPanel/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = ""
+
+[node name="DeathPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBox" type="VBoxContainer" parent="DeathPanel"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="DeathPanel/VBox"]
+layout_mode = 2
+text = "YOU DIED"
+
+[node name="RingLabel" type="Label" parent="DeathPanel/VBox"]
+layout_mode = 2
+text = ""
+
+[node name="EncountersLabel" type="Label" parent="DeathPanel/VBox"]
+layout_mode = 2
+text = ""
+
+[node name="XPLabel" type="Label" parent="DeathPanel/VBox"]
+layout_mode = 2
+text = ""
+
+[node name="LootLabel" type="Label" parent="DeathPanel/VBox"]
+layout_mode = 2
+text = ""
+
+[node name="ReturnButton" type="Button" parent="DeathPanel/VBox"]
+layout_mode = 2
+text = "Return to Sanctuary"
+
+[node name="CreditsPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBox" type="VBoxContainer" parent="CreditsPanel"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="CreditsPanel/VBox"]
+layout_mode = 2
+text = "The Long Walk"
+
+[node name="NarrativeLabel" type="Label" parent="CreditsPanel/VBox"]
+layout_mode = 2
+autowrap_mode = 3
+text = "You have retrieved the Sunken Artifact.
+The rings grow quiet.
+The long walk ends here — for now."
+
+[node name="CreditsLabel" type="Label" parent="CreditsPanel/VBox"]
+layout_mode = 2
+autowrap_mode = 3
+text = "— Credits —
+
+Game Design & Development
+An indie project
+
+Made with Godot 4
+
+Audio: Placeholder tracks
+
+Thank you for playing."
+
+[node name="BeginNewJourneyButton" type="Button" parent="CreditsPanel/VBox"]
+layout_mode = 2
+text = "Begin New Journey"
+
+[node name="BackToMenuButton" type="Button" parent="CreditsPanel/VBox"]
+layout_mode = 2
+text = "Back to Menu"
+
+[node name="UpgradeToast" type="Label" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 2
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -60.0
+offset_right = 400.0
+offset_bottom = -30.0
+
 [connection signal="pressed" from="PrepScreen/StartRunButton" to="." method="_on_start_run_button_pressed"]
+[connection signal="pressed" from="PrepScreen/VendorButton" to="." method="_on_visit_vendor_pressed"]
+[connection signal="pressed" from="PrepScreen/HistoryButton" to="." method="_on_history_button_pressed"]
 [connection signal="item_selected" from="PrepScreen/LoadoutSelect" to="." method="_on_loadout_select_item_selected"]
+[connection signal="item_selected" from="PrepScreen/RingSelector" to="." method="_on_ring_selected"]
 [connection signal="pressed" from="RunScreen/ResolveEncounterButton" to="." method="_on_resolve_encounter_button_pressed"]
 [connection signal="pressed" from="RunScreen/ExtractButton" to="." method="_on_extract_button_pressed"]
 [connection signal="pressed" from="RunScreen/DieButton" to="." method="_on_die_button_pressed"]
+[connection signal="pressed" from="RunScreen/DescendWardenButton" to="." method="_on_descend_warden_pressed"]
+[connection signal="pressed" from="CreditsPanel/VBox/BeginNewJourneyButton" to="." method="_on_begin_new_journey_pressed"]
+[connection signal="pressed" from="PauseMenu/VBoxContainer/SettingsButton" to="." method="_on_settings_button_pressed"]
+[connection signal="pressed" from="CreditsPanel/VBox/BackToMenuButton" to="." method="_on_back_to_menu_pressed"]

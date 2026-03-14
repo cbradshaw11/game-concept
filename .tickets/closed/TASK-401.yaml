@@ -1,0 +1,93 @@
+id: TASK-401
+title: Ring selection UI and main.gd decoupling
+type: feature
+priority: p1
+area: ui
+risk: medium
+milestone: M4 The Road Opens
+status: done
+
+problem: >
+  main.gd hardcodes the string "inner" in three places (lines 41, 51, 62) for
+  start_run, calculate_rewards, and encounter spawning. There is no UI for the
+  player to choose which ring to enter. The game cannot progress beyond Ring 1.
+
+desired_outcome: >
+  FlowUI PrepScreen has a ring selector. The selected ring flows through
+  GameState into start_run, reward calculation, and encounter spawning. "inner"
+  is never hardcoded in the combat flow.
+
+scope_in:
+  - Remove all hardcoded "inner" strings from main.gd combat flow (lines 41, 51, 62)
+  - Add ring selector control to FlowUI PrepScreen (RadioButtons or OptionButton)
+  - Wire selected ring to GameState.current_ring before start_run() call
+  - Reward calculation and encounter spawning use GameState.current_ring
+  - Ring 3 visible but disabled (placeholder gate, TASK-402 wires real gate)
+
+scope_out:
+  - Ring unlock persistence (TASK-402)
+  - Loot threshold gates (TASK-408)
+  - Enemy behavior profiles (TASK-403)
+
+dependencies:
+  blockers: []
+  unblocks:
+    - TASK-402
+    - TASK-408
+
+acceptance_criteria:
+  - id: ac1
+    description: No hardcoded "inner" strings in combat flow in main.gd
+    verify: "grep -n '\"inner\"' game/scripts/main.gd"
+  - id: ac2
+    description: FlowUI PrepScreen has a ring selector control
+    verify: "grep -n 'ring_selector\\|RingSelector\\|ring_option' game/scripts/ui/flow_ui.gd"
+  - id: ac3
+    description: Ring 3 option is visible but disabled in selector
+    verify: "grep -n 'disabled\\|ring.*outer\\|outer.*ring' game/scripts/ui/flow_ui.gd"
+
+verification_required:
+  - "grep -n '\"inner\"' game/scripts/main.gd"
+  - "grep -n 'ring_selector\\|RingSelector\\|current_ring' game/scripts/ui/flow_ui.gd"
+  - "grep -n 'current_ring' game/scripts/main.gd"
+
+slices:
+  - id: s1
+    name: Remove hardcoded ring strings from main.gd
+    files_modify:
+      - game/scripts/main.gd
+    files_read_only:
+      - game/autoload/game_state.gd
+      - game/data/rings.json
+  - id: s2
+    name: Add ring selector to FlowUI PrepScreen
+    files_modify:
+      - game/scripts/ui/flow_ui.gd
+      - game/scenes/ui/flow_ui.tscn
+    files_read_only:
+      - game/data/rings.json
+      - game/autoload/game_state.gd
+
+context_refs:
+  - .plans/TASK-401-execution-plan.md
+  - game/scripts/main.gd
+  - game/scripts/ui/flow_ui.gd
+  - game/scenes/ui/flow_ui.tscn
+  - game/autoload/game_state.gd
+  - game/data/rings.json
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: false
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  main.gd lines 41, 51, 62 are the three hardcoded "inner" references.
+  GameState already has current_ring field. PrepScreen already exists in FlowUI.
+  Ring selector should default to "inner" for first-time players.

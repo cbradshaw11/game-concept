@@ -1,0 +1,53 @@
+id: TASK-103
+title: Add PR template with verifier section and evidence checklist
+type: chore
+priority: p2
+area: infra
+risk: low
+milestone: M1 Foundation
+status: done
+
+problem: No PR template enforced consistent structure or verifier sign-off on pull requests.
+desired_outcome: All PRs use a standard template with a verifier section and evidence checklist.
+
+scope_in:
+  - Add .github/PULL_REQUEST_TEMPLATE.md with verifier section
+scope_out:
+  - Issue templates
+  - CI workflows
+
+dependencies:
+  blockers:
+    - TASK-102
+  unblocks:
+    - TASK-104
+
+acceptance_criteria:
+  - id: ac1
+    description: PR template exists with verifier section
+    verify: "cat .github/PULL_REQUEST_TEMPLATE.md"
+
+verification_required:
+  - "cat .github/PULL_REQUEST_TEMPLATE.md"
+
+slices:
+  - id: s1
+    name: Add PR template
+    files_create:
+      - .github/PULL_REQUEST_TEMPLATE.md
+    files_modify: []
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: Completed as part of M1 Foundation milestone.

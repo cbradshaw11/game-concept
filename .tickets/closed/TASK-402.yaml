@@ -1,0 +1,91 @@
+id: TASK-402
+title: Ring unlock gates and save schema migration
+type: feature
+priority: p1
+area: progression
+risk: medium
+milestone: M4 The Road Opens
+status: done
+
+problem: >
+  GameState has no rings_cleared field. Nothing persists which rings a player
+  has extracted from. There is no gate preventing players from skipping to
+  Ring 3 on first run. M3 saves will not have this field.
+
+desired_outcome: >
+  rings_cleared: Array[String] is in GameState, persisted to save, populated
+  on extract, and used to gate ring selection in FlowUI. Loading an M3 save
+  (missing rings_cleared) safely defaults to an empty array.
+
+scope_in:
+  - Add rings_cleared: Array[String] to GameState
+  - Populate rings_cleared in extract() when current_ring != "sanctuary"
+  - Include rings_cleared in to_save_state() and apply_save_state()
+  - apply_save_state() safely defaults to [] if key missing (M3 migration)
+  - FlowUI ring selector: disable Ring 2 until "inner" in rings_cleared
+  - FlowUI ring selector: disable Ring 3 until "mid" in rings_cleared
+
+scope_out:
+  - Loot threshold gates (TASK-408 — separate gate layer on top of this one)
+  - Warden flag (TASK-405)
+
+dependencies:
+  blockers:
+    - TASK-401
+  unblocks:
+    - TASK-404
+    - TASK-408
+
+acceptance_criteria:
+  - id: ac1
+    description: rings_cleared field declared, populated in extract(), included in save state
+    verify: "grep -n 'rings_cleared' game/autoload/game_state.gd"
+  - id: ac2
+    description: M3 save without rings_cleared key loads without crash (defaults to [])
+    verify: "python3 -c \"import json; s=json.load(open('game/save_state.json')) if __import__('os').path.exists('game/save_state.json') else {}; print(s.get('rings_cleared', 'SAFE_DEFAULT_OK'))\""
+  - id: ac3
+    description: Ring 2 disabled in selector when rings_cleared does not contain "inner"
+    verify: "grep -n 'rings_cleared\\|ring.*disabled\\|disabled.*ring' game/scripts/ui/flow_ui.gd"
+
+verification_required:
+  - "grep -n 'rings_cleared' game/autoload/game_state.gd"
+  - "grep -n 'rings_cleared' game/scripts/systems/save_system.gd"
+  - "grep -n 'rings_cleared' game/scripts/ui/flow_ui.gd"
+
+slices:
+  - id: s1
+    name: Add rings_cleared to GameState and save schema
+    files_modify:
+      - game/autoload/game_state.gd
+      - game/scripts/systems/save_system.gd
+    files_read_only:
+      - game/data/rings.json
+  - id: s2
+    name: Wire gate logic into FlowUI ring selector
+    files_modify:
+      - game/scripts/ui/flow_ui.gd
+    files_read_only:
+      - game/autoload/game_state.gd
+
+context_refs:
+  - .plans/TASK-402-execution-plan.md
+  - game/autoload/game_state.gd
+  - game/scripts/systems/save_system.gd
+  - game/scripts/ui/flow_ui.gd
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: false
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  Death must NOT clear rings_cleared. die_in_run() should reset unbanked XP/loot
+  but rings_cleared persists. extract() should append current_ring to rings_cleared
+  if not already present. Safe migration: apply_save_state() uses
+  save_data.get("rings_cleared", []).

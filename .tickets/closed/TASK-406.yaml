@@ -1,0 +1,92 @@
+id: TASK-406
+title: Win condition handler and credits screen
+type: feature
+priority: p1
+area: ui
+risk: medium
+milestone: M4 The Road Opens
+status: done
+
+problem: >
+  Defeating the Warden sets warden_defeated = true but nothing happens. There
+  is no win state, no narrative moment, no credits screen, and no stable
+  post-game state. The first time the loop is completable, the game crashes
+  or hangs.
+
+desired_outcome: >
+  After warden_defeated is set, an extract-artifact narrative card displays
+  (placeholder text acceptable), followed by a credits screen. After credits,
+  the game returns to a stable PrepScreen with game_completed flag set. No crash.
+
+scope_in:
+  - Add game_completed: bool to GameState, persisted in save
+  - main.gd on_warden_defeated() handler: set game_completed, trigger credits flow
+  - FlowUI credits screen: CreditsPanel with title, placeholder narrative text,
+    and a "Begin New Journey" button
+  - After credits, return to idle/prep state (not a crash)
+  - game_completed flag written to save_state.json
+
+scope_out:
+  - Polished credits content, music, animation (M5)
+  - New game+ or prestige system (M5)
+  - Narrative text beyond placeholder (M5)
+
+dependencies:
+  blockers:
+    - TASK-405
+  unblocks:
+    - TASK-409
+
+acceptance_criteria:
+  - id: ac1
+    description: Win state handling in main.gd wired to warden_defeated
+    verify: "grep -n 'warden_defeated\\|game_completed\\|on_warden_defeated' game/scripts/main.gd"
+  - id: ac2
+    description: CreditsPanel exists in FlowUI
+    verify: "grep -n 'credits\\|CreditsPanel\\|game_completed' game/scripts/ui/flow_ui.gd"
+  - id: ac3
+    description: After credits, game reaches stable screen without crash
+    verify: "grep -n 'on_credits_finished\\|on_new_journey\\|idle_ready' game/scripts/ui/flow_ui.gd"
+
+verification_required:
+  - "grep -n 'warden_defeated\\|game_completed\\|on_warden_defeated' game/scripts/main.gd"
+  - "grep -n 'credits\\|CreditsPanel' game/scripts/ui/flow_ui.gd"
+  - "grep -n 'game_completed' game/autoload/game_state.gd"
+
+slices:
+  - id: s1
+    name: Add game_completed to GameState and win handler in main.gd
+    files_modify:
+      - game/autoload/game_state.gd
+      - game/scripts/main.gd
+    files_read_only:
+      - game/scripts/systems/save_system.gd
+  - id: s2
+    name: Add CreditsPanel to FlowUI
+    files_modify:
+      - game/scripts/ui/flow_ui.gd
+      - game/scenes/ui/flow_ui.tscn
+
+context_refs:
+  - .plans/TASK-406-execution-plan.md
+  - game/scripts/main.gd
+  - game/scripts/ui/flow_ui.gd
+  - game/scenes/ui/flow_ui.tscn
+  - game/autoload/game_state.gd
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: false
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  Placeholder narrative text for credits: "You have retrieved the Sunken Artifact.
+  The long walk ends here — for now. The rings grow quiet." Then a scrolling
+  credits list with game title and developer placeholder names. "Begin New Journey"
+  calls GameState.start_new_run() or resets to prep state.

@@ -9,6 +9,7 @@ static func save_state(data: Dictionary) -> bool:
 		push_error("Failed to open save file for write")
 		return false
 	file.store_string(JSON.stringify(data))
+	file.close()
 	return true
 
 static func load_state(default_state: Dictionary) -> Dictionary:

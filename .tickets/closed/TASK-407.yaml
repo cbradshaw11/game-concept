@@ -1,0 +1,96 @@
+id: TASK-407
+title: Heavy attack input and weapon stat reload fix
+type: feature
+priority: p2
+area: combat
+risk: medium
+milestone: M4 The Road Opens
+status: done
+
+problem: >
+  weapons.json fully defines heavy_damage and heavy_stamina_cost for all
+  weapons but nothing in the game reads these fields. Heavy attack input is
+  never bound. Additionally, when the player swaps weapons in the loadout
+  selector, PlayerController retains the previous weapon's guard_efficiency,
+  attack costs, and heavy costs because _on_loadout_selected() never calls
+  a stat reload method.
+
+desired_outcome: >
+  Heavy attack input is bound (e.g., Shift+Attack or separate key). Pressing
+  it consumes heavy_stamina_cost and deals heavy_damage from weapons.json.
+  Weapon swap always reloads all stats onto PlayerController.
+
+scope_in:
+  - Add heavy_attack() method to PlayerController
+  - heavy_attack() consumes heavy_stamina_cost, emits heavy_attack_triggered
+  - heavy_attack() applies heavy_damage via CombatArena._apply_damage_to_front_enemy
+  - Add reload_weapon_stats() to PlayerController (reads from DataStore via GameState.selected_weapon_id)
+  - main.gd _on_loadout_selected() calls player_controller.reload_weapon_stats()
+  - Add input binding for heavy attack (ui_heavy_attack action or Shift key)
+
+scope_out:
+  - Heavy attack animations (M5)
+  - Heavy attack stagger bonus (nice-to-have, defer if complex)
+
+dependencies:
+  blockers: []
+  unblocks:
+    - TASK-409
+
+acceptance_criteria:
+  - id: ac1
+    description: heavy_damage and heavy_stamina_cost wired in PlayerController
+    verify: "grep -n 'heavy_damage\\|heavy_attack\\|heavy_stamina' game/scripts/core/player_controller.gd"
+  - id: ac2
+    description: reload_weapon_stats() called on loadout change
+    verify: "grep -n 'reload_weapon_stats\\|selected_weapon_id' game/scripts/main.gd"
+  - id: ac3
+    description: Test file exists for heavy attack stats
+    verify: "test -f game/scripts/tests/m4/test_heavy_attack.gd"
+
+verification_required:
+  - "grep -n 'heavy_damage\\|heavy_attack' game/scripts/core/player_controller.gd"
+  - "grep -n 'reload_weapon_stats' game/scripts/main.gd"
+  - "test -f game/scripts/tests/m4/test_heavy_attack.gd"
+
+slices:
+  - id: s1
+    name: Add heavy attack and reload_weapon_stats to PlayerController
+    files_modify:
+      - game/scripts/core/player_controller.gd
+    files_read_only:
+      - game/data/weapons.json
+      - game/autoload/game_state.gd
+  - id: s2
+    name: Wire heavy attack into CombatArena and reload on loadout change in main.gd
+    files_modify:
+      - game/scenes/combat/combat_arena.gd
+      - game/scripts/main.gd
+    files_read_only:
+      - game/scripts/core/player_controller.gd
+
+context_refs:
+  - .plans/TASK-407-execution-plan.md
+  - game/scripts/core/player_controller.gd
+  - game/scenes/combat/combat_arena.gd
+  - game/scripts/main.gd
+  - game/data/weapons.json
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: false
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  blade_iron: heavy_damage=24, heavy_stamina_cost=18
+  polearm_iron: heavy_damage=28, heavy_stamina_cost=22
+  bow_iron: heavy_damage=26, heavy_stamina_cost=20
+  Input: use Godot InputMap. Add "heavy_attack" action bound to Shift+Z or
+  a dedicated key. CombatArena handles input in _input() and calls
+  player_controller.heavy_attack() then _apply_damage_to_front_enemy(heavy_dmg).

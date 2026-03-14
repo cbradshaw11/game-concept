@@ -1,0 +1,54 @@
+id: TASK-206
+title: Contract objective system v1
+type: feature
+priority: p1
+area: progression
+risk: medium
+milestone: M2 Ring1 Slice
+status: done
+
+problem: No contract/objective system existed to give players directed goals during Ring1 runs.
+desired_outcome: Contract objective system v1 issues objectives at run start and tracks completion.
+
+scope_in:
+  - Contract objective definition and issuance at run start
+  - Objective completion tracking during encounter
+scope_out:
+  - Reward distribution (TASK-208)
+  - Save/load persistence (TASK-203)
+
+dependencies:
+  blockers:
+    - TASK-202
+  unblocks:
+    - TASK-208
+
+acceptance_criteria:
+  - id: ac1
+    description: Contract system tests pass
+    verify: "bash scripts/ci/task_specific_tests.sh"
+
+verification_required:
+  - "bash scripts/ci/task_specific_tests.sh"
+
+slices:
+  - id: s1
+    name: Contract objective system
+    files_create: []
+    files_modify: []
+    files_read_only:
+      - game/data/enemies.json
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: Completed as part of M2 Ring1 Slice milestone.

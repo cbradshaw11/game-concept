@@ -1,0 +1,87 @@
+id: TASK-209
+title: Enable Godot runtime execution in CI headless tests
+type: chore
+priority: p1
+area: infra
+risk: medium
+milestone: M2 Ring1 Slice
+status: done
+
+problem: >
+  CI was running a structural fallback (file existence checks only) instead of
+  real Godot headless tests, meaning the test suite gave false confidence on PRs
+  where Godot was not available on the runner.
+
+desired_outcome: >
+  CI executes all Godot test scripts against a real Godot 4 runtime on every PR
+  and push to main, with the structural fallback eliminated as the primary path.
+
+scope_in:
+  - headless-tests workflow installs godot4 binary on runner
+  - CI wires runtime into headless_tests.sh execution path
+
+scope_out:
+  - Changing test script logic or assertions
+  - Adding new test coverage beyond existing scripts
+  - Modifying lint, smoke-scene, or task-specific-tests workflows
+
+dependencies:
+  blockers: []
+  unblocks:
+    - M2 milestone verifier sign-off
+
+acceptance_criteria:
+  - id: ac1
+    description: headless-tests workflow installs godot4 on runner
+    verify: "grep -i 'install godot' .github/workflows/headless-tests.yml"
+  - id: ac2
+    description: CI executes test scripts with runtime available
+    verify: "grep 'godot4' .github/workflows/headless-tests.yml"
+  - id: ac3
+    description: Local workflow lint checks still pass
+    verify: "bash scripts/ci/lint.sh"
+
+verification_required:
+  - "grep -i 'install godot' .github/workflows/headless-tests.yml"
+  - "grep 'godot4' .github/workflows/headless-tests.yml"
+  - "bash scripts/ci/lint.sh"
+
+slices:
+  - id: s1
+    name: Add Godot install step to headless-tests workflow
+    files_create: []
+    files_modify:
+      - .github/workflows/headless-tests.yml
+    files_read_only:
+      - scripts/ci/headless_tests.sh
+    evidence:
+      - "ac1: grep -i 'install godot' .github/workflows/headless-tests.yml => PASS"
+      - "ac2: grep 'godot4' .github/workflows/headless-tests.yml => PASS"
+      - "ac3: bash scripts/ci/lint.sh => PASS"
+
+context_refs:
+  - tasks/in-progress/TASK-209.md
+  - .github/workflows/headless-tests.yml
+  - scripts/ci/headless_tests.sh
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: "2026-03-10T05:12:59Z"
+  verification:
+    required_passed: true
+    commands_run:
+      - "grep -i 'install godot' .github/workflows/headless-tests.yml"
+      - "grep 'godot4' .github/workflows/headless-tests.yml"
+      - "bash scripts/ci/lint.sh"
+    evidence_refs:
+      - ".tickets/closed/TASK-209.yaml"
+      - ".memory/M2-ring1-slice/TASK-209.md"
+
+notes: >
+  Implementation was already present at closure time. The workflow had a working
+  "Install Godot runtime" step and headless_tests.sh already branched on
+  `command -v godot4`. All AC verification commands passed on 2026-03-10.
+  No code changes were required. Ticket closed after manual AC verification.

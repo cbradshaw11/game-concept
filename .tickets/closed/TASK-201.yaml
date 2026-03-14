@@ -1,0 +1,53 @@
+id: TASK-201
+title: Sanctuary prep UI loadout selector
+type: feature
+priority: p1
+area: ui
+risk: medium
+milestone: M2 Ring1 Slice
+status: done
+
+problem: Players had no UI to configure their loadout before entering Ring1 from the Sanctuary.
+desired_outcome: Loadout selector UI is available in the Sanctuary prep screen before each run.
+
+scope_in:
+  - Sanctuary prep scene loadout selector UI
+  - Weapon and ring selection UI components
+scope_out:
+  - Backend progression persistence (TASK-203)
+  - Combat arena (TASK-204)
+
+dependencies:
+  blockers:
+    - TASK-108
+  unblocks:
+    - TASK-204
+
+acceptance_criteria:
+  - id: ac1
+    description: Loadout selector scene renders in Sanctuary prep
+    verify: "bash scripts/ci/smoke_scene.sh"
+
+verification_required:
+  - "bash scripts/ci/smoke_scene.sh"
+
+slices:
+  - id: s1
+    name: Sanctuary loadout selector UI
+    files_create: []
+    files_modify: []
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: Completed as part of M2 Ring1 Slice milestone.

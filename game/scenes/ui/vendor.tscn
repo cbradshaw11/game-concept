@@ -1,0 +1,36 @@
+[gd_scene load_steps=2 format=3 uid="uid://vendor_scene_001"]
+
+[ext_resource type="Script" path="res://scripts/ui/vendor.gd" id="1_vendor"]
+
+[node name="Vendor" type="PanelContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_vendor")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+offset_left = 40.0
+offset_top = 40.0
+offset_right = -40.0
+offset_bottom = -40.0
+
+[node name="TitleLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Sanctuary Vendor"
+
+[node name="LootLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Your Loot: 0"
+
+[node name="ItemList" type="VBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="FeedbackLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = ""
+visible = false
+
+[node name="CloseButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Close"

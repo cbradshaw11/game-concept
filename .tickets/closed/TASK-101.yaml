@@ -1,0 +1,50 @@
+id: TASK-101
+title: Add queue labels and normalize default label set
+type: chore
+priority: p2
+area: infra
+risk: low
+milestone: M1 Foundation
+status: done
+
+problem: No standardized queue labels existed for task tracking across the repository.
+desired_outcome: Normalized label set applied and available for all PRs and issues.
+
+scope_in:
+  - Add and normalize queue labels on the repository
+scope_out:
+  - Workflow or automation changes
+
+dependencies:
+  blockers: []
+  unblocks:
+    - TASK-102
+
+acceptance_criteria:
+  - id: ac1
+    description: Queue labels added and normalized
+    verify: "gh label list"
+
+verification_required:
+  - "gh label list"
+
+slices:
+  - id: s1
+    name: Normalize label set
+    files_create: []
+    files_modify: []
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: Completed as part of M1 Foundation milestone.
