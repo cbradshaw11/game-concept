@@ -48,6 +48,8 @@ var _is_paused: bool = false
 var _current_draw: Array = []
 var _vendor_instance: Node = null
 var _history_instance: Node = null
+var _modifier_draw_instance: Node = null
+var _current_modifier_draw: Array = []
 
 var _ui_sfx_player: AudioStreamPlayer = null
 var _ui_click_stream: AudioStream = null
@@ -200,6 +202,37 @@ func _on_ring_selected(index: int) -> void:
 
 func _on_start_run_button_pressed() -> void:
 	_play_ui_click()
+	_show_modifier_draw()
+
+func _show_modifier_draw() -> void:
+	var f := FileAccess.open("res://data/modifiers.json", FileAccess.READ)
+	if f == null:
+		push_error("modifier_draw: could not open modifiers.json")
+		start_run_pressed.emit()
+		return
+	var parsed = JSON.parse_string(f.read_as_text())
+	f.close()
+	if parsed == null or not parsed.has("modifiers"):
+		push_error("modifier_draw: invalid modifiers.json")
+		start_run_pressed.emit()
+		return
+	var pool: Array = parsed["modifiers"].duplicate()
+	pool.shuffle()
+	_current_modifier_draw = pool.slice(0, 2)
+	var modifier_draw_scene := load("res://scenes/ui/modifier_draw.tscn")
+	if modifier_draw_scene == null:
+		push_error("modifier_draw: scene not found")
+		start_run_pressed.emit()
+		return
+	_modifier_draw_instance = modifier_draw_scene.instantiate()
+	add_child(_modifier_draw_instance)
+	_modifier_draw_instance.modifier_selected.connect(_on_modifier_selected)
+	_modifier_draw_instance.populate(_current_modifier_draw)
+
+func _on_modifier_selected(modifier: Dictionary) -> void:
+	_modifier_draw_instance = null
+	GameState.pending_modifier = modifier
+	_show_upgrade_toast("Modifier: " + modifier.get("name", "?"))
 	start_run_pressed.emit()
 
 func _on_resolve_encounter_button_pressed() -> void:

@@ -32,6 +32,8 @@ var run_history: Array = []
 var weapons_unlocked: Array = ["blade_iron"]
 var _run_outcome_recorded: bool = false
 var telemetry := Telemetry.new()
+var active_modifiers: Array = []
+var pending_modifier: Dictionary = {}
 
 func default_save_state() -> Dictionary:
 	return {
@@ -52,7 +54,8 @@ func default_save_state() -> Dictionary:
 		"weapons_unlocked": ["blade_iron"],
 		"xp_gain_multiplier": 1.0,
 		"warden_map_unlocked": false,
-		"save_version": 4,
+		"active_modifiers": [],
+		"save_version": 5,
 	}
 
 func to_save_state() -> Dictionary:
@@ -74,7 +77,8 @@ func to_save_state() -> Dictionary:
 		"weapons_unlocked": weapons_unlocked,
 		"xp_gain_multiplier": xp_gain_multiplier,
 		"warden_map_unlocked": warden_map_unlocked,
-		"save_version": 4,
+		"active_modifiers": active_modifiers,
+		"save_version": 5,
 	}
 
 func apply_save_state(data: Dictionary) -> void:
@@ -115,8 +119,17 @@ func apply_save_state(data: Dictionary) -> void:
 	# xp_gain_multiplier and warden_map_unlocked: always read with defaults (present in v4+)
 	xp_gain_multiplier = float(data.get("xp_gain_multiplier", 1.0))
 	warden_map_unlocked = bool(data.get("warden_map_unlocked", false))
+	# TASK-802 migration guard: only restore active_modifiers if save_version >= 5
+	if data.get("save_version", 0) >= 5:
+		active_modifiers = Array(data.get("active_modifiers", []))
+	else:
+		active_modifiers = []
 
 func start_run(seed: int, ring_id: String) -> void:
+	active_modifiers = []
+	if not pending_modifier.is_empty():
+		active_modifiers = [pending_modifier]
+		pending_modifier = {}
 	active_seed = seed
 	current_ring = ring_id
 	unbanked_xp = 0
@@ -217,6 +230,7 @@ func abandon_run() -> void:
 	encounters_cleared = 0
 	current_ring = "sanctuary"
 	active_upgrades = []
+	active_modifiers = []
 	_run_outcome_recorded = false
 
 func record_warden_defeated() -> void:
