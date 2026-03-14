@@ -396,7 +396,7 @@ func on_died(unbanked_xp: int, unbanked_loot: int, ring_id: String = GameState.c
 	xp_label.text = "XP: Lost %d | Kept %d (50%% retention)" % [xp_lost, xp_kept]
 	var loot_kept: int = int(unbanked_loot * 0.25)
 	var loot_lost: int = unbanked_loot - loot_kept
-	loot_label.text = "Loot: Lost %d | Kept %d (25%% retention)" % [loot_lost, loot_kept]
+	loot_label.text = "Loot: Lost %d | Kept %d (25%% retention)\nTip: Extract at the Sanctuary to protect your loot." % [loot_lost, loot_kept]
 	_refresh_upgrade_display()
 	run_screen.visible = false
 	death_panel.visible = true

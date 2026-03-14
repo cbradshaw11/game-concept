@@ -33,6 +33,29 @@ signal player_died()
 
 var _tutorial_showing: bool = false
 var _dismiss_frame: int = -1
+var tutorial_page: int = 0
+var _tutorial_overlay: Panel = null
+var _tutorial_title: Label = null
+var _tutorial_body: Label = null
+var _tutorial_button: Button = null
+
+const _TUTORIAL_CARDS: Array = [
+	{
+		"title": "Poise",
+		"body": "Every enemy has a poise bar. Deplete it with attacks to stagger them -- they cannot act while staggered. Guard or dodge to protect your own poise.",
+		"button": "Next",
+	},
+	{
+		"title": "Guard Break",
+		"body": "Blocking heavy hits costs guard stamina. If you absorb more than 30 damage while guarding, your guard breaks and you take the hit.",
+		"button": "Next",
+	},
+	{
+		"title": "The Long Walk",
+		"body": "When you die, you keep 25% of unbanked loot. Extract at the Sanctuary to bank everything safely. Push deeper for more -- or lose it.",
+		"button": "Got it",
+	},
+]
 var _feedback_tween: Tween = null
 var _poise_flash_tween: Tween = null
 var _shake_tween: Tween = null
@@ -146,26 +169,59 @@ func _process(delta: float) -> void:
 
 func _show_first_run_tooltips() -> void:
 	_tutorial_showing = true
-	_combat_tutorial_overlay.visible = true
+	tutorial_page = 0
+	if _tutorial_overlay == null:
+		var layer := CanvasLayer.new()
+		layer.process_mode = Node.PROCESS_MODE_ALWAYS
+		add_child(layer)
+		_tutorial_overlay = Panel.new()
+		_tutorial_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+		layer.add_child(_tutorial_overlay)
+		var vbox := VBoxContainer.new()
+		vbox.set_anchors_preset(Control.PRESET_CENTER)
+		vbox.set_deferred("offset_left", -250.0)
+		vbox.set_deferred("offset_top", -100.0)
+		vbox.set_deferred("offset_right", 250.0)
+		vbox.set_deferred("offset_bottom", 100.0)
+		_tutorial_overlay.add_child(vbox)
+		_tutorial_title = Label.new()
+		_tutorial_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vbox.add_child(_tutorial_title)
+		_tutorial_body = Label.new()
+		_tutorial_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_tutorial_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		vbox.add_child(_tutorial_body)
+		_tutorial_button = Button.new()
+		_tutorial_button.pressed.connect(_next_tutorial)
+		vbox.add_child(_tutorial_button)
+	_tutorial_overlay.visible = true
+	_show_tutorial_card(tutorial_page)
+
+func _show_tutorial_card(page: int) -> void:
+	if page < 0 or page >= _TUTORIAL_CARDS.size():
+		return
+	var card: Dictionary = _TUTORIAL_CARDS[page]
+	_tutorial_title.text = str(card.get("title", ""))
+	_tutorial_body.text = str(card.get("body", ""))
+	_tutorial_button.text = str(card.get("button", "Next"))
+
+func _next_tutorial() -> void:
+	tutorial_page += 1
+	if tutorial_page >= _TUTORIAL_CARDS.size():
+		_dismiss_tutorial()
+	else:
+		_show_tutorial_card(tutorial_page)
 
 func _dismiss_tutorial() -> void:
 	if not _tutorial_showing:
 		return
 	_tutorial_showing = false
 	_dismiss_frame = Engine.get_process_frames()
-	_combat_tutorial_overlay.visible = false
+	if is_instance_valid(_tutorial_overlay):
+		_tutorial_overlay.visible = false
 	GameState.first_run_complete = true
 
 func _input(event: InputEvent) -> void:
-	if _tutorial_showing:
-		if event is InputEventKey and event.pressed:
-			_dismiss_tutorial()
-			get_viewport().set_input_as_handled()
-			return
-		if event is InputEventMouseButton and event.pressed:
-			_dismiss_tutorial()
-			get_viewport().set_input_as_handled()
-			return
 	if event.is_action_pressed("heavy_attack"):
 		player.heavy_attack()
 
