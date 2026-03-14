@@ -7,6 +7,9 @@
     {"id": "warden_map", "name": "Warden Map", "description": "Reveals Warden phase HP thresholds during the boss fight.", "cost": 40, "type": "permanent", "stat": "warden_map_owned", "value": 1},
     {"id": "heavy_rations", "name": "Heavy Rations", "description": "Start each run with 20 extra maximum stamina.", "cost": 50, "type": "permanent", "stat": "max_stamina", "value": 20},
     {"id": "unlock_polearm", "name": "Master the Polearm", "description": "Unlocks the iron polearm. High damage, high stamina cost, good poise damage.", "cost_xp": 150, "type": "weapon_unlock", "stat": "weapon_unlocked", "value": "polearm_iron"},
-    {"id": "unlock_bow", "name": "Master the Bow", "description": "Unlocks the short bow. Rapid attacks, ranged advantage, low poise damage.", "cost_xp": 200, "type": "weapon_unlock", "stat": "weapon_unlocked", "value": "bow_iron"}
+    {"id": "unlock_bow", "name": "Master the Bow", "description": "Unlocks the short bow. Rapid attacks, ranged advantage, low poise damage.", "cost_xp": 200, "type": "weapon_unlock", "stat": "weapon_unlocked", "value": "bow_iron"},
+    {"id": "veteran_spirit", "name": "Veteran Spirit", "description": "Start each run with more stamina.", "type": "permanent_xp", "cost_xp": 400, "effect": "starting_stamina_bonus", "value": 20},
+    {"id": "deep_pockets", "name": "Deep Pockets", "description": "Retain more loot on death.", "type": "permanent_xp", "cost_xp": 500, "effect": "loot_retention_bonus", "value": 0.10},
+    {"id": "warden_insight", "name": "Warden Insight", "description": "See the Warden's damage per phase.", "type": "permanent_xp", "cost_xp": 300, "effect": "warden_phase_hud_detailed", "value": 1}
   ]
 }

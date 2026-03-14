@@ -31,9 +31,12 @@ func _load_and_populate() -> void:
 		return
 
 	# Pick 3-4 random items to offer, seeded by run state for consistency
-	# Exclude weapon_unlock items -- those are only purchasable from the prep screen with XP
+	# Exclude weapon_unlock and permanent_xp items from the random loot pool
 	_rng.seed = GameState.active_seed + GameState.rings_cleared.size() * 1000
-	var pool: Array = _all_items.filter(func(i): return i.get("type", "") != "weapon_unlock")
+	var pool: Array = _all_items.filter(func(i):
+		var t: String = i.get("type", "")
+		return t != "weapon_unlock" and t != "permanent_xp"
+	)
 	for i in range(pool.size() - 1, 0, -1):
 		var j: int = _rng.randi() % (i + 1)
 		var tmp = pool[i]
@@ -46,7 +49,7 @@ func _load_and_populate() -> void:
 	_populate_item_list()
 
 func _refresh_loot_label() -> void:
-	loot_label.text = "Your Loot: %d" % GameState.banked_loot
+	loot_label.text = "Your Loot: %d  |  Banked XP: %d" % [GameState.banked_loot, GameState.banked_xp]
 
 func _populate_item_list() -> void:
 	for child in item_list.get_children():
@@ -83,6 +86,45 @@ func _populate_item_list() -> void:
 
 		item_list.add_child(card)
 
+	# Prestige section: show permanent_xp items not yet purchased
+	var prestige_items: Array = _all_items.filter(func(i): return i.get("type", "") == "permanent_xp")
+	var unpurchased_prestige: Array = prestige_items.filter(func(i): return not GameState.has_purchased(str(i.get("id", ""))))
+	if not unpurchased_prestige.is_empty():
+		var separator := HSeparator.new()
+		item_list.add_child(separator)
+
+		var section_label := Label.new()
+		section_label.text = "-- Prestige (XP) --"
+		item_list.add_child(section_label)
+
+		for item in unpurchased_prestige:
+			var card := HBoxContainer.new()
+
+			var name_label := Label.new()
+			name_label.text = str(item.get("name", ""))
+			name_label.custom_minimum_size = Vector2(150, 0)
+			card.add_child(name_label)
+
+			var desc_label := Label.new()
+			desc_label.text = str(item.get("description", ""))
+			desc_label.custom_minimum_size = Vector2(280, 0)
+			desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			card.add_child(desc_label)
+
+			var cost_xp: int = int(item.get("cost_xp", 0))
+			var cost_label := Label.new()
+			cost_label.text = "XP: %d" % cost_xp
+			cost_label.custom_minimum_size = Vector2(70, 0)
+			card.add_child(cost_label)
+
+			var buy_btn := Button.new()
+			buy_btn.text = "Buy"
+			buy_btn.disabled = GameState.banked_xp < cost_xp
+			buy_btn.pressed.connect(_on_buy_prestige_pressed.bind(str(item.get("id", ""))))
+			card.add_child(buy_btn)
+
+			item_list.add_child(card)
+
 func _on_buy_pressed(item_id: String) -> void:
 	if _purchasing:
 		return
@@ -116,6 +158,39 @@ func _on_buy_pressed(item_id: String) -> void:
 
 	GameState.banked_loot -= cost
 	GameState.apply_shop_item(item)
+	_purchasing = false
+	SaveSystem.save_state(GameState.to_save_state())
+	_refresh_loot_label()
+	_populate_item_list()
+	_show_feedback("Purchased: %s" % str(item.get("name", "")))
+
+func _on_buy_prestige_pressed(item_id: String) -> void:
+	if _purchasing:
+		return
+	_purchasing = true
+
+	var item: Dictionary = {}
+	for i in _all_items:
+		if i.get("id", "") == item_id and i.get("type", "") == "permanent_xp":
+			item = i
+			break
+	if item.is_empty():
+		_purchasing = false
+		return
+
+	var cost_xp: int = int(item.get("cost_xp", 0))
+	if GameState.banked_xp < cost_xp:
+		_purchasing = false
+		_show_feedback("Not enough XP!")
+		return
+
+	GameState.banked_xp -= cost_xp
+	GameState.permanent_purchases.append(str(item_id))
+	GameState.telemetry.log_event("shop_item_purchased", {
+		"item_id": item_id,
+		"type": "permanent_xp",
+		"effect": item.get("effect", ""),
+	})
 	_purchasing = false
 	SaveSystem.save_state(GameState.to_save_state())
 	_refresh_loot_label()

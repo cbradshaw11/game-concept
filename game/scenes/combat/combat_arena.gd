@@ -253,7 +253,7 @@ func _update_enemy_hud() -> void:
 	if is_boss_encounter and not enemies.is_empty():
 		var boss_enemy := enemies[0]
 		var phase: int = boss_enemy._current_phase
-		if GameState.warden_map_unlocked:
+		if GameState.warden_map_unlocked or GameState.has_purchased("warden_insight"):
 			wardan_phase_label.text = "Phase %d / 3  (Phase 2: 840HP | Phase 3: 420HP)" % phase
 		else:
 			wardan_phase_label.text = "Phase %d / 3" % phase
@@ -387,7 +387,7 @@ func start_boss_encounter(boss_id: String) -> void:
 		_load_enemy_sprites([{"role": "elite"}])
 	_update_enemy_hud()
 	_update_status()
-	if GameState.warden_map_unlocked:
+	if GameState.warden_map_unlocked or GameState.has_purchased("warden_insight"):
 		wardan_phase_label.text = "Phase 1 / 3  (Phase 2: 840HP | Phase 3: 420HP)"
 	else:
 		wardan_phase_label.text = "Phase 1 / 3"

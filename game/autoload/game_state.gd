@@ -80,6 +80,7 @@ func to_save_state() -> Dictionary:
 		"xp_gain_multiplier": xp_gain_multiplier,
 		"warden_map_unlocked": warden_map_unlocked,
 		"active_modifiers": active_modifiers,
+		"permanent_purchases": permanent_purchases,
 		"save_version": 5,
 	}
 
@@ -132,8 +133,10 @@ func apply_save_state(data: Dictionary) -> void:
 			_seen_mod_ids[mid] = true
 			return true
 		)
+		permanent_purchases = Array(data.get("permanent_purchases", []), TYPE_STRING, "", null)
 	else:
 		active_modifiers = []
+		permanent_purchases = []
 
 func start_run(seed: int, ring_id: String) -> void:
 	active_modifiers = []
@@ -206,7 +209,8 @@ func extract() -> void:
 
 func die_in_run() -> void:
 	var event_ring := current_ring
-	var retained: int = int(unbanked_loot * 0.25)
+	var retention_pct: float = 0.35 if "deep_pockets" in permanent_purchases else 0.25
+	var retained: int = int(unbanked_loot * retention_pct)
 	banked_loot += retained
 	# Append run record BEFORE zeroing run state so ring_reached/encounters_cleared are valid
 	if not _run_outcome_recorded:
@@ -313,7 +317,11 @@ func can_afford_weapon_unlock(cost_xp: int) -> bool:
 func spend_xp(amount: int) -> void:
 	banked_xp = max(0, banked_xp - amount)
 
+func has_purchased(item_id: String) -> bool:
+	return item_id in weapons_unlocked or item_id in permanent_purchases
+
 func reset_for_new_game() -> void:
+	var saved_permanent_purchases := permanent_purchases.duplicate()
 	var defaults := default_save_state()
 	apply_save_state(defaults)
 	active_upgrades = []
@@ -329,6 +337,7 @@ func reset_for_new_game() -> void:
 	run_history = []
 	weapons_unlocked = ["blade_iron"]
 	prologue_seen = true  # preserve: prologue is a one-time player experience, not run state
+	permanent_purchases = saved_permanent_purchases  # preserve: prestige XP purchases are account-wide
 	# Delete the save file so no stale state persists
 	if FileAccess.file_exists(_SaveSystem.SAVE_PATH):
 		DirAccess.remove_absolute(_SaveSystem.SAVE_PATH)

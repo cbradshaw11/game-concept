@@ -172,6 +172,9 @@ func _on_start_run_pressed() -> void:
 		combat_arena.player.reset_for_run()
 		for upgrade in GameState.permanent_upgrades:
 			combat_arena.player.apply_upgrade(upgrade)
+		# Apply permanent_xp prestige purchases
+		if "veteran_spirit" in GameState.permanent_purchases:
+			combat_arena.player.apply_upgrade({"stat": "max_stamina", "modifier_type": "add", "value": 20})
 		for upgrade in GameState.active_upgrades:
 			combat_arena.player.apply_upgrade(upgrade)
 		for modifier in GameState.active_modifiers:
