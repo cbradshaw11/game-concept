@@ -32,9 +32,8 @@ gdscript/warnings/class_name_hides_autoload=0
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
-window/size/initial_position_type=2
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
+window/stretch/aspect="expand"
 
 [input]
 
