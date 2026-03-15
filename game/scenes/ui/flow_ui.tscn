@@ -157,10 +157,9 @@ theme_override_font_sizes/font_size = 14
 [node name="RunScreen" type="PanelContainer" parent="."]
 visible = false
 offset_left = 24.0
-offset_top = 24.0
-offset_right = 560.0
-offset_bottom = 340.0
-theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+offset_top = 110.0
+offset_right = 520.0
+offset_bottom = 400.0
 
 [node name="RunVBox" type="VBoxContainer" parent="RunScreen"]
 theme_override_constants/separation = 10

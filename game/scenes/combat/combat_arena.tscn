@@ -105,6 +105,167 @@ theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.7, 0.7, 0.8, 0.9)
 text = ""
 
+[node name="Bars" type="VBoxContainer" parent="HUD"]
+offset_left = 24.0
+offset_top = 36.0
+offset_right = 224.0
+offset_bottom = 96.0
+
+[node name="HPBar" type="ProgressBar" parent="HUD/Bars"]
+layout_mode = 2
+max_value = 100.0
+value = 100.0
+
+[node name="StaminaBar" type="ProgressBar" parent="HUD/Bars"]
+layout_mode = 2
+max_value = 100.0
+value = 100.0
+
+[node name="PoiseBar" type="ProgressBar" parent="HUD/Bars"]
+layout_mode = 2
+max_value = 100.0
+value = 100.0
+modulate = Color(1.0, 1.0, 0.4, 1)
+
+[node name="EnemyHUDContainer" type="VBoxContainer" parent="HUD"]
+offset_left = 800.0
+offset_top = 8.0
+offset_right = 1256.0
+offset_bottom = 96.0
+alignment = 1
+
+[node name="EnemyHUD_0" type="HBoxContainer" parent="HUD/EnemyHUDContainer"]
+layout_mode = 2
+
+[node name="EnemyNameLabel" type="Label" parent="HUD/EnemyHUDContainer/EnemyHUD_0"]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 0)
+text = "Enemy"
+
+[node name="EnemyHPBar" type="ProgressBar" parent="HUD/EnemyHUDContainer/EnemyHUD_0"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 100.0
+value = 100.0
+modulate = Color(0.8, 0.2, 0.2, 1)
+
+[node name="EnemyHUD_1" type="HBoxContainer" parent="HUD/EnemyHUDContainer"]
+layout_mode = 2
+
+[node name="EnemyNameLabel" type="Label" parent="HUD/EnemyHUDContainer/EnemyHUD_1"]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 0)
+text = "Enemy"
+
+[node name="EnemyHPBar" type="ProgressBar" parent="HUD/EnemyHUDContainer/EnemyHUD_1"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 100.0
+value = 100.0
+modulate = Color(0.8, 0.2, 0.2, 1)
+
+[node name="EnemyHUD_2" type="HBoxContainer" parent="HUD/EnemyHUDContainer"]
+layout_mode = 2
+
+[node name="EnemyNameLabel" type="Label" parent="HUD/EnemyHUDContainer/EnemyHUD_2"]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 0)
+text = "Enemy"
+
+[node name="EnemyHPBar" type="ProgressBar" parent="HUD/EnemyHUDContainer/EnemyHUD_2"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 100.0
+value = 100.0
+modulate = Color(0.8, 0.2, 0.2, 1)
+
+[node name="ActionFeedback" type="Label" parent="HUD"]
+offset_left = 330.0
+offset_top = 420.0
+offset_right = 640.0
+offset_bottom = 460.0
+visible = false
+horizontal_alignment = 1
+vertical_alignment = 1
+text = ""
+
+[node name="WardanPhaseLabel" type="Label" parent="HUD"]
+offset_left = 24.0
+offset_top = 100.0
+offset_right = 400.0
+offset_bottom = 122.0
+visible = false
+text = ""
+
+[node name="StaminaHints" type="Label" parent="HUD"]
+offset_left = 560.0
+offset_top = 505.0
+offset_right = 940.0
+offset_bottom = 530.0
+text = "Attack [SPC] -12  |  Dodge [Z] -22  |  Heavy [X] -26  |  Guard [ESC] free"
+
+[node name="PlayerSprite" type="Sprite2D" parent="."]
+position = Vector2(480, 270)
+
+[node name="EnemySprite0" type="Sprite2D" parent="."]
+position = Vector2(640, 270)
+visible = false
+
+[node name="EnemySprite1" type="Sprite2D" parent="."]
+position = Vector2(760, 270)
+visible = false
+
+[node name="EnemySprite2" type="Sprite2D" parent="."]
+position = Vector2(880, 270)
+visible = false
+
+[node name="TutorialLayer" type="CanvasLayer" parent="."]
+process_mode = 3
+
+[node name="CombatTutorialOverlay" type="Panel" parent="TutorialLayer"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TutorialLayer/CombatTutorialOverlay"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = -130.0
+offset_right = 250.0
+offset_bottom = 130.0
+
+[node name="HintAttack" type="Label" parent="TutorialLayer/CombatTutorialOverlay/VBoxContainer"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "SPACE: Attack (-12 stamina)"
+
+[node name="HintDodge" type="Label" parent="TutorialLayer/CombatTutorialOverlay/VBoxContainer"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "Z: Dodge (-22 stamina, brief invulnerability)"
+
+[node name="HintGuard" type="Label" parent="TutorialLayer/CombatTutorialOverlay/VBoxContainer"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "HOLD ESC: Guard (reduces damage by 70%)"
+
+[node name="HintHeavy" type="Label" parent="TutorialLayer/CombatTutorialOverlay/VBoxContainer"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "X: Heavy Attack (-26 stamina, more damage)"
+
+[node name="HintDismiss" type="Label" parent="TutorialLayer/CombatTutorialOverlay/VBoxContainer"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "Click or press any key to dismiss"
+
 [node name="Player" type="CharacterBody2D" parent="."]
 position = Vector2(480, 300)
 script = ExtResource("2_8n9ne")
