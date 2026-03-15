@@ -243,6 +243,19 @@ func _on_resolve_encounter_pressed() -> void:
 	var contract := contract_system.record_encounter_completed()
 	flow_ui.on_objective_progress(contract)
 	active_encounter = {}
+	_encounter_resolved = false
+	if not contract_system.can_extract():
+		var next_seed := int(GameState.active_seed) + GameState.encounters_cleared
+		active_encounter = ring_director.generate_encounter(
+			next_seed,
+			GameState.current_ring,
+			DataStore.enemies,
+			DataStore.encounter_templates
+		)
+		if not active_encounter.get("enemies", []).is_empty():
+			_ensure_combat_arena()
+			combat_arena.set_context(GameState.current_ring, next_seed, int(active_encounter.get("enemy_count", 1)), active_encounter.get("enemies", []))
+			combat_arena.set_arena_active(true)
 
 func _on_extract_pressed() -> void:
 	if GameState.current_ring == "sanctuary":

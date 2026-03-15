@@ -302,6 +302,8 @@ func _update_enemy_hud() -> void:
 				enemy_hp_bar.value = enemy.health
 		else:
 			slot.visible = false
+			if i < _enemy_sprites.size() and is_instance_valid(_enemy_sprites[i]):
+				_enemy_sprites[i].visible = false
 	if is_boss_encounter and not enemies.is_empty():
 		var boss_enemy := enemies[0]
 		var phase: int = boss_enemy._current_phase
