@@ -53,10 +53,10 @@ value = 100.0
 modulate = Color(1.0, 1.0, 0.4, 1)
 
 [node name="EnemyHUDContainer" type="VBoxContainer" parent="HUD"]
-offset_left = 330.0
+offset_left = 800.0
 offset_top = 8.0
-offset_right = 640.0
-offset_bottom = 80.0
+offset_right = 1256.0
+offset_bottom = 96.0
 alignment = 1
 
 [node name="EnemyHUD_0" type="HBoxContainer" parent="HUD/EnemyHUDContainer"]
