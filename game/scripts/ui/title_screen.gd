@@ -31,8 +31,8 @@ func _on_continue_pressed() -> void:
 	continue_requested.emit()
 
 func _on_settings_pressed() -> void:
-	var settings_scene := load("res://scenes/ui/settings.tscn")
-	var settings_instance := settings_scene.instantiate()
+	var settings_scene: PackedScene = load("res://scenes/ui/settings.tscn")
+	var settings_instance: Node = settings_scene.instantiate()
 	add_child(settings_instance)
 	settings_instance.settings_closed.connect(_on_settings_closed.bind(settings_instance))
 
