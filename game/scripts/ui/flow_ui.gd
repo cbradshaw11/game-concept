@@ -60,6 +60,7 @@ var _pool_exhaustion_tween: Tween = null
 func _ready() -> void:
 	_setup_ui_audio()
 	_show_prep()
+	set_available_loadouts(DataStore.weapons.get("weapons", []))
 	return_button.pressed.connect(_on_return_to_sanctuary)
 	return_button.pressed.connect(_play_ui_click)
 	descend_warden_button.pressed.connect(_on_descend_warden_pressed)
