@@ -1,0 +1,88 @@
+id: TASK-408
+title: Loot threshold ring access gate
+type: feature
+priority: p2
+area: progression
+risk: low
+milestone: M4 The Road Opens
+status: done
+
+problem: >
+  Players can access Ring 2 and Ring 3 from the first run with zero banked loot.
+  There is no economy loop. The shop is deferred to M5. Without any gate,
+  loot accumulates with no spend path and progression has no friction.
+
+desired_outcome: >
+  rings.json defines loot_gate_threshold per ring. FlowUI shows rings as locked
+  when banked_loot is below threshold. Attempting to select a locked ring
+  displays a message with the required threshold. This establishes the earn/spend
+  loop placeholder until the full shop arrives in M5.
+
+scope_in:
+  - Add loot_gate_threshold to each ring in rings.json (inner=0, mid=50, outer=150)
+  - FlowUI ring selector reads thresholds from rings.json via DataStore
+  - Locked state: selector option grayed, tooltip shows "Requires 50 loot"
+  - Gate check: GameState.banked_loot >= threshold to enable
+  - Both gate layers apply: rings_cleared (TASK-402) AND loot threshold
+
+scope_out:
+  - Full shop/vendor UI (M5)
+  - Spending loot (M5)
+  - Dynamic threshold tuning (M5)
+
+dependencies:
+  blockers:
+    - TASK-402
+  unblocks:
+    - TASK-409
+
+acceptance_criteria:
+  - id: ac1
+    description: rings.json has loot_gate_threshold per ring
+    verify: "python3 -c \"import json; r=json.load(open('game/data/rings.json')); [print(x['id'], x.get('loot_gate_threshold','MISSING')) for x in r.get('rings',r.get('rings',[]))]\""
+  - id: ac2
+    description: Locked ring shows threshold message in FlowUI
+    verify: "grep -n 'loot_gate\\|loot_threshold\\|banked_loot' game/scripts/ui/flow_ui.gd"
+  - id: ac3
+    description: Gate check uses GameState.banked_loot comparison
+    verify: "grep -n 'banked_loot' game/scripts/ui/flow_ui.gd"
+
+verification_required:
+  - "python3 -c \"import json; r=json.load(open('game/data/rings.json')); print(r)\""
+  - "grep -n 'loot_gate\\|banked_loot' game/scripts/ui/flow_ui.gd"
+
+slices:
+  - id: s1
+    name: Add loot_gate_threshold to rings.json
+    files_modify:
+      - game/data/rings.json
+  - id: s2
+    name: Add loot gate check to FlowUI ring selector
+    files_modify:
+      - game/scripts/ui/flow_ui.gd
+    files_read_only:
+      - game/data/rings.json
+      - game/autoload/game_state.gd
+
+context_refs:
+  - .plans/TASK-408-execution-plan.md
+  - game/data/rings.json
+  - game/scripts/ui/flow_ui.gd
+  - game/autoload/game_state.gd
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: false
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  Thresholds: inner ring = 0 (always accessible), mid ring = 50 banked_loot,
+  outer ring = 150 banked_loot. Both the rings_cleared gate AND the loot gate
+  must pass for a ring to be selectable. inner ring is always accessible to
+  ensure new players can always play. sanctuary ring is not in selector.

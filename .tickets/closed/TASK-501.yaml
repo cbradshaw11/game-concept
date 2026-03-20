@@ -1,0 +1,117 @@
+id: TASK-501
+title: Upgrade Pass (Per-Run Economy)
+type: feature
+priority: p1
+area: progression
+risk: medium
+milestone: M5 Into the Dark
+status: done
+
+problem: >
+  The game has no economy loop. Players earn loot to unlock rings but there is
+  no spend path within a run. Each run feels identical regardless of progress.
+  Without per-run build differentiation, replays are indistinguishable.
+
+desired_outcome: >
+  A 3-card upgrade draw appears between Ring 1->2 and Ring 2->3. Player selects
+  one upgrade that modifies their stats for the rest of the run. Pool of 6 upgrades
+  defined in upgrades.json. Active upgrades shown on RunScreen and death screen.
+
+scope_in:
+  - upgrades.json data file with minimum 6 upgrade definitions
+  - 3-card draw UI in FlowUI (appears after ring completion, before extract)
+  - Apply selected upgrade to PlayerController stats for run duration
+  - Active upgrades indicator on RunScreen
+  - Active upgrades listed on death screen and credits panel
+  - Per-run scope (upgrades reset on new run, NOT persisted to save state)
+
+scope_out:
+  - Persistent/meta-progression upgrades across runs (M6)
+  - Vendor NPC or catalog UI (M6)
+  - Currency display or shop screen (M6)
+
+dependencies:
+  blockers: []
+  unblocks:
+    - TASK-508
+
+acceptance_criteria:
+  - id: ac1
+    description: 3-card draw appears in FlowUI after completing Ring 1 or Ring 2 before extract; player must select one (cannot skip)
+    verify: "grep -n 'upgrade_draw\\|UpgradeCard\\|upgrade_panel' game/scripts/ui/flow_ui.gd"
+  - id: ac2
+    description: Selected upgrade modifies PlayerController stats for remainder of run
+    verify: "grep -n 'active_upgrades\\|apply_upgrade' game/autoload/game_state.gd"
+  - id: ac3
+    description: Active upgrades shown as compact list on RunScreen and on death screen / credits panel
+    verify: "grep -n 'active_upgrades\\|upgrade.*label' game/scripts/ui/flow_ui.gd"
+  - id: ac4
+    description: upgrades.json has at least 6 upgrades
+    verify: "python3 -c \"import json; u=json.load(open('game/data/upgrades.json')); print(len(u['upgrades']))\""
+  - id: ac5
+    description: Upgrades not present in to_save_state() (per-run scope)
+    verify: "grep -n 'active_upgrades' game/autoload/game_state.gd | grep -v 'to_save_state\\|apply_save' || echo 'PASS: not in save'"
+
+verification_required:
+  - "grep -n 'upgrade_draw\\|UpgradeCard\\|upgrade_panel' game/scripts/ui/flow_ui.gd"
+  - "python3 -c \"import json; u=json.load(open('game/data/upgrades.json')); print(len(u['upgrades']))\""
+  - "grep -n 'active_upgrades\\|apply_upgrade' game/autoload/game_state.gd"
+
+slices:
+  - id: s1
+    name: upgrades.json data file
+    files_create:
+      - game/data/upgrades.json
+    files_modify: []
+    files_read_only: []
+    evidence: []
+  - id: s2
+    name: active_upgrades tracking in GameState
+    files_create: []
+    files_modify:
+      - game/autoload/game_state.gd
+    files_read_only: []
+    evidence: []
+  - id: s3
+    name: apply_upgrade in PlayerController
+    files_create: []
+    files_modify:
+      - game/scripts/core/player_controller.gd
+    files_read_only: []
+    evidence: []
+  - id: s4
+    name: 3-card draw UI in FlowUI
+    files_create: []
+    files_modify:
+      - game/scripts/ui/flow_ui.gd
+      - game/scenes/ui/flow_ui.tscn
+    files_read_only: []
+    evidence: []
+  - id: s5
+    name: Active upgrades on RunScreen and death screen
+    files_create: []
+    files_modify:
+      - game/scripts/ui/flow_ui.gd
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: "2026-03-12"
+  verification:
+    required_passed: true
+    commands_run:
+      - "python3 -c \"import json; u=json.load(open('game/data/upgrades.json')); print(len(u['upgrades']))\""
+      - "grep -n 'active_upgrades|apply_upgrade' game/autoload/game_state.gd"
+      - "grep -n 'UpgradeCard|upgrade_draw|upgrade_panel' game/scripts/ui/flow_ui.gd"
+      - "grep -n 'active_upgrades|upgrade.*label' game/scripts/ui/flow_ui.gd"
+      - "grep -n 'active_upgrades' game/autoload/game_state.gd | grep -v 'to_save_state|apply_save'"
+    evidence_refs: []
+
+notes: >
+  Upgrades are per-run only. Do not add active_upgrades to to_save_state().
+  GameState.active_upgrades should be an Array[Dictionary] reset in start_run().
+  Read the execution plan at .plans/TASK-501-execution-plan.md before implementing.

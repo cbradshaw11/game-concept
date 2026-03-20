@@ -1,0 +1,55 @@
+id: TASK-204
+title: Combat arena scene and player movement controller
+type: feature
+priority: p1
+area: combat
+risk: high
+milestone: M2 Ring1 Slice
+status: done
+
+problem: No playable combat arena scene existed for Ring1 encounters.
+desired_outcome: Combat arena scene renders and player can move within the arena using the movement controller.
+
+scope_in:
+  - Combat arena scene (main.tscn)
+  - Player movement controller script
+scope_out:
+  - Enemy actor integration (TASK-205)
+  - Contract/objective system (TASK-206)
+
+dependencies:
+  blockers:
+    - TASK-201
+  unblocks:
+    - TASK-205
+    - TASK-207
+
+acceptance_criteria:
+  - id: ac1
+    description: Combat arena scene loads and player movement works
+    verify: "bash scripts/ci/smoke_scene.sh"
+
+verification_required:
+  - "bash scripts/ci/smoke_scene.sh"
+
+slices:
+  - id: s1
+    name: Combat arena scene and movement controller
+    files_create:
+      - game/scenes/main.tscn
+    files_modify: []
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: Completed as part of M2 Ring1 Slice milestone.

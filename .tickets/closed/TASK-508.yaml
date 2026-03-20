@@ -1,0 +1,114 @@
+id: TASK-508
+title: M5 Test Suite
+type: test
+priority: p1
+area: test
+risk: low
+milestone: M5 Into the Dark
+status: done
+
+problem: >
+  No headless tests exist for M5 systems. Without tests, regressions in upgrade
+  pass, Warden phases, bank on death, save migration, or contract targets cannot
+  be detected automatically. CI cannot gate on M5 correctness.
+
+desired_outcome: >
+  6 headless unit tests for all M5 systems in game/scripts/tests/m5/.
+  All registered in headless_tests.sh. Zero M4 regressions. check_content_volume.py
+  integrated as a CI verification step.
+
+scope_in:
+  - test_upgrade_pass.gd
+  - test_warden_phases.gd
+  - test_bank_on_death.gd
+  - test_save_migration_m5.gd
+  - test_contract_targets.gd
+  - test_audio_events.gd
+  - Register all 6 in headless_tests.sh with run_test entries
+  - Add structural file checks in no-godot4 branch of headless_tests.sh
+scope_out:
+  - Runtime audio playback tests (structural signal connection check only)
+  - End-to-end playthrough tests
+  - Performance benchmarks
+
+dependencies:
+  blockers:
+    - TASK-501
+    - TASK-502
+    - TASK-503
+    - TASK-504
+    - TASK-505
+    - TASK-506
+    - TASK-507
+  unblocks: []
+
+acceptance_criteria:
+  - id: ac1
+    description: All 6 test files present
+    verify: "ls game/scripts/tests/m5/"
+  - id: ac2
+    description: Zero failures in headless_tests.sh
+    verify: "bash scripts/ci/headless_tests.sh 2>&1 | tail -10"
+  - id: ac3
+    description: All 6 m5 tests registered in headless_tests.sh
+    verify: "grep -n 'm5/' scripts/ci/headless_tests.sh"
+  - id: ac4
+    description: check_content_volume.py passes
+    verify: "python3 scripts/ci/check_content_volume.py"
+
+verification_required:
+  - "ls game/scripts/tests/m5/"
+  - "grep -n 'm5/' scripts/ci/headless_tests.sh"
+  - "bash scripts/ci/headless_tests.sh 2>&1 | tail -10"
+  - "python3 scripts/ci/check_content_volume.py"
+
+slices:
+  - id: s1
+    name: Read all M5 implementation files before writing tests
+    files_create: []
+    files_modify: []
+    files_read_only:
+      - game/autoload/game_state.gd
+      - game/scripts/core/enemy_controller.gd
+      - game/scripts/core/player_controller.gd
+      - game/data/upgrades.json
+      - game/data/rings.json
+      - scripts/ci/headless_tests.sh
+    evidence: []
+  - id: s2
+    name: Write 6 test files
+    files_create:
+      - game/scripts/tests/m5/test_upgrade_pass.gd
+      - game/scripts/tests/m5/test_warden_phases.gd
+      - game/scripts/tests/m5/test_bank_on_death.gd
+      - game/scripts/tests/m5/test_save_migration_m5.gd
+      - game/scripts/tests/m5/test_contract_targets.gd
+      - game/scripts/tests/m5/test_audio_events.gd
+    files_modify: []
+    files_read_only: []
+    evidence: []
+  - id: s3
+    name: Register tests in headless_tests.sh
+    files_create: []
+    files_modify:
+      - scripts/ci/headless_tests.sh
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: false
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  CRITICAL: Read all M5 implementation files before writing tests to match actual
+  method names, signal names, and field names. Tests must be self-contained using
+  the extends SceneTree pattern. EnemyController extends RefCounted (instantiate
+  directly). GameState is an autoload (access via GameState.field).
+  Read the execution plan at .plans/TASK-508-execution-plan.md before implementing.

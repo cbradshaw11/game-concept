@@ -1,0 +1,95 @@
+id: TASK-310
+title: Full combat loop test suite
+type: test
+priority: p1
+area: test
+risk: low
+milestone: M3 Combat Model
+status: done
+
+problem: >
+  The existing 11 M2 tests verify signals and structure but no combat outcomes.
+  After M3 adds HP, enemy damage, weapon stats, guard, dodge, and poise, there
+  are no regression tests to catch breakage.
+
+desired_outcome: >
+  A coherent test suite under game/scripts/tests/combat/ covers every new system.
+  All tests run via headless_tests.sh. No existing M2 tests regress.
+
+scope_in:
+  - test_player_hp.gd: take_damage reduces HP; at 0 fires player_died; unbanked clears
+  - test_enemy_damage.gd: mock enemy with known damage, attack resolves, player HP delta correct
+  - test_weapon_stats.gd: each weapon's light_damage matches attack damage dealt
+  - test_guard_reduction.gd: guarded damage < unguarded; guard_broken fires at threshold
+  - test_dodge_iframes.gd: damage during window = 0; damage outside = normal
+  - test_poise.gd: poise to 0 fires player_staggered; poise recovers after stagger
+  - All tests use minimal mock scenes (no full game world)
+  - headless_tests.sh updated with new test file paths
+
+scope_out:
+  - Integration test of the full Sanctuary-to-extraction flow (too slow for unit suite)
+  - Ring 2 content tests
+
+dependencies:
+  blockers:
+    - TASK-301
+    - TASK-302
+    - TASK-303
+    - TASK-304
+    - TASK-305
+    - TASK-306
+  unblocks: []
+
+acceptance_criteria:
+  - id: ac1
+    description: 6 new test files exist in game/scripts/tests/combat/
+    verify: "ls game/scripts/tests/combat/"
+  - id: ac2
+    description: All combat tests pass in CI headless run
+    verify: "bash scripts/ci/headless_tests.sh 2>&1 | tail -5"
+  - id: ac3
+    description: No regression on M2 test files
+    verify: "bash scripts/ci/headless_tests.sh 2>&1 | grep -c FAIL || echo '0 failures'"
+
+verification_required:
+  - "ls game/scripts/tests/combat/"
+  - "bash scripts/ci/headless_tests.sh 2>&1 | tail -5"
+  - "bash scripts/ci/headless_tests.sh 2>&1 | grep -c FAIL | xargs -I{} test {} -eq 0 && echo 'PASS: 0 failures'"
+
+slices:
+  - id: s1
+    name: Consolidate test files into game/scripts/tests/combat/
+    files_create:
+      - game/scripts/tests/combat/test_player_hp.gd
+      - game/scripts/tests/combat/test_enemy_damage.gd
+      - game/scripts/tests/combat/test_weapon_stats.gd
+      - game/scripts/tests/combat/test_guard_reduction.gd
+      - game/scripts/tests/combat/test_dodge_iframes.gd
+      - game/scripts/tests/combat/test_poise.gd
+    files_modify:
+      - scripts/ci/headless_tests.sh
+    files_read_only: []
+    evidence: []
+
+context_refs:
+  - .plans/TASK-310-execution-plan.md
+  - scripts/ci/headless_tests.sh
+  - game/scripts/tests/
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: "2026-03-10"
+  completed_at: "2026-03-10"
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  Individual test stubs will be created as part of TASK-301 through TASK-306.
+  TASK-310 consolidates them under tests/combat/, ensures headless_tests.sh
+  picks them all up, and verifies the full suite passes with no regressions.
+  Each test file should follow the pattern of existing tests — extend SceneTree,
+  use _initialize(), assert conditions, call quit(0) on pass or quit(1) on fail.

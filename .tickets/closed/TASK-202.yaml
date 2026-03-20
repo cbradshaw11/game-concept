@@ -1,0 +1,55 @@
+id: TASK-202
+title: Encounter templates data file and loader
+type: feature
+priority: p1
+area: data
+risk: low
+milestone: M2 Ring1 Slice
+status: done
+
+problem: No data-driven encounter template system existed; encounters were hardcoded.
+desired_outcome: Encounter templates defined in a data file and loaded at runtime by a loader component.
+
+scope_in:
+  - Encounter templates JSON data file
+  - Loader that reads and validates encounter templates at runtime
+scope_out:
+  - Combat logic (TASK-204, TASK-205)
+  - Enemy actor implementation
+
+dependencies:
+  blockers:
+    - TASK-108
+  unblocks:
+    - TASK-205
+    - TASK-206
+
+acceptance_criteria:
+  - id: ac1
+    description: Encounter templates data file exists and loader passes tests
+    verify: "bash scripts/ci/task_specific_tests.sh"
+
+verification_required:
+  - "bash scripts/ci/task_specific_tests.sh"
+
+slices:
+  - id: s1
+    name: Encounter templates data and loader
+    files_create:
+      - game/data/encounters.json
+    files_modify: []
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: Completed as part of M2 Ring1 Slice milestone.

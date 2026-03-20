@@ -1,0 +1,57 @@
+id: TASK-102
+title: Add issue templates for task and milestone intake
+type: chore
+priority: p2
+area: infra
+risk: low
+milestone: M1 Foundation
+status: done
+
+problem: No standardized issue templates existed for creating tasks or milestone checkpoints.
+desired_outcome: Issue templates available for task and milestone intake via GitHub UI.
+
+scope_in:
+  - Add .github/ISSUE_TEMPLATE/task.yml
+  - Add .github/ISSUE_TEMPLATE/milestone-checkpoint.yml
+  - Add .github/ISSUE_TEMPLATE/config.yml
+scope_out:
+  - PR templates
+  - Label configuration
+
+dependencies:
+  blockers:
+    - TASK-101
+  unblocks:
+    - TASK-103
+
+acceptance_criteria:
+  - id: ac1
+    description: Issue templates exist for task and milestone
+    verify: "ls .github/ISSUE_TEMPLATE/"
+
+verification_required:
+  - "ls .github/ISSUE_TEMPLATE/"
+
+slices:
+  - id: s1
+    name: Add issue templates
+    files_create:
+      - .github/ISSUE_TEMPLATE/task.yml
+      - .github/ISSUE_TEMPLATE/milestone-checkpoint.yml
+      - .github/ISSUE_TEMPLATE/config.yml
+    files_modify: []
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: Completed as part of M1 Foundation milestone.

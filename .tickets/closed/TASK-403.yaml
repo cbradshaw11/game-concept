@@ -1,0 +1,97 @@
+id: TASK-403
+title: Enemy behavior profile dispatch
+type: feature
+priority: p1
+area: combat
+risk: medium
+milestone: M4 The Road Opens
+status: done
+
+problem: >
+  enemies.json defines behavior_profile for every enemy (frontline_basic,
+  flank_aggressive, kite_volley, guard_counter, zone_control, elite_pressure)
+  but EnemyController never reads this field. All enemies behave identically
+  regardless of profile. Ring 2 enemies are indistinguishable from Ring 1.
+
+desired_outcome: >
+  EnemyController supports per-profile tick() parameters. CombatArena reads
+  behavior_profile from enemies.json data and sets parameters on spawn.
+  Ring 2 enemies (flank_aggressive, kite_volley) produce observably different
+  ATTACK/IDLE states compared to Ring 1 (frontline_basic).
+
+scope_in:
+  - Add preferred_min_range: float = 0.0 to EnemyController
+  - Add guard_query: Callable field to EnemyController (default: returns false)
+  - Modify tick() to check distance >= preferred_min_range before ATTACK
+  - For guard_counter: skip ATTACK transition when guard_query.call() returns true
+  - Add match block in CombatArena._spawn_enemies() dispatching parameters per profile:
+    - frontline_basic: chase_range=3.5, attack_cooldown=1.5 (unchanged)
+    - flank_aggressive: chase_range=5.0, attack_cooldown=0.9
+    - kite_volley: preferred_min_range=1.5, attack_range=4.5
+    - guard_counter: chase_range=4.5, guard_query=func()->bool: return player_guarding
+    - zone_control: chase_range=6.0, attack_cooldown=1.8, poise_damage multiplier
+    - elite_pressure: chase_range=4.5, attack_cooldown=0.7, damage boost
+
+scope_out:
+  - Zone system replacement (deferred to M5)
+  - Warden-specific behavior (TASK-405)
+
+dependencies:
+  blockers: []
+  unblocks:
+    - TASK-405
+
+acceptance_criteria:
+  - id: ac1
+    description: preferred_min_range and guard_query fields declared in EnemyController
+    verify: "grep -n 'behavior_profile\\|preferred_min_range\\|guard_query' game/scripts/core/enemy_controller.gd"
+  - id: ac2
+    description: CombatArena has match block dispatching profile parameters on spawn
+    verify: "grep -n 'behavior_profile\\|flank_aggressive\\|kite_volley\\|guard_counter' game/scenes/combat/combat_arena.gd"
+  - id: ac3
+    description: Unit test verifies different profiles produce different ATTACK/IDLE at same distance
+    verify: "test -f game/scripts/tests/m4/test_behavior_profiles.gd"
+
+verification_required:
+  - "grep -n 'preferred_min_range' game/scripts/core/enemy_controller.gd"
+  - "grep -n 'flank_aggressive\\|kite_volley' game/scenes/combat/combat_arena.gd"
+  - "test -f game/scripts/tests/m4/test_behavior_profiles.gd"
+
+slices:
+  - id: s1
+    name: Add profile parameters to EnemyController
+    files_modify:
+      - game/scripts/core/enemy_controller.gd
+    files_read_only:
+      - game/data/enemies.json
+  - id: s2
+    name: Add profile dispatch match block in CombatArena
+    files_modify:
+      - game/scenes/combat/combat_arena.gd
+    files_read_only:
+      - game/scripts/core/enemy_controller.gd
+      - game/data/enemies.json
+
+context_refs:
+  - .plans/TASK-403-execution-plan.md
+  - game/scripts/core/enemy_controller.gd
+  - game/scenes/combat/combat_arena.gd
+  - game/data/enemies.json
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: false
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  Implementation is parameter-driven only. The zone system (pixel_x / 160 = zone)
+  cannot support spatial flanking. All profiles work via tick() parameter variations.
+  guard_query closure: in CombatArena, set enemy.guard_query = func() -> bool:
+  return player_controller.guarding. EnemyController default guard_query should
+  return false so non-guard_counter enemies always attack normally.

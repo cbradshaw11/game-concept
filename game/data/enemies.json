@@ -4,18 +4,22 @@
       "id": "scavenger_grunt",
       "role": "grunt",
       "rings": ["inner", "mid"],
-      "health": 60,
+      "ring_availability": "inner",
+      "health": 65,
       "poise": 20,
-      "damage": 8,
+      "damage": 6,
+      "poise_damage": 15,
       "behavior_profile": "frontline_basic"
     },
     {
       "id": "shieldbearer",
       "role": "defender",
       "rings": ["inner", "mid"],
-      "health": 85,
+      "ring_availability": "inner",
+      "health": 70,
       "poise": 40,
-      "damage": 7,
+      "damage": 6,
+      "poise_damage": 20,
       "behavior_profile": "guard_counter"
     },
     {
@@ -25,15 +29,18 @@
       "health": 70,
       "poise": 25,
       "damage": 12,
+      "poise_damage": 14,
       "behavior_profile": "flank_aggressive"
     },
     {
       "id": "ridge_archer",
       "role": "ranged",
       "rings": ["mid", "outer"],
+      "ring_availability": "mid",
       "health": 55,
       "poise": 15,
-      "damage": 10,
+      "damage": 5,
+      "poise_damage": 12,
       "behavior_profile": "kite_volley"
     },
     {
@@ -43,6 +50,7 @@
       "health": 65,
       "poise": 18,
       "damage": 14,
+      "poise_damage": 16,
       "behavior_profile": "zone_control"
     },
     {
@@ -52,16 +60,85 @@
       "health": 130,
       "poise": 70,
       "damage": 16,
+      "poise_damage": 20,
+      "behavior_profile": "elite_pressure"
+    },
+    {
+      "id": "dust_runner",
+      "role": "grunt",
+      "rings": ["inner"],
+      "ring_availability": "inner",
+      "health": 35,
+      "poise": 20,
+      "damage": 8,
+      "poise_damage": 10,
+      "behavior_profile": "frontline_basic"
+    },
+    {
+      "id": "siege_crossbowman",
+      "role": "ranged",
+      "rings": ["inner"],
+      "ring_availability": "inner",
+      "health": 45,
+      "poise": 15,
+      "damage": 11,
+      "poise_damage": 12,
+      "behavior_profile": "kite_volley"
+    },
+    {
+      "id": "iron_vanguard",
+      "role": "defender",
+      "rings": ["mid"],
+      "ring_availability": "mid",
+      "health": 90,
+      "poise": 60,
+      "damage": 14,
+      "poise_damage": 22,
+      "behavior_profile": "guard_counter"
+    },
+    {
+      "id": "rift_sentinel",
+      "role": "elite",
+      "rings": ["outer"],
+      "health": 120,
+      "poise": 50,
+      "damage": 18,
+      "poise_damage": 25,
+      "behavior_profile": "elite_pressure"
+    },
+    {
+      "id": "void_sniper",
+      "role": "ranged",
+      "rings": ["outer"],
+      "health": 70,
+      "poise": 20,
+      "damage": 22,
+      "poise_damage": 14,
+      "behavior_profile": "sniper_volley"
+    },
+    {
+      "id": "warden_herald",
+      "role": "mini_boss",
+      "rings": ["outer"],
+      "health": 169,
+      "poise": 30,
+      "damage": 17,
+      "poise_damage": 26,
       "behavior_profile": "elite_pressure"
     }
   ],
   "bosses": [
     {
       "id": "outer_warden",
+      "role": "boss",
+      "rings": ["outer"],
       "ring": "outer",
       "phases": 3,
       "health": 1200,
       "poise": 250,
+      "damage": 18,
+      "poise_damage": 35,
+      "behavior_profile": "elite_pressure",
       "damage_profile": "heavy_commitment_punish"
     }
   ]

@@ -1,0 +1,82 @@
+id: TASK-309
+title: Ring 1 combat balance pass
+type: chore
+priority: p2
+area: data
+risk: low
+milestone: M3 Combat Model
+status: done
+
+problem: >
+  Enemy stats in enemies.json were authored before the combat model existed.
+  With real damage numbers now in place (TASK-302, TASK-303), the encounter
+  difficulty may be wildly off — trivial or instant-kill.
+
+desired_outcome: >
+  Inner-ring enemies tuned so an unupgraded player (100 HP) drains 20-35% HP
+  per encounter. No single attack deals more than 40 HP (not a one-shot).
+  Balance documented in the PR body.
+
+scope_in:
+  - Review all 3 inner-ring enemy types (scavenger_grunt, ridge_sentinel, dust_crawler or equivalent)
+  - Tune damage and health values in enemies.json inner-ring entries only
+  - Document encounter budget: expected HP drain per encounter for each weapon
+  - No code changes — data only
+
+scope_out:
+  - Mid/outer ring enemy tuning (Ring 2 deferred to M4)
+  - Boss (outer_warden) tuning
+  - Guard/dodge interaction tuning (separate concern)
+
+dependencies:
+  blockers:
+    - TASK-302
+    - TASK-303
+  unblocks:
+    - TASK-310
+
+acceptance_criteria:
+  - id: ac1
+    description: Inner-ring enemy damage values present and <= 40 per hit
+    verify: "python3 -c \"import json; e=json.load(open('game/data/enemies.json')); inner=[x for x in e['enemies'] if 'inner' in x.get('ring_availability','')]; print([x['damage'] for x in inner])\""
+  - id: ac2
+    description: Encounter budget documented in PR body (manual check)
+    verify: "cat game/data/enemies.json | python3 -c \"import json,sys; e=json.load(sys.stdin); [print(x['id'],x['damage'],x['health']) for x in e['enemies'] if 'inner' in x.get('ring_availability','')]\""
+
+verification_required:
+  - "python3 -c \"import json; e=json.load(open('game/data/enemies.json')); inner=[x for x in e['enemies'] if 'inner' in x.get('ring_availability','')]; assert all(x['damage']<=40 for x in inner), 'damage exceeds one-shot threshold'; print('balance check: PASS')\""
+
+slices:
+  - id: s1
+    name: Tune inner-ring enemy stats in enemies.json
+    files_create: []
+    files_modify:
+      - game/data/enemies.json
+    files_read_only:
+      - game/data/encounter_templates.json
+      - game/data/weapons.json
+    evidence: []
+
+context_refs:
+  - .plans/TASK-309-execution-plan.md
+  - game/data/enemies.json
+  - game/data/encounter_templates.json
+  - game/data/weapons.json
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: "2026-03-10"
+  completed_at: "2026-03-10"
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  Target budget: player has 100 HP, 3 inner encounters per run. If each
+  encounter drains 20-35 HP, player arrives at extraction with 5-40 HP —
+  tense but survivable. blade_iron (14 damage) needs ~7-8 hits to clear a
+  100 HP enemy, so encounters should have 60-80 HP enemies for reasonable pacing.
+  Adjust poise_damage on enemies too so guard/dodge have meaningful stakes.

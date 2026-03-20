@@ -1,0 +1,98 @@
+id: TASK-405
+title: Warden boss encounter
+type: feature
+priority: p1
+area: combat
+risk: medium
+milestone: M4 The Road Opens
+status: done
+
+problem: >
+  There is no way to fight the Warden. outer_warden exists in enemies.json with
+  1200 HP and elite_pressure profile but there is no UI trigger to enter the
+  encounter, no warden_defeated flag, and no win-state hookup. The game cannot
+  be completed.
+
+desired_outcome: >
+  After completing encounters in Ring 3, a "Descend to Warden" option appears.
+  Selecting it spawns outer_warden as a single-phase encounter using HP and
+  stats from enemies.json. Defeat sets warden_defeated = true in GameState and
+  persists to save. This enables TASK-406 win condition handler.
+
+scope_in:
+  - Add warden_defeated: bool to GameState, persisted in save state
+  - Add "Descend to Warden" trigger in FlowUI after Ring 3 encounters complete
+  - CombatArena._spawn_boss(boss_id) spawns from DataStore.enemies.get("bosses")
+  - HP and damage loaded from enemies.json (not hardcoded)
+  - Warden death emits warden_defeated signal, sets GameState.warden_defeated = true
+  - Single phase only — phase 2/3 deferred to M5
+
+scope_out:
+  - Win condition and credits screen (TASK-406)
+  - Warden boss phases 2 and 3 (M5)
+  - Special warden animations or VFX (M5)
+
+dependencies:
+  blockers:
+    - TASK-403
+    - TASK-404
+  unblocks:
+    - TASK-406
+
+acceptance_criteria:
+  - id: ac1
+    description: After Ring 3 encounters complete, "Descend to Warden" option appears in FlowUI
+    verify: "grep -n 'warden\\|Descend\\|boss_encounter' game/scripts/ui/flow_ui.gd"
+  - id: ac2
+    description: warden_defeated flag declared in GameState and persisted to save
+    verify: "grep -n 'warden_defeated' game/autoload/game_state.gd"
+  - id: ac3
+    description: Warden HP loaded from enemies.json matches what CombatArena uses
+    verify: "python3 -c \"import json; e=json.load(open('game/data/enemies.json')); warden=[x for x in e.get('bosses',[]) if x['id']=='outer_warden'][0]; print('HP:', warden['health'])\""
+
+verification_required:
+  - "grep -n 'warden_defeated' game/autoload/game_state.gd"
+  - "grep -n 'warden_defeated\\|_spawn_boss' game/scenes/combat/combat_arena.gd"
+  - "grep -n 'warden\\|Descend' game/scripts/ui/flow_ui.gd"
+  - "grep -n 'warden_defeated' game/scripts/systems/save_system.gd"
+
+slices:
+  - id: s1
+    name: Add warden_defeated to GameState and save schema
+    files_modify:
+      - game/autoload/game_state.gd
+      - game/scripts/systems/save_system.gd
+  - id: s2
+    name: Add Descend to Warden trigger in FlowUI and CombatArena boss spawn
+    files_modify:
+      - game/scripts/ui/flow_ui.gd
+      - game/scenes/combat/combat_arena.gd
+    files_read_only:
+      - game/data/enemies.json
+      - game/autoload/game_state.gd
+
+context_refs:
+  - .plans/TASK-405-execution-plan.md
+  - game/autoload/game_state.gd
+  - game/scenes/combat/combat_arena.gd
+  - game/scripts/ui/flow_ui.gd
+  - game/data/enemies.json
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: false
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  Warden uses elite_pressure behavior profile (set by TASK-403 dispatch).
+  enemies.json outer_warden: health=1200, damage=22, poise_damage=35.
+  The "Descend to Warden" option should only appear when GameState.current_ring
+  == "outer" AND GameState.encounters_cleared >= some threshold (e.g., 3).
+  warden_defeated should survive die_in_run() — once the Warden is defeated,
+  that's permanent progress.

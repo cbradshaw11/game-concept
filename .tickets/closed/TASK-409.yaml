@@ -1,0 +1,106 @@
+id: TASK-409
+title: M4 test suite
+type: test
+priority: p1
+area: test
+risk: low
+milestone: M4 The Road Opens
+status: done
+
+problem: >
+  M4 introduces ring unlock logic, behavior profiles, heavy attacks, and save
+  migration. None of these have unit test coverage. The M3 test suite covers
+  only combat model fundamentals. CI cannot catch regressions in new M4 systems.
+
+desired_outcome: >
+  5 new headless unit tests in game/scripts/tests/m4/ covering ring gates,
+  progression, save migration, behavior profiles, and heavy attacks. All tests
+  registered in headless_tests.sh. Zero M3 test regressions.
+
+scope_in:
+  - test_ring_gate.gd: ring access blocked/unblocked by rings_cleared; loot threshold
+  - test_ring_unlock_progression.gd: extract() adds to rings_cleared; death does NOT remove from rings_cleared; save/load round-trip preserves rings_cleared
+  - test_save_migration.gd: loading save without rings_cleared key defaults to [] without crash
+  - test_behavior_profiles.gd: ash_flanker (flank_aggressive) and ridge_archer (kite_volley) produce different ATTACK/IDLE states at same distance
+  - test_heavy_attack.gd: heavy attack deals heavy_damage, costs heavy_stamina_cost; weapon swap reloads stats
+  - Register all 5 tests in scripts/ci/headless_tests.sh
+
+scope_out:
+  - M5 tests
+  - Performance or integration tests
+
+dependencies:
+  blockers:
+    - TASK-401
+    - TASK-402
+    - TASK-403
+    - TASK-404
+    - TASK-405
+    - TASK-406
+    - TASK-407
+    - TASK-408
+  unblocks: []
+
+acceptance_criteria:
+  - id: ac1
+    description: All 5 test files exist in game/scripts/tests/m4/
+    verify: "ls game/scripts/tests/m4/"
+  - id: ac2
+    description: Headless test suite passes with 0 failures
+    verify: "bash scripts/ci/headless_tests.sh 2>&1 | tail -5"
+  - id: ac3
+    description: All 5 new tests registered in headless_tests.sh
+    verify: "grep -n 'm4/' scripts/ci/headless_tests.sh"
+
+verification_required:
+  - "ls game/scripts/tests/m4/"
+  - "bash scripts/ci/headless_tests.sh 2>&1 | tail -5"
+  - "grep -c 'm4/' scripts/ci/headless_tests.sh"
+
+slices:
+  - id: s1
+    name: Write 5 M4 unit test files
+    files_create:
+      - game/scripts/tests/m4/test_ring_gate.gd
+      - game/scripts/tests/m4/test_ring_unlock_progression.gd
+      - game/scripts/tests/m4/test_save_migration.gd
+      - game/scripts/tests/m4/test_behavior_profiles.gd
+      - game/scripts/tests/m4/test_heavy_attack.gd
+    files_read_only:
+      - game/autoload/game_state.gd
+      - game/scripts/core/enemy_controller.gd
+      - game/scripts/core/player_controller.gd
+      - game/data/weapons.json
+      - game/data/rings.json
+  - id: s2
+    name: Register all 5 tests in headless_tests.sh
+    files_modify:
+      - scripts/ci/headless_tests.sh
+
+context_refs:
+  - .plans/TASK-409-execution-plan.md
+  - game/scripts/tests/combat/ (pattern reference)
+  - scripts/ci/headless_tests.sh
+  - game/autoload/game_state.gd
+  - game/scripts/core/enemy_controller.gd
+  - game/scripts/core/player_controller.gd
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: false
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  Follow the established test pattern: extends SceneTree, _initialize(),
+  quit(0) for PASS, print("FAIL: reason") then quit(1) for FAIL.
+  Test files must be self-contained — no scene dependencies.
+  test_behavior_profiles.gd should instantiate EnemyController directly
+  and call tick() with various distances to verify ATTACK vs IDLE transitions.
+  test_ring_gate.gd should manipulate GameState.rings_cleared and
+  GameState.banked_loot directly to test gate logic without UI.

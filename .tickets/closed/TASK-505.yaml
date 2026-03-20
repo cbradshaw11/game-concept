@@ -1,0 +1,94 @@
+id: TASK-505
+title: Pause Menu and RunScreen Ring Display
+type: feature
+priority: p2
+area: ui
+risk: low
+milestone: M5 Into the Dark
+status: done
+
+problem: >
+  There is no pause menu. A player who needs to step away mid-run must force-quit,
+  which loses run progress and reads as broken. The RunScreen also has no persistent
+  display of which ring the player is currently in, making UI context ambiguous.
+
+desired_outcome: >
+  Escape key toggles a pause overlay during active run states only. Two buttons:
+  Resume (resumes run) and Quit to Main Menu (calls die_in_run, returns to idle).
+  Current ring label shown persistently on RunScreen, updated on run start.
+
+scope_in:
+  - PauseMenu overlay node in flow_ui.tscn (visible=false by default)
+  - Escape key handler in flow_ui.gd (only during RUNNING/COMBAT states)
+  - get_tree().paused = true/false on toggle
+  - Resume button: hides overlay, unpauses
+  - Quit to Main Menu: calls GameState.die_in_run(), transitions to idle
+  - RingDisplay label node on RunScreen
+  - Label updated on run_started signal with ring name
+scope_out:
+  - Settings menu or audio volume controls (M6)
+  - Key rebinding (M6)
+  - Save-on-quit (run state is not preserved across force-quit even with pause)
+
+dependencies:
+  blockers: []
+  unblocks:
+    - TASK-508
+
+acceptance_criteria:
+  - id: ac1
+    description: Pause menu implementation present
+    verify: "grep -n 'PauseMenu\\|pause_menu\\|KEY_ESCAPE\\|ui_cancel' game/scripts/ui/flow_ui.gd"
+  - id: ac2
+    description: Pause/unpause tree toggle present
+    verify: "grep -n 'get_tree.*paused\\|tree.*pause' game/scripts/ui/flow_ui.gd"
+  - id: ac3
+    description: Ring display label present on RunScreen
+    verify: "grep -n 'RingDisplay\\|ring_label\\|current_ring.*label\\|ring.*text' game/scripts/ui/flow_ui.gd"
+  - id: ac4
+    description: PauseMenu node in scene file
+    verify: "grep -n 'PauseMenu\\|pause_menu' game/scenes/ui/flow_ui.tscn"
+
+verification_required:
+  - "grep -n 'PauseMenu\\|pause_menu\\|KEY_ESCAPE\\|ui_cancel' game/scripts/ui/flow_ui.gd"
+  - "grep -n 'get_tree.*paused\\|tree.*pause' game/scripts/ui/flow_ui.gd"
+  - "grep -n 'RingDisplay\\|ring_label' game/scripts/ui/flow_ui.gd"
+
+slices:
+  - id: s1
+    name: Add PauseMenu node and RingDisplay label to flow_ui.tscn
+    files_create: []
+    files_modify:
+      - game/scenes/ui/flow_ui.tscn
+    files_read_only: []
+    evidence: []
+  - id: s2
+    name: Wire Escape key, pause toggle, Resume and Quit buttons in flow_ui.gd
+    files_create: []
+    files_modify:
+      - game/scripts/ui/flow_ui.gd
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: true
+    commands_run:
+      - "grep -n 'PauseMenu\\|pause_menu\\|KEY_ESCAPE\\|ui_cancel' game/scripts/ui/flow_ui.gd"
+      - "grep -n 'get_tree.*paused\\|tree.*pause' game/scripts/ui/flow_ui.gd"
+      - "grep -n 'RingDisplay\\|ring_label\\|ring_display' game/scripts/ui/flow_ui.gd"
+      - "grep -n 'PauseMenu\\|RingDisplay' game/scenes/ui/flow_ui.tscn"
+    evidence_refs: []
+
+notes: >
+  Pause must only work during RUNNING and COMBAT states, not during IDLE, PREP,
+  UPGRADE_DRAW, or CREDITS. Quit to Main Menu should call die_in_run() so that
+  the 25% loot retention from TASK-506 applies. get_tree().paused = true prevents
+  all _process and _physics_process from running, so the pause overlay itself
+  must use process_mode = ALWAYS or be shown before pausing.
+  Read the execution plan at .plans/TASK-505-execution-plan.md before implementing.

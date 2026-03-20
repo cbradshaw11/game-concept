@@ -1,0 +1,100 @@
+id: TASK-504
+title: Audio Combat Readability Floor
+type: feature
+priority: p1
+area: audio
+risk: low
+milestone: M5 Into the Dark
+status: done
+
+problem: >
+  The game has zero audio. In a permanent-death combat game, players cannot
+  reliably close the feedback loop on their own actions without sound cues.
+  There is also no visual telegraph before enemy attacks land, making combat
+  feel arbitrary. Both are functional readability defects, not polish gaps.
+
+desired_outcome: >
+  4 placeholder audio files cover the atomic combat feedback loop. AudioStreamPlayer
+  nodes wired to combat events in CombatArena. Enemy EnemyController adds a
+  WIND_UP state (0.2s visual flash) before attack damage emits.
+
+scope_in:
+  - game/audio/ directory with 4 .wav files (placeholder beeps acceptable)
+  - AudioStreamPlayer nodes in combat_arena.tscn
+  - Playback calls wired to: hit_land, damage_taken, dodge_guard_success, player_death
+  - WIND_UP state in EnemyController (0.2s modulate flash before ATTACK fires)
+scope_out:
+  - Music or ambient audio (M6)
+  - UI sounds, footstep sounds (M6)
+  - Enemy death sounds, victory fanfare (M6)
+  - Volume controls or audio settings (M6)
+
+dependencies:
+  blockers: []
+  unblocks:
+    - TASK-508
+
+acceptance_criteria:
+  - id: ac1
+    description: game/audio/ has at least 4 audio files
+    verify: "ls game/audio/"
+  - id: ac2
+    description: Audio playback wired to combat events in CombatArena
+    verify: "grep -n 'hit_land\\|damage_taken\\|dodge_guard\\|player_death' game/scenes/combat/combat_arena.gd"
+  - id: ac3
+    description: WIND_UP telegraph state in EnemyController
+    verify: "grep -n 'WIND_UP\\|wind_up\\|telegraph\\|attack_delay' game/scripts/core/enemy_controller.gd"
+  - id: ac4
+    description: AudioStreamPlayer nodes in combat_arena.tscn
+    verify: "grep -n 'AudioStreamPlayer' game/scenes/combat/combat_arena.tscn"
+
+verification_required:
+  - "ls game/audio/"
+  - "grep -n 'hit_land\\|damage_taken\\|dodge_guard\\|player_death' game/scenes/combat/combat_arena.gd"
+  - "grep -n 'WIND_UP\\|wind_up\\|telegraph' game/scripts/core/enemy_controller.gd"
+  - "grep -n 'AudioStreamPlayer' game/scenes/combat/combat_arena.tscn"
+
+slices:
+  - id: s1
+    name: Create placeholder audio files
+    files_create:
+      - game/audio/hit_land.wav
+      - game/audio/damage_taken.wav
+      - game/audio/dodge_guard_success.wav
+      - game/audio/player_death.wav
+    files_modify: []
+    files_read_only: []
+    evidence: []
+  - id: s2
+    name: Add AudioStreamPlayer nodes and wire combat events in CombatArena
+    files_create: []
+    files_modify:
+      - game/scenes/combat/combat_arena.tscn
+      - game/scenes/combat/combat_arena.gd
+    files_read_only: []
+    evidence: []
+  - id: s3
+    name: Add WIND_UP state to EnemyController
+    files_create: []
+    files_modify:
+      - game/scripts/core/enemy_controller.gd
+    files_read_only: []
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: false
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  Placeholder audio files can be minimal valid WAV files (44 bytes minimum for
+  a silent WAV header, or generate a simple sine wave beep). The key requirement
+  is that the files exist and are loadable by Godot. WIND_UP state applies to
+  ALL enemies (not just boss) since all enemies need a readable telegraph.
+  Read the execution plan at .plans/TASK-504-execution-plan.md before implementing.

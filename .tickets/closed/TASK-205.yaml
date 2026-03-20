@@ -1,0 +1,56 @@
+id: TASK-205
+title: Enemy actor integration with state machine
+type: feature
+priority: p1
+area: combat
+risk: high
+milestone: M2 Ring1 Slice
+status: done
+
+problem: Enemy actors had no state machine driving their behavior in the combat arena.
+desired_outcome: Enemy actors integrated into the arena with a functional AI state machine.
+
+scope_in:
+  - Enemy actor scene integration into combat arena
+  - Enemy state machine (idle, patrol, attack, death states)
+scope_out:
+  - Player movement controller (TASK-204)
+  - Contract/reward systems (TASK-206, TASK-208)
+
+dependencies:
+  blockers:
+    - TASK-202
+    - TASK-204
+  unblocks:
+    - TASK-207
+
+acceptance_criteria:
+  - id: ac1
+    description: Enemy state machine tests pass
+    verify: "bash scripts/ci/task_specific_tests.sh"
+
+verification_required:
+  - "bash scripts/ci/task_specific_tests.sh"
+
+slices:
+  - id: s1
+    name: Enemy actor and state machine integration
+    files_create:
+      - game/scripts/systems/enemy_state_machine.gd
+    files_modify: []
+    files_read_only:
+      - game/data/enemies.json
+    evidence: []
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: null
+  completed_at: null
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: Completed as part of M2 Ring1 Slice milestone.

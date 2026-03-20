@@ -14,13 +14,13 @@ func generate_encounter(
 
 	var candidates: Array = []
 	for enemy in enemies_data.get("enemies", []):
-		if ring_id in enemy.get("rings", []):
+		if ring_id in enemy.get("rings", []) and enemy.get("role", "") != "mini_boss":
 			candidates.append(enemy)
 	if candidates.is_empty():
 		return {"ring": ring_id, "enemies": []}
 
 	var rng := RandomNumberGenerator.new()
-	rng.seed = _combine_seed(seed, ring_id)
+	rng.seed = _combine_seed(seed + GameState.encounters_cleared, ring_id)
 	var count := clampi(rng.randi_range(1, 3), 1, candidates.size())
 	var selected: Array = []
 	for i in range(count):
@@ -34,7 +34,7 @@ func generate_encounter(
 	}
 
 func _combine_seed(seed: int, ring_id: String) -> int:
-	return int(seed + ring_id.hash())
+	return abs(int(seed + ring_id.hash()))
 
 func _generate_template_encounter(
 	seed: int,
@@ -58,14 +58,16 @@ func _generate_template_encounter(
 		by_id[str(enemy.get("id", ""))] = enemy
 
 	var rng := RandomNumberGenerator.new()
-	rng.seed = _combine_seed(seed, ring_id)
-	var template := ring_templates[rng.randi_range(0, ring_templates.size() - 1)]
+	rng.seed = _combine_seed(seed + GameState.encounters_cleared, ring_id)
+	var template: Variant = ring_templates[rng.randi_range(0, ring_templates.size() - 1)]
 
 	var selected: Array = []
 	for enemy_id in template.get("enemy_ids", []):
 		var key := str(enemy_id)
 		if by_id.has(key):
 			selected.append(by_id[key])
+		else:
+			push_warning("ring_director: template '%s' references unknown enemy id '%s'" % [template.get("id", "?"), key])
 
 	if selected.is_empty():
 		return {}

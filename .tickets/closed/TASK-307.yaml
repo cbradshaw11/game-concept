@@ -1,0 +1,90 @@
+id: TASK-307
+title: Combat HUD (HP, stamina, poise)
+type: feature
+priority: p1
+area: ui
+risk: low
+milestone: M3 Combat Model
+status: done
+
+problem: >
+  The combat arena HUD is a single Label (CombatStatus) showing a text dump.
+  There are no progress bars for HP, stamina, or poise. Players cannot see their
+  health at a glance during combat.
+
+desired_outcome: >
+  Three progress bars visible in the combat HUD: HP (red), stamina (yellow),
+  poise (blue). Bars update in real time via player signals. HP bar turns dark
+  red below 25%.
+
+scope_in:
+  - Replace or augment CombatStatus label with 3 ProgressBar nodes in combat_arena.tscn
+  - Connect health_changed, stamina_changed, poise_changed signals from PlayerController
+  - HP bar color change below 25% threshold
+  - HUD must not obscure the combat area
+
+scope_out:
+  - Enemy health bars
+  - Numeric overlay on bars
+  - Animations on bar changes
+
+dependencies:
+  blockers:
+    - TASK-301
+  unblocks:
+    - TASK-310
+
+acceptance_criteria:
+  - id: ac1
+    description: Three ProgressBar nodes exist in combat_arena.tscn scene tree
+    verify: "grep -c 'ProgressBar' game/scenes/combat/combat_arena.tscn"
+  - id: ac2
+    description: combat_arena.gd connects health_changed/stamina_changed/poise_changed to bar updates
+    verify: "grep -n 'health_changed\\|stamina_changed\\|poise_changed' game/scenes/combat/combat_arena.gd"
+  - id: ac3
+    description: HP bar changes color below 25% threshold
+    verify: "grep -n '0.25\\|low_health\\|dark_red' game/scenes/combat/combat_arena.gd"
+
+verification_required:
+  - "grep -c 'ProgressBar' game/scenes/combat/combat_arena.tscn"
+  - "grep -n 'health_changed\\|stamina_changed\\|poise_changed' game/scenes/combat/combat_arena.gd"
+
+slices:
+  - id: s1
+    name: Add ProgressBar nodes to combat_arena.tscn
+    files_create: []
+    files_modify:
+      - game/scenes/combat/combat_arena.tscn
+    files_read_only: []
+    evidence: []
+  - id: s2
+    name: Wire bar updates from player signals in combat_arena.gd
+    files_create: []
+    files_modify:
+      - game/scenes/combat/combat_arena.gd
+    files_read_only:
+      - game/scripts/core/player_controller.gd
+    evidence: []
+
+context_refs:
+  - .plans/TASK-307-execution-plan.md
+  - game/scenes/combat/combat_arena.tscn
+  - game/scenes/combat/combat_arena.gd
+  - game/scripts/core/player_controller.gd
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: "2026-03-10"
+  completed_at: "2026-03-10"
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  PlayerController needs health_changed and poise_changed signals added as part of
+  TASK-301 and TASK-306. stamina_changed can be added to PlayerController.regenerate_stamina
+  and try_attack/try_dodge. combat_arena.gd connects these in _ready() after TASK-301 lands.
+  Godot ProgressBar node: set max_value = player.max_health, value = player.current_health.

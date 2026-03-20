@@ -1,0 +1,100 @@
+id: TASK-305
+title: Dodge invulnerability frames
+type: feature
+priority: p1
+area: combat
+risk: low
+milestone: M3 Combat Model
+status: done
+
+problem: >
+  try_dodge() in PlayerController deducts stamina and emits dodge_triggered but
+  grants no invulnerability. dodge_iframe_ms = 220 in weapons.json global_combat
+  is never read. Dodge is a stamina sink with no defensive benefit.
+
+desired_outcome: >
+  After a dodge, the player is invulnerable for 220ms. Any _apply_damage_to_player
+  call during this window returns 0 damage and emits attack_evaded. Spamming dodge
+  does not chain i-frames.
+
+scope_in:
+  - Add dodge_iframes_active bool and dodge_iframe_timer float to PlayerController
+  - try_dodge() sets dodge_iframes_active = true for dodge_iframe_ms milliseconds
+  - _apply_damage_to_player checks player.dodge_iframes_active; if true, emit attack_evaded, return
+  - dodge_iframe_ms read from weapons.json global_combat (220ms)
+  - Cooldown prevents back-to-back i-frames (minimum gap enforced by stamina cost naturally)
+
+scope_out:
+  - Visual flash during i-frame window
+  - Guard interaction with dodge
+  - Animation system
+
+dependencies:
+  blockers:
+    - TASK-301
+    - TASK-302
+  unblocks:
+    - TASK-310
+
+acceptance_criteria:
+  - id: ac1
+    description: PlayerController has dodge_iframes_active and iframe timer logic
+    verify: "grep -n 'dodge_iframes_active\\|iframe' game/scripts/core/player_controller.gd"
+  - id: ac2
+    description: _apply_damage_to_player returns 0 and emits attack_evaded during i-frame window
+    verify: "grep -n 'attack_evaded\\|dodge_iframes_active' game/scenes/combat/combat_arena.gd"
+  - id: ac3
+    description: Unit test — damage during i-frame window = 0; damage outside = normal
+    verify: "bash scripts/ci/headless_tests.sh 2>&1 | grep -E 'PASS.*dodge_iframes|dodge_iframes.*PASS'"
+
+verification_required:
+  - "grep -n 'dodge_iframes_active\\|iframe' game/scripts/core/player_controller.gd"
+  - "grep -n 'attack_evaded' game/scenes/combat/combat_arena.gd"
+  - "bash scripts/ci/headless_tests.sh 2>&1 | grep -E 'PASS.*dodge_iframes|dodge_iframes.*PASS'"
+
+slices:
+  - id: s1
+    name: Add i-frame timer to PlayerController
+    files_create: []
+    files_modify:
+      - game/scripts/core/player_controller.gd
+    files_read_only:
+      - game/data/weapons.json
+    evidence: []
+  - id: s2
+    name: Check i-frame in _apply_damage_to_player
+    files_create: []
+    files_modify:
+      - game/scenes/combat/combat_arena.gd
+    files_read_only: []
+    evidence: []
+  - id: s3
+    name: Write dodge i-frame unit test
+    files_create:
+      - game/scripts/tests/combat/test_dodge_iframes.gd
+    files_modify: []
+    files_read_only: []
+    evidence: []
+
+context_refs:
+  - .plans/TASK-305-execution-plan.md
+  - game/scripts/core/player_controller.gd
+  - game/scenes/combat/combat_arena.gd
+  - game/data/weapons.json
+
+delivery:
+  branch: null
+  commits: []
+  pr_url: null
+  started_at: "2026-03-10"
+  completed_at: "2026-03-10"
+  verification:
+    required_passed: true
+    commands_run: []
+    evidence_refs: []
+
+notes: >
+  Use a countdown timer in PlayerController._physics_process: if dodge_iframes_active,
+  decrement dodge_iframe_timer by delta * 1000 (ms). When <= 0, set inactive.
+  try_dodge() sets dodge_iframe_timer = 220.0 (ms from global_combat).
+  CombatArena._apply_damage_to_player checks player.dodge_iframes_active first.
