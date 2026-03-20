@@ -7,13 +7,13 @@ signal extract_pressed
 signal die_pressed
 signal loadout_selected(weapon_id: String)
 
-@onready var prep_screen: VBoxContainer = $PrepScreen
-@onready var run_screen: VBoxContainer = $RunScreen
-@onready var prep_status: Label = $PrepScreen/PrepStatus
-@onready var loadout_select: OptionButton = $PrepScreen/LoadoutSelect
-@onready var loadout_summary: Label = $PrepScreen/LoadoutSummary
-@onready var run_status: Label = $RunScreen/RunStatus
-@onready var run_loadout: Label = $RunScreen/RunLoadout
+@onready var prep_screen: PanelContainer = $PrepScreen
+@onready var run_screen: PanelContainer = $RunScreen
+@onready var prep_status: Label = $PrepScreen/PrepVBox/PrepStatus
+@onready var loadout_select: OptionButton = $PrepScreen/PrepVBox/LoadoutSelect
+@onready var loadout_summary: Label = $PrepScreen/PrepVBox/LoadoutSummary
+@onready var run_status: Label = $RunScreen/RunVBox/RunStatus
+@onready var run_loadout: Label = $RunScreen/RunVBox/RunLoadout
 
 var run_base_status: String = ""
 var objective_status: String = ""
@@ -34,7 +34,7 @@ func _on_die_button_pressed() -> void:
 	die_pressed.emit()
 
 func _on_loadout_select_item_selected(index: int) -> void:
-	var weapon_id := loadout_select.get_item_metadata(index)
+	var weapon_id: Variant = loadout_select.get_item_metadata(index)
 	loadout_selected.emit(str(weapon_id))
 
 func _show_prep() -> void:
@@ -70,22 +70,22 @@ func on_encounter_resolved(xp_gain: int, loot_gain: int) -> void:
 
 func on_extracted(total_xp: int, total_loot: int) -> void:
 	_show_prep()
-	prep_status.text = "Extracted. Banked XP: %d, Loot: %d" % [total_xp, total_loot]
+	prep_status.text = "Extracted successfully. Banked XP: %d  Loot: %d" % [total_xp, total_loot]
 
 func on_died(unbanked_xp: int, unbanked_loot: int) -> void:
 	_show_prep()
-	prep_status.text = "You died. Remaining unbanked XP: %d, Loot: %d" % [unbanked_xp, unbanked_loot]
+	prep_status.text = "You fell in the Ring.\nLost XP: %d  Lost Loot: %d" % [unbanked_xp, unbanked_loot]
 
 func on_idle_ready() -> void:
 	_show_prep()
 	run_base_status = ""
 	objective_status = ""
-	prep_status.text = "Sanctuary: choose loadout and start run"
+	prep_status.text = "Choose your loadout and enter the Ring."
 
 func on_objective_started(contract: Dictionary) -> void:
 	var contract_id := str(contract.get("id", "contract"))
 	var target := int(contract.get("target", 1))
-	objective_status = "%s 0/%d (active)" % [contract_id, target]
+	objective_status = "%s  0/%d  (active)" % [contract_id, target]
 	_refresh_run_status()
 
 func on_objective_progress(contract: Dictionary) -> void:
@@ -93,18 +93,18 @@ func on_objective_progress(contract: Dictionary) -> void:
 	var progress := int(contract.get("progress", 0))
 	var target := int(contract.get("target", 1))
 	var state := str(contract.get("state", "active"))
-	objective_status = "%s %d/%d (%s)" % [contract_id, progress, target, state]
+	objective_status = "%s  %d/%d  (%s)" % [contract_id, progress, target, state]
 	_refresh_run_status()
 
 func on_extract_blocked(contract: Dictionary) -> void:
 	var progress := int(contract.get("progress", 0))
 	var target := int(contract.get("target", 1))
-	run_base_status = "Extraction locked: objective incomplete (%d/%d)" % [progress, target]
+	run_base_status = "⚠ Extraction locked — objective incomplete (%d/%d)" % [progress, target]
 	_refresh_run_status()
 
 func on_objective_failed(contract: Dictionary) -> void:
 	var contract_id := str(contract.get("id", "contract"))
-	objective_status = "%s failed" % contract_id
+	objective_status = "%s  failed" % contract_id
 	_refresh_run_status()
 
 func _refresh_run_status() -> void:

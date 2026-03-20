@@ -6,8 +6,8 @@ Dark fantasy style, programmatic pixel art using Pillow.
 from PIL import Image, ImageDraw
 import os
 
-OUT_SPRITES = os.path.join(os.path.dirname(__file__), "../../../assets/sprites")
-OUT_BACKGROUNDS = os.path.join(os.path.dirname(__file__), "../../../assets/backgrounds")
+OUT_SPRITES = os.path.join(os.path.dirname(__file__), "../../assets/sprites")
+OUT_BACKGROUNDS = os.path.join(os.path.dirname(__file__), "../../assets/backgrounds")
 os.makedirs(OUT_SPRITES, exist_ok=True)
 os.makedirs(OUT_BACKGROUNDS, exist_ok=True)
 
