@@ -5,15 +5,18 @@ const RewardSystem = preload("res://scripts/systems/reward_system.gd")
 const SaveSystem = preload("res://scripts/systems/save_system.gd")
 const CombatArenaScene = preload("res://scenes/combat/combat_arena.tscn")
 const ContractSystem = preload("res://scripts/systems/contract_system.gd")
+const VendorSystem = preload("res://scripts/systems/vendor_system.gd")
 
 @onready var flow_ui: FlowUI = $FlowUI
 
 var ring_director := RingDirector.new()
 var reward_system := RewardSystem.new()
 var contract_system := ContractSystem.new()
+var vendor_system := VendorSystem.new()
 var active_encounter: Dictionary = {}
 var selected_weapon_id: String = "blade_iron"
 var combat_arena: CombatArena = null
+var current_run_ring: String = "inner"
 
 func _ready() -> void:
 	print("The Long Walk MVP Slice 1 booted")
@@ -29,6 +32,7 @@ func _connect_ui() -> void:
 	flow_ui.extract_pressed.connect(_on_extract_pressed)
 	flow_ui.die_pressed.connect(_on_die_pressed)
 	flow_ui.loadout_selected.connect(_on_loadout_selected)
+	flow_ui.vendor_purchase_pressed.connect(_on_vendor_purchase_pressed)
 
 func _connect_state() -> void:
 	GameState.run_started.connect(flow_ui.on_run_started)
@@ -36,19 +40,27 @@ func _connect_state() -> void:
 	GameState.extracted.connect(flow_ui.on_extracted)
 	GameState.player_died.connect(_on_player_died)
 
-func _on_start_run_pressed() -> void:
+func _on_start_run_pressed(ring_id: String) -> void:
+	# Check if ring is unlocked
+	if not GameState.is_ring_unlocked(ring_id, DataStore.rings):
+		return
+	current_run_ring = ring_id
 	var seed := Time.get_unix_time_from_system()
-	GameState.start_run(int(seed), "inner")
-	var contract := contract_system.start_contract("ring1_clearance", "inner", 3)
+	GameState.start_run(int(seed), ring_id)
+	# Get contract target from ring data
+	var ring_data := DataStore.get_ring(ring_id)
+	var contract_target := int(ring_data.get("contract_target", 3))
+	var contract_id := "ring_%s_clearance" % ring_id
+	var contract := contract_system.start_contract(contract_id, ring_id, contract_target)
 	flow_ui.on_objective_started(contract)
 	active_encounter = ring_director.generate_encounter(
 		int(seed),
-		"inner",
+		ring_id,
 		DataStore.enemies,
 		DataStore.encounter_templates
 	)
 	_ensure_combat_arena()
-	combat_arena.set_context("inner", int(seed), int(active_encounter.get("enemy_count", 1)))
+	combat_arena.set_context(ring_id, int(seed), int(active_encounter.get("enemy_count", 1)))
 	combat_arena.set_arena_active(true)
 	flow_ui.set_current_loadout(selected_weapon_id)
 
@@ -59,7 +71,7 @@ func _on_resolve_encounter_pressed() -> void:
 		return
 
 	var rewards := reward_system.calculate_rewards(
-		"inner",
+		current_run_ring,
 		DataStore.rings,
 		int(active_encounter.get("enemy_count", 1))
 	)
@@ -94,6 +106,12 @@ func _on_player_died() -> void:
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
 	flow_ui.on_died(GameState.unbanked_xp, GameState.unbanked_loot)
+
+func _on_vendor_purchase_pressed(upgrade_id: String) -> void:
+	var purchased := vendor_system.purchase(upgrade_id)
+	if purchased:
+		_save_state()
+		flow_ui.refresh_vendor()
 
 func _ensure_combat_arena() -> void:
 	if combat_arena != null:

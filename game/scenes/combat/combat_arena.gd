@@ -54,11 +54,20 @@ func _ready() -> void:
 	_load_background()
 	_load_player_sprite()
 	_update_hud()
+	# Start combat music when arena becomes active
+	if AudioManager:
+		AudioManager.play_combat_music()
 
 func _load_background() -> void:
-	var bg_path := "res://assets/backgrounds/arena_bg.png"
+	# Check for ring-specific background first, fallback to default
+	var bg_name := "arena_bg.png"
+	if ring_id == "mid":
+		bg_name = "arena_bg_mid.png"
+	var bg_path := "res://assets/backgrounds/" + bg_name
 	if ResourceLoader.exists(bg_path):
 		arena_bg.texture = load(bg_path) as Texture2D
+	elif ResourceLoader.exists("res://assets/backgrounds/arena_bg.png"):
+		arena_bg.texture = load("res://assets/backgrounds/arena_bg.png") as Texture2D
 
 func _load_player_sprite() -> void:
 	var path := SPRITE_BASE + "player.png"
@@ -73,6 +82,7 @@ func set_context(next_ring_id: String, next_seed: int, enemy_count: int = 1) -> 
 	guard_active = false
 	encounter_enemy_count = max(1, enemy_count)
 	encounter_completed = false
+	_load_background()
 	_spawn_enemies(encounter_enemy_count)
 	player.set_guarding(false)
 	_update_hud()
@@ -96,6 +106,8 @@ func _process(delta: float) -> void:
 		enemy.tick(distance_to_player, delta)
 	if _all_enemies_defeated():
 		encounter_completed = true
+		if AudioManager:
+			AudioManager.play_victory()
 		encounter_cleared.emit(encounter_enemy_count)
 	_update_hud()
 
@@ -103,16 +115,22 @@ func _on_attack_triggered() -> void:
 	attack_count += 1
 	_apply_damage_to_front_enemy(40)
 	attack_hook_triggered.emit()
+	if AudioManager:
+		AudioManager.play_attack()
 	_update_hud()
 
 func _on_dodge_triggered() -> void:
 	dodge_count += 1
 	dodge_hook_triggered.emit()
+	if AudioManager:
+		AudioManager.play_dodge()
 	_update_hud()
 
 func _on_guard_changed(is_guarding: bool) -> void:
 	guard_active = is_guarding
 	guard_hook_changed.emit(is_guarding)
+	if is_guarding and AudioManager:
+		AudioManager.play_guard()
 	_update_hud()
 
 func _update_hud() -> void:
@@ -200,9 +218,13 @@ func _apply_damage_to_front_enemy(damage: int) -> void:
 				# Death: dissolve + heavy shake
 				_start_death_dissolve(i)
 				trigger_screen_shake(5.0, 0.3)
+				if AudioManager:
+					AudioManager.play_death()
 			else:
 				# Regular hit: light shake
 				trigger_screen_shake(2.0, 0.12)
+				if AudioManager:
+					AudioManager.play_hit()
 			return
 
 
