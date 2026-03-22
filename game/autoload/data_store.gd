@@ -6,6 +6,7 @@ var enemies: Dictionary = {}
 var weapons: Dictionary = {}
 var encounter_templates: Dictionary = {}
 var vendor_upgrades: Dictionary = {}
+var modifiers: Dictionary = {}
 
 func _ready() -> void:
 	load_data()
@@ -16,6 +17,7 @@ func load_data() -> void:
 	weapons = _load_json("res://data/weapons.json")
 	encounter_templates = _load_json("res://data/encounter_templates.json")
 	vendor_upgrades = _load_json("res://data/vendor_upgrades.json")
+	modifiers = _load_json("res://data/modifiers.json")
 
 func _load_json(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
@@ -51,3 +53,35 @@ func get_vendor_upgrade(upgrade_id: String) -> Dictionary:
 		if str(upg.get("id", "")) == upgrade_id:
 			return upg
 	return {}
+
+func get_weapon(weapon_id: String) -> Dictionary:
+	for weapon in weapons.get("weapons", []):
+		if str(weapon.get("id", "")) == weapon_id:
+			return weapon
+	return {}
+
+func get_all_modifiers() -> Array:
+	return modifiers.get("modifiers", [])
+
+func get_modifier(modifier_id: String) -> Dictionary:
+	for mod in get_all_modifiers():
+		if str(mod.get("id", "")) == modifier_id:
+			return mod
+	return {}
+
+func get_modifier_choices_per_run() -> int:
+	return int(modifiers.get("choices_per_run", 3))
+
+func get_random_modifiers(count: int, rng_seed: int) -> Array:
+	var all_mods := get_all_modifiers()
+	if all_mods.is_empty():
+		return []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = rng_seed
+	var shuffled := all_mods.duplicate()
+	for i in range(shuffled.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var tmp: Variant = shuffled[i]
+		shuffled[i] = shuffled[j]
+		shuffled[j] = tmp
+	return shuffled.slice(0, min(count, shuffled.size()))

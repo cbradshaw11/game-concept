@@ -8,7 +8,7 @@
     {
       "id": "inner_swarm_a",
       "ring": "inner",
-      "enemy_ids": ["scavenger_grunt", "scavenger_grunt", "scavenger_grunt"]
+      "enemy_ids": ["scavenger_grunt", "scavenger_grunt"]
     },
     {
       "id": "inner_ranged_mix",
@@ -16,14 +16,54 @@
       "enemy_ids": ["scavenger_grunt", "ridge_archer"]
     },
     {
+      "id": "inner_defender_pair",
+      "ring": "inner",
+      "enemy_ids": ["shieldbearer", "scavenger_grunt"]
+    },
+    {
       "id": "mid_patrol_a",
       "ring": "mid",
       "enemy_ids": ["ash_flanker", "ridge_archer", "shieldbearer"]
     },
     {
+      "id": "mid_flanker_pair",
+      "ring": "mid",
+      "enemy_ids": ["ash_flanker", "ash_flanker"]
+    },
+    {
+      "id": "mid_berserker_entry",
+      "ring": "mid",
+      "enemy_ids": ["berserker", "scavenger_grunt"]
+    },
+    {
+      "id": "mid_shield_wall_break",
+      "ring": "mid",
+      "enemy_ids": ["shield_wall", "ridge_archer"]
+    },
+    {
+      "id": "mid_mixed_threat",
+      "ring": "mid",
+      "enemy_ids": ["berserker", "shield_wall"]
+    },
+    {
       "id": "outer_elite_a",
       "ring": "outer",
       "enemy_ids": ["warden_hunter", "rift_caster"]
+    },
+    {
+      "id": "outer_berserker_pack",
+      "ring": "outer",
+      "enemy_ids": ["berserker", "berserker"]
+    },
+    {
+      "id": "outer_wall_caster",
+      "ring": "outer",
+      "enemy_ids": ["shield_wall", "rift_caster"]
+    },
+    {
+      "id": "outer_full_squad",
+      "ring": "outer",
+      "enemy_ids": ["warden_hunter", "berserker", "shield_wall"]
     }
   ]
 }

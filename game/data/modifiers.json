@@ -1,0 +1,49 @@
+{
+  "modifiers": [
+    {
+      "id": "swift",
+      "name": "Swift",
+      "description": "-20% light attack stamina cost",
+      "effect": "light_stamina_cost_pct",
+      "value": -0.2
+    },
+    {
+      "id": "death_wish",
+      "name": "Death Wish",
+      "description": "At low HP, attacks become ferocious (+30% damage below 30 HP)",
+      "effect": "low_hp_damage_bonus_pct",
+      "value": 0.3,
+      "threshold_hp": 30
+    },
+    {
+      "id": "iron_skin",
+      "name": "Iron Skin",
+      "description": "+15 max HP this run",
+      "effect": "max_hp_flat",
+      "value": 15
+    },
+    {
+      "id": "relentless",
+      "name": "Relentless",
+      "description": "Stamina regens 30% faster",
+      "effect": "stamina_regen_pct",
+      "value": 0.3
+    },
+    {
+      "id": "berserker",
+      "name": "Berserker",
+      "description": "Heavy attacks deal +25% damage but cost +5 stamina",
+      "effect": "heavy_damage_pct",
+      "value": 0.25,
+      "stamina_cost_flat": 5
+    },
+    {
+      "id": "ghost_step",
+      "name": "Ghost Step",
+      "description": "Dodge i-frames extended by 50ms",
+      "effect": "dodge_iframe_ms_flat",
+      "value": 50
+    }
+  ],
+  "choices_per_run": 3
+}

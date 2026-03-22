@@ -3,35 +3,49 @@
     {
       "id": "blade_iron",
       "family": "blade",
+      "name": "Iron Blade",
       "light_damage": 14,
       "heavy_damage": 24,
       "light_stamina_cost": 12,
       "heavy_stamina_cost": 26,
       "guard_efficiency": 0.7,
       "poise_damage_light": 8,
-      "poise_damage_heavy": 16
+      "poise_damage_heavy": 16,
+      "unlock_cost": 0,
+      "light_mechanic": "single_target",
+      "heavy_mechanic": "single_target"
     },
     {
       "id": "polearm_iron",
       "family": "polearm",
+      "name": "Iron Polearm",
       "light_damage": 12,
       "heavy_damage": 28,
-      "light_stamina_cost": 14,
-      "heavy_stamina_cost": 30,
-      "guard_efficiency": 0.78,
+      "light_stamina_cost": 10,
+      "heavy_stamina_cost": 24,
+      "guard_efficiency": 0.5,
       "poise_damage_light": 12,
-      "poise_damage_heavy": 22
+      "poise_damage_heavy": 22,
+      "unlock_cost": 150,
+      "light_mechanic": "sweep_all",
+      "light_sweep_ratio": 0.6,
+      "heavy_mechanic": "lunge_poise"
     },
     {
       "id": "bow_iron",
       "family": "bow",
-      "light_damage": 11,
-      "heavy_damage": 26,
-      "light_stamina_cost": 10,
-      "heavy_stamina_cost": 24,
-      "guard_efficiency": 0.35,
+      "name": "Iron Bow",
+      "light_damage": 18,
+      "heavy_damage": 32,
+      "light_stamina_cost": 14,
+      "heavy_stamina_cost": 28,
+      "guard_efficiency": 0.3,
       "poise_damage_light": 6,
-      "poise_damage_heavy": 14
+      "poise_damage_heavy": 14,
+      "unlock_cost": 200,
+      "light_mechanic": "ranged_single",
+      "heavy_mechanic": "charged_suppress",
+      "heavy_suppress_ticks": 1
     }
   ],
   "global_combat": {
@@ -42,4 +56,3 @@
     "stamina_regen_per_sec": 18
   }
 }
-

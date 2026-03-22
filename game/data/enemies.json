@@ -4,7 +4,7 @@
       "id": "scavenger_grunt",
       "role": "grunt",
       "rings": ["inner", "mid"],
-      "health": 60,
+      "health": 52,
       "poise": 20,
       "damage": 8,
       "behavior_profile": "frontline_basic"
@@ -13,7 +13,7 @@
       "id": "shieldbearer",
       "role": "defender",
       "rings": ["inner", "mid"],
-      "health": 85,
+      "health": 75,
       "poise": 40,
       "damage": 7,
       "behavior_profile": "guard_counter"
@@ -22,7 +22,7 @@
       "id": "ash_flanker",
       "role": "flanker",
       "rings": ["mid", "outer"],
-      "health": 70,
+      "health": 72,
       "poise": 25,
       "damage": 12,
       "behavior_profile": "flank_aggressive"
@@ -31,7 +31,7 @@
       "id": "ridge_archer",
       "role": "ranged",
       "rings": ["mid", "outer"],
-      "health": 55,
+      "health": 58,
       "poise": 15,
       "damage": 10,
       "behavior_profile": "kite_volley"
@@ -53,6 +53,25 @@
       "poise": 70,
       "damage": 16,
       "behavior_profile": "elite_pressure"
+    },
+    {
+      "id": "berserker",
+      "role": "berserker",
+      "rings": ["mid", "outer"],
+      "health": 45,
+      "poise": 8,
+      "damage": 22,
+      "behavior_profile": "glass_cannon_aggro"
+    },
+    {
+      "id": "shield_wall",
+      "role": "tank",
+      "rings": ["mid", "outer"],
+      "health": 80,
+      "poise": 40,
+      "damage": 8,
+      "guard_efficiency": 0.8,
+      "behavior_profile": "poise_gate_tank"
     }
   ],
   "bosses": [
@@ -66,4 +85,3 @@
     }
   ]
 }
-
