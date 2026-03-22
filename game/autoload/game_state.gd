@@ -28,6 +28,13 @@ var run_history: Array = []
 
 const MAX_HISTORY := 20
 
+# ── Per-run tracking (cleared on start_run) ───────────────────────────────────
+var run_encounters_cleared: int = 0
+var run_total_xp: int = 0
+var run_total_loot: int = 0
+var run_active_modifiers: Array = []
+var run_last_enemy_killer: String = ""
+
 func default_save_state() -> Dictionary:
 	return {
 		"banked_xp": 0,
@@ -70,6 +77,10 @@ func start_run(seed: int, ring_id: String) -> void:
 	current_ring = ring_id
 	unbanked_xp = 0
 	unbanked_loot = 0
+	run_encounters_cleared = 0
+	run_total_xp = 0
+	run_total_loot = 0
+	run_last_enemy_killer = ""
 	telemetry.log_event("run_started", {
 		"seed": active_seed,
 		"ring": current_ring,
@@ -79,6 +90,9 @@ func start_run(seed: int, ring_id: String) -> void:
 func add_unbanked(xp_value: int, loot_value: int) -> void:
 	unbanked_xp += xp_value
 	unbanked_loot += loot_value
+	run_encounters_cleared += 1
+	run_total_xp += xp_value
+	run_total_loot += loot_value
 	telemetry.log_event("encounter_completed", {
 		"seed": active_seed,
 		"ring": current_ring,
@@ -169,6 +183,43 @@ func purchase_upgrade(upgrade_id: String, cost: int) -> bool:
 
 func set_telemetry_enabled(enabled: bool) -> void:
 	telemetry.enabled = enabled
+
+# ── Run Modifiers ─────────────────────────────────────────────────────────────
+
+func set_active_modifiers(modifier_list: Array) -> void:
+	run_active_modifiers = modifier_list.duplicate(true)
+
+func get_active_modifiers() -> Array:
+	return run_active_modifiers.duplicate(true)
+
+func has_modifier(modifier_id: String) -> bool:
+	for mod in run_active_modifiers:
+		if str(mod.get("id", "")) == modifier_id:
+			return true
+	return false
+
+# ── Victory / Death Stats ─────────────────────────────────────────────────────
+
+func get_run_stats() -> Dictionary:
+	return {
+		"ring": current_ring,
+		"seed": active_seed,
+		"encounters_cleared": run_encounters_cleared,
+		"total_xp": run_total_xp,
+		"total_loot": run_total_loot,
+		"active_modifiers": run_active_modifiers.duplicate(true),
+		"vendor_upgrades": _get_active_upgrade_names(),
+	}
+
+func _get_active_upgrade_names() -> Array:
+	var result: Array = []
+	for upg_id in vendor_upgrades:
+		if int(vendor_upgrades[upg_id]) > 0:
+			result.append(str(upg_id))
+	return result
+
+func set_killer_enemy(enemy_id: String) -> void:
+	run_last_enemy_killer = enemy_id
 
 # ── Run History ───────────────────────────────────────────────────────────────
 

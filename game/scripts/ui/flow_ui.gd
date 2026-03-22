@@ -7,6 +7,7 @@ signal extract_pressed
 signal die_pressed
 signal loadout_selected(weapon_id: String)
 signal vendor_purchase_pressed(upgrade_id: String)
+signal modifier_selected(modifier_id: String)
 
 @onready var prep_screen: PanelContainer = $PrepScreen
 @onready var run_screen: PanelContainer = $RunScreen
@@ -21,13 +22,71 @@ var vendor_panel: PanelContainer = null
 var vendor_loot_label: Label = null
 var vendor_upgrade_buttons: Dictionary = {}  # upgrade_id -> Button
 
+# Victory / Death / Modifier panels (created dynamically)
+var victory_panel: PanelContainer = null
+var death_panel: PanelContainer = null
+var modifier_panel: PanelContainer = null
+
 var run_base_status: String = ""
 var objective_status: String = ""
+
+# Death flavor lines keyed by ring id and/or enemy type
+const DEATH_FLAVOR: Dictionary = {
+	"inner": [
+		"The outer walls didn't kill you. The inner ring did.",
+		"You walked in with hope. You left in pieces.",
+		"Even the weakest scavengers found your weakness.",
+		"The ring claimed another body for the ash.",
+		"They said Ring 1 was easy. They lied.",
+		"Your equipment survived. You didn't.",
+		"A grunt dealt the killing blow. Let that sink in.",
+		"The Long Walk ends here, apparently.",
+		"Death doesn't discriminate by ring number.",
+		"Tomorrow you'll do better. Today you're dead.",
+	],
+	"mid": [
+		"The Mid Reaches are called that for a reason.",
+		"Flanked, outpaced, overwhelmed. Classic mid.",
+		"You had the skills. The flankers had the numbers.",
+		"Another soul left in the ash dunes.",
+		"The berserkers barely noticed you.",
+		"Mid ring sends its regards.",
+		"You got farther than most. Not far enough.",
+		"The Long Walk claimed you at the midpoint.",
+		"Poise broken, guard shattered, hope extinguished.",
+		"You'll come back stronger. Or you won't.",
+	],
+	"outer": [
+		"The Outer Ring was always going to kill you.",
+		"Elite threats require elite preparation. Next time.",
+		"The Warden's approach path is littered with the fallen.",
+		"You saw the outer ring. That's more than most.",
+		"The rift casters had your number from the start.",
+		"Outer ring death is an achievement in itself.",
+		"The warden hunter was named for a reason.",
+		"Far from home. Far from safety. Far from alive.",
+		"Your loot stays here. Your lessons go with you.",
+		"The Long Walk ends at the outer gate.",
+	],
+	"berserker": [
+		"Hit first, hit hard — the berserker's creed.",
+		"Staggered once, finished twice. That's berserker math.",
+		"Fast, fragile, and faster than you.",
+	],
+	"shield_wall": [
+		"You forgot: break poise before dealing damage.",
+		"The Shield Wall absorbed everything. Literally everything.",
+		"Attrition wins when you can't break guard.",
+	],
+}
 
 func _ready() -> void:
 	_setup_ring2_button()
 	_setup_vendor_panel()
 	_setup_history_button()
+	_setup_victory_panel()
+	_setup_death_panel()
+	_setup_modifier_panel()
 	_show_prep()
 
 func _on_start_run_button_pressed() -> void:
@@ -69,6 +128,12 @@ func _show_prep() -> void:
 	run_screen.visible = false
 	if vendor_panel:
 		vendor_panel.visible = false
+	if victory_panel:
+		victory_panel.visible = false
+	if death_panel:
+		death_panel.visible = false
+	if modifier_panel:
+		modifier_panel.visible = false
 	if AudioManager:
 		AudioManager.play_sanctuary_music()
 
@@ -77,6 +142,12 @@ func _show_run() -> void:
 	run_screen.visible = true
 	if vendor_panel:
 		vendor_panel.visible = false
+	if victory_panel:
+		victory_panel.visible = false
+	if death_panel:
+		death_panel.visible = false
+	if modifier_panel:
+		modifier_panel.visible = false
 
 func _show_vendor() -> void:
 	prep_screen.visible = false
@@ -84,6 +155,51 @@ func _show_vendor() -> void:
 	if vendor_panel:
 		vendor_panel.visible = true
 		_refresh_vendor_ui()
+	if victory_panel:
+		victory_panel.visible = false
+	if death_panel:
+		death_panel.visible = false
+	if modifier_panel:
+		modifier_panel.visible = false
+
+func _show_victory(stats: Dictionary) -> void:
+	prep_screen.visible = false
+	run_screen.visible = false
+	if vendor_panel:
+		vendor_panel.visible = false
+	if death_panel:
+		death_panel.visible = false
+	if modifier_panel:
+		modifier_panel.visible = false
+	if victory_panel:
+		_populate_victory_panel(stats)
+		victory_panel.visible = true
+
+func _show_death(ring_id: String, killer_enemy_id: String) -> void:
+	prep_screen.visible = false
+	run_screen.visible = false
+	if vendor_panel:
+		vendor_panel.visible = false
+	if victory_panel:
+		victory_panel.visible = false
+	if modifier_panel:
+		modifier_panel.visible = false
+	if death_panel:
+		_populate_death_panel(ring_id, killer_enemy_id)
+		death_panel.visible = true
+
+func _show_modifier_selection(choices: Array) -> void:
+	prep_screen.visible = false
+	run_screen.visible = false
+	if vendor_panel:
+		vendor_panel.visible = false
+	if victory_panel:
+		victory_panel.visible = false
+	if death_panel:
+		death_panel.visible = false
+	if modifier_panel:
+		_populate_modifier_panel(choices)
+		modifier_panel.visible = true
 
 # ── Public API called from main.gd ───────────────────────────────────────────
 
@@ -111,13 +227,15 @@ func on_encounter_resolved(xp_gain: int, loot_gain: int) -> void:
 	_refresh_run_status()
 
 func on_extracted(total_xp: int, total_loot: int) -> void:
-	_show_prep()
-	prep_status.text = "Extracted successfully. Banked XP: %d  Loot: %d" % [total_xp, total_loot]
+	var stats := GameState.get_run_stats()
+	_show_victory(stats)
 	_refresh_ring_buttons()
 
 func on_died(unbanked_xp: int, unbanked_loot: int) -> void:
-	_show_prep()
-	prep_status.text = "You fell in the Ring.\nLost XP: %d  Lost Loot: %d" % [unbanked_xp, unbanked_loot]
+	var ring_id := GameState.current_ring
+	if ring_id == "sanctuary":
+		ring_id = str(GameState.run_history[-1].get("ring", "inner")) if not GameState.run_history.is_empty() else "inner"
+	_show_death(ring_id, GameState.run_last_enemy_killer)
 	_refresh_ring_buttons()
 
 func on_idle_ready() -> void:
@@ -152,6 +270,11 @@ func on_objective_failed(contract: Dictionary) -> void:
 	objective_status = "%s  failed" % contract_id
 	_refresh_run_status()
 
+func show_modifier_selection(seed: int) -> void:
+	var count := DataStore.get_modifier_choices_per_run()
+	var choices := DataStore.get_random_modifiers(count, seed)
+	_show_modifier_selection(choices)
+
 func refresh_vendor() -> void:
 	_refresh_vendor_ui()
 
@@ -172,6 +295,185 @@ func _refresh_ring_buttons() -> void:
 		var unlocked := GameState.has_extracted_from("inner")
 		ring2_btn.visible = unlocked
 		ring2_btn.disabled = not unlocked
+
+# ── Victory Panel ─────────────────────────────────────────────────────────────
+
+func _setup_victory_panel() -> void:
+	victory_panel = PanelContainer.new()
+	victory_panel.name = "VictoryPanel"
+	victory_panel.visible = false
+	victory_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(victory_panel)
+
+	var vbox := VBoxContainer.new()
+	victory_panel.add_child(vbox)
+
+	var title := Label.new()
+	title.name = "VictoryTitle"
+	title.text = "✦  EXTRACTION SUCCESSFUL  ✦"
+	vbox.add_child(title)
+
+	var sep := HSeparator.new()
+	vbox.add_child(sep)
+
+	var stats_label := Label.new()
+	stats_label.name = "VictoryStats"
+	stats_label.text = ""
+	vbox.add_child(stats_label)
+
+	var continue_btn := Button.new()
+	continue_btn.text = "← Return to Sanctuary"
+	continue_btn.pressed.connect(func():
+		_play_click()
+		_show_prep()
+	)
+	vbox.add_child(continue_btn)
+
+func _populate_victory_panel(stats: Dictionary) -> void:
+	if victory_panel == null:
+		return
+	var stats_label := victory_panel.find_child("VictoryStats", true, false) as Label
+	if stats_label == null:
+		return
+
+	var ring := str(stats.get("ring", "?"))
+	var seed_val := int(stats.get("seed", 0))
+	var encounters := int(stats.get("encounters_cleared", 0))
+	var total_xp := int(stats.get("total_xp", 0))
+	var total_loot := int(stats.get("total_loot", 0))
+	var active_mods: Array = stats.get("active_modifiers", [])
+	var active_upgrades: Array = stats.get("vendor_upgrades", [])
+
+	var lines: PackedStringArray = []
+	lines.append("Ring reached:        %s" % ring.to_upper())
+	lines.append("Encounters cleared:  %d" % encounters)
+	lines.append("Total XP earned:     %d" % total_xp)
+	lines.append("Total loot earned:   %d" % total_loot)
+	lines.append("Run seed:            %d" % seed_val)
+
+	if active_mods.is_empty():
+		lines.append("Modifiers:           (none)")
+	else:
+		var mod_names: PackedStringArray = []
+		for mod in active_mods:
+			mod_names.append(str(mod.get("name", mod.get("id", "?"))))
+		lines.append("Modifiers:           %s" % ", ".join(mod_names))
+
+	if active_upgrades.is_empty():
+		lines.append("Upgrades active:     (none)")
+	else:
+		lines.append("Upgrades active:     %s" % ", ".join(PackedStringArray(active_upgrades)))
+
+	stats_label.text = "\n".join(lines)
+
+# ── Death Panel ───────────────────────────────────────────────────────────────
+
+func _setup_death_panel() -> void:
+	death_panel = PanelContainer.new()
+	death_panel.name = "DeathPanel"
+	death_panel.visible = false
+	death_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(death_panel)
+
+	var vbox := VBoxContainer.new()
+	death_panel.add_child(vbox)
+
+	var title := Label.new()
+	title.name = "DeathTitle"
+	title.text = "✦  YOU HAVE FALLEN  ✦"
+	vbox.add_child(title)
+
+	var sep := HSeparator.new()
+	vbox.add_child(sep)
+
+	var flavor_label := Label.new()
+	flavor_label.name = "DeathFlavor"
+	flavor_label.text = ""
+	vbox.add_child(flavor_label)
+
+	var continue_btn := Button.new()
+	continue_btn.text = "← Try Again"
+	continue_btn.pressed.connect(func():
+		_play_click()
+		_show_prep()
+	)
+	vbox.add_child(continue_btn)
+
+func _populate_death_panel(ring_id: String, killer_enemy_id: String) -> void:
+	if death_panel == null:
+		return
+	var flavor_label := death_panel.find_child("DeathFlavor", true, false) as Label
+	if flavor_label == null:
+		return
+
+	# Pick flavor text — prefer enemy-specific, fall back to ring
+	var lines: Array = []
+	if killer_enemy_id != "" and DEATH_FLAVOR.has(killer_enemy_id):
+		lines = DEATH_FLAVOR[killer_enemy_id].duplicate()
+	elif DEATH_FLAVOR.has(ring_id):
+		lines = DEATH_FLAVOR[ring_id].duplicate()
+	else:
+		lines = DEATH_FLAVOR["inner"].duplicate()
+
+	# Use seed-based determinism for flavor line selection
+	var rng := RandomNumberGenerator.new()
+	rng.seed = abs(GameState.active_seed + ring_id.hash())
+	rng.randomize()
+	var idx := rng.randi_range(0, lines.size() - 1)
+	flavor_label.text = str(lines[idx])
+
+# ── Modifier Selection Panel ──────────────────────────────────────────────────
+
+func _setup_modifier_panel() -> void:
+	modifier_panel = PanelContainer.new()
+	modifier_panel.name = "ModifierPanel"
+	modifier_panel.visible = false
+	modifier_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(modifier_panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.name = "ModifierVBox"
+	modifier_panel.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "✦  CHOOSE YOUR RUN MODIFIER  ✦"
+	vbox.add_child(title)
+
+	var sep := HSeparator.new()
+	vbox.add_child(sep)
+
+	# Choice buttons added dynamically in _populate_modifier_panel
+	var choices_container := VBoxContainer.new()
+	choices_container.name = "ModifierChoices"
+	vbox.add_child(choices_container)
+
+func _populate_modifier_panel(choices: Array) -> void:
+	if modifier_panel == null:
+		return
+	var choices_container := modifier_panel.find_child("ModifierChoices", true, false) as VBoxContainer
+	if choices_container == null:
+		return
+
+	# Clear old buttons
+	for child in choices_container.get_children():
+		child.queue_free()
+
+	for mod in choices:
+		var mod_id := str(mod.get("id", ""))
+		var mod_name := str(mod.get("name", mod_id))
+		var mod_desc := str(mod.get("description", ""))
+
+		var btn := Button.new()
+		btn.text = "%s — %s" % [mod_name, mod_desc]
+		var cap_id := mod_id
+		var cap_mod := mod
+		btn.pressed.connect(func():
+			_play_click()
+			GameState.set_active_modifiers([cap_mod])
+			modifier_selected.emit(cap_id)
+			_show_run()
+		)
+		choices_container.add_child(btn)
 
 # ── Dynamic UI construction ───────────────────────────────────────────────────
 

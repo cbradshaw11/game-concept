@@ -38,6 +38,10 @@ var _camera_origin: Vector2 = Vector2.ZERO
 # Hit flash timers per enemy
 var _hit_flash_timers: Array[float] = []
 
+# Bow heavy charge state
+# _bow_suppress_ticks[enemy_index] = remaining suppression ticks
+var _enemy_suppress_ticks: Array[int] = []
+
 const SPRITE_BASE := "res://assets/sprites/"
 const ENEMY_SPRITE_NAMES := {
 	"grunt": "enemy_grunt.png",
@@ -102,6 +106,10 @@ func _process(delta: float) -> void:
 		var enemy := enemies[index]
 		if enemy.state == EnemyController.EnemyState.DEAD:
 			continue
+		# Suppressed enemies skip their action for this tick
+		if index < _enemy_suppress_ticks.size() and _enemy_suppress_ticks[index] > 0:
+			_enemy_suppress_ticks[index] -= 1
+			continue
 		var distance_to_player := absf(float(index - player_zone)) + 0.5
 		enemy.tick(distance_to_player, delta)
 	if _all_enemies_defeated():
@@ -113,11 +121,56 @@ func _process(delta: float) -> void:
 
 func _on_attack_triggered() -> void:
 	attack_count += 1
-	_apply_damage_to_front_enemy(40)
+	_execute_weapon_attack()
 	attack_hook_triggered.emit()
 	if AudioManager:
 		AudioManager.play_attack()
 	_update_hud()
+
+func _execute_weapon_attack() -> void:
+	# Get weapon data to determine attack mechanic
+	var weapon_id: String = ""
+	if "selected_weapon_id" in get_parent():
+		weapon_id = str(get_parent().get("selected_weapon_id"))
+	var weapon_data := DataStore.get_weapon(weapon_id) if weapon_id != "" else {}
+	var mechanic := str(weapon_data.get("light_mechanic", "single_target"))
+
+	match mechanic:
+		"sweep_all":
+			# Polearm: hits ALL enemies at 60% damage
+			var sweep_ratio := float(weapon_data.get("light_sweep_ratio", 0.6))
+			var base_dmg := int(weapon_data.get("light_damage", 12))
+			var sweep_dmg := int(round(float(base_dmg) * sweep_ratio))
+			_apply_damage_to_all_enemies(sweep_dmg)
+		"ranged_single":
+			# Bow light: single target, same as default
+			_apply_damage_to_front_enemy(40)
+		_:
+			# Default single target
+			_apply_damage_to_front_enemy(40)
+
+func execute_heavy_attack() -> void:
+	# Get weapon data to determine heavy mechanic
+	var weapon_id: String = ""
+	if "selected_weapon_id" in get_parent():
+		weapon_id = str(get_parent().get("selected_weapon_id"))
+	var weapon_data := DataStore.get_weapon(weapon_id) if weapon_id != "" else {}
+	var mechanic := str(weapon_data.get("heavy_mechanic", "single_target"))
+
+	match mechanic:
+		"lunge_poise":
+			# Polearm heavy: single target, bonus poise damage
+			var base_dmg := int(weapon_data.get("heavy_damage", 28))
+			_apply_damage_to_front_enemy(base_dmg, true)
+		"charged_suppress":
+			# Bow heavy: suppress front enemy action for N ticks during wind-up
+			var suppress_ticks := int(weapon_data.get("heavy_suppress_ticks", 1))
+			_suppress_front_enemy(suppress_ticks)
+			var base_dmg := int(weapon_data.get("heavy_damage", 32))
+			_apply_damage_to_front_enemy(base_dmg)
+		_:
+			var base_dmg := int(weapon_data.get("heavy_damage", 24))
+			_apply_damage_to_front_enemy(base_dmg)
 
 func _on_dodge_triggered() -> void:
 	dodge_count += 1
@@ -156,6 +209,7 @@ func _update_hud() -> void:
 func _spawn_enemies(count: int) -> void:
 	enemies.clear()
 	_hit_flash_timers.clear()
+	_enemy_suppress_ticks.clear()
 
 	for node in enemy_nodes:
 		if is_instance_valid(node):
@@ -170,6 +224,7 @@ func _spawn_enemies(count: int) -> void:
 	for i in count:
 		enemies.append(EnemyController.new(100, 3.5, 1.2))
 		_hit_flash_timers.append(0.0)
+		_enemy_suppress_ticks.append(0)
 
 		var archetype := "grunt"
 		if count == 1 and ring_id == "outer":
@@ -203,12 +258,12 @@ func _player_zone() -> int:
 	return clampi(zone, 0, max(0, enemies.size() - 1))
 
 
-func _apply_damage_to_front_enemy(damage: int) -> void:
+func _apply_damage_to_front_enemy(damage: int, force_poise_break: bool = false) -> void:
 	for i in enemies.size():
 		var enemy := enemies[i]
 		if enemy.state != EnemyController.EnemyState.DEAD:
 			var prev_state := enemy.state
-			enemy.apply_damage(damage, true)
+			enemy.apply_damage(damage, force_poise_break or true)
 
 			# Hit flash
 			if i < _hit_flash_timers.size():
@@ -225,6 +280,42 @@ func _apply_damage_to_front_enemy(damage: int) -> void:
 				trigger_screen_shake(2.0, 0.12)
 				if AudioManager:
 					AudioManager.play_hit()
+			return
+
+
+func _apply_damage_to_all_enemies(damage: int) -> void:
+	# Polearm sweep: hits all non-dead enemies
+	var hit_any := false
+	for i in enemies.size():
+		var enemy := enemies[i]
+		if enemy.state == EnemyController.EnemyState.DEAD:
+			continue
+		var prev_state := enemy.state
+		enemy.apply_damage(damage, false)
+		hit_any = true
+
+		if i < _hit_flash_timers.size():
+			_hit_flash_timers[i] = 0.1
+
+		if enemy.state == EnemyController.EnemyState.DEAD and prev_state != EnemyController.EnemyState.DEAD:
+			_start_death_dissolve(i)
+			if AudioManager:
+				AudioManager.play_death()
+		else:
+			if AudioManager:
+				AudioManager.play_hit()
+
+	if hit_any:
+		trigger_screen_shake(3.0, 0.18)
+
+
+func _suppress_front_enemy(ticks: int) -> void:
+	# Bow heavy: suppress the first living enemy for N ticks
+	for i in enemies.size():
+		var enemy := enemies[i]
+		if enemy.state != EnemyController.EnemyState.DEAD:
+			if i < _enemy_suppress_ticks.size():
+				_enemy_suppress_ticks[i] = ticks
 			return
 
 

@@ -1,6 +1,8 @@
 extends RefCounted
 class_name RingDirector
 
+const MAX_SAME_ENEMY_TYPE := 2
+
 # Deterministic ring encounter selection based on seed and ring index.
 func generate_encounter(
 	seed: int,
@@ -23,13 +25,22 @@ func generate_encounter(
 	rng.seed = _combine_seed(seed, ring_id)
 	var count := clampi(rng.randi_range(1, 3), 1, candidates.size())
 	var selected: Array = []
-	for i in range(count):
-		selected.append(candidates[rng.randi_range(0, candidates.size() - 1)])
+	var type_counts: Dictionary = {}
+
+	var attempts := 0
+	while selected.size() < count and attempts < 100:
+		attempts += 1
+		var candidate: Dictionary = candidates[rng.randi_range(0, candidates.size() - 1)]
+		var cid := str(candidate.get("id", ""))
+		var current_count := int(type_counts.get(cid, 0))
+		if current_count < MAX_SAME_ENEMY_TYPE:
+			selected.append(candidate)
+			type_counts[cid] = current_count + 1
 
 	return {
 		"ring": ring_id,
 		"seed": seed,
-		"enemy_count": count,
+		"enemy_count": selected.size(),
 		"enemies": selected,
 	}
 
@@ -61,11 +72,16 @@ func _generate_template_encounter(
 	rng.seed = _combine_seed(seed, ring_id)
 	var template: Dictionary = ring_templates[rng.randi_range(0, ring_templates.size() - 1)]
 
+	# Enforce max 2 of same type when building from template
+	var type_counts: Dictionary = {}
 	var selected: Array = []
 	for enemy_id in template.get("enemy_ids", []):
 		var key := str(enemy_id)
 		if by_id.has(key):
-			selected.append(by_id[key])
+			var current_count := int(type_counts.get(key, 0))
+			if current_count < MAX_SAME_ENEMY_TYPE:
+				selected.append(by_id[key])
+				type_counts[key] = current_count + 1
 
 	if selected.is_empty():
 		return {}
