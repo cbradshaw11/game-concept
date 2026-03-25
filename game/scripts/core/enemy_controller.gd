@@ -11,32 +11,45 @@ enum EnemyState {
 
 var state: EnemyState = EnemyState.IDLE
 var health: int
+var initial_health: int
+var damage: int = 8
 var attack_range: float
 var chase_range: float
 var stagger_timer: float = 0.0
+var attack_cooldown: float = 1.5
+var _attack_timer: float = 0.0
+var enemy_display_name: String = "Enemy"
 
-func _init(max_health: int = 100, chase_distance: float = 6.0, attack_distance: float = 1.8) -> void:
+func _init(max_health: int = 100, chase_distance: float = 6.0, attack_distance: float = 1.8, base_damage: int = 8) -> void:
 	health = max_health
+	initial_health = max_health
 	chase_range = chase_distance
 	attack_range = attack_distance
+	damage = base_damage
 
-func tick(distance_to_player: float, delta: float) -> EnemyState:
+## Returns true if the enemy attacks this tick (caller should apply damage to player)
+func tick(distance_to_player: float, delta: float) -> bool:
 	if state == EnemyState.DEAD:
-		return state
+		return false
 
 	if state == EnemyState.STAGGER:
 		stagger_timer -= delta
 		if stagger_timer <= 0.0:
 			state = EnemyState.CHASE
-		return state
+		return false
+
+	_attack_timer = max(0.0, _attack_timer - delta)
 
 	if distance_to_player <= attack_range:
 		state = EnemyState.ATTACK
+		if _attack_timer <= 0.0:
+			_attack_timer = attack_cooldown
+			return true
 	elif distance_to_player <= chase_range:
 		state = EnemyState.CHASE
 	else:
 		state = EnemyState.IDLE
-	return state
+	return false
 
 func apply_damage(amount: int, poise_break: bool = false) -> EnemyState:
 	if state == EnemyState.DEAD:

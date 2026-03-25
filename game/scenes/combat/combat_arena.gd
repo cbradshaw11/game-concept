@@ -24,6 +24,10 @@ var seed: int = 0
 var attack_count: int = 0
 var dodge_count: int = 0
 var guard_active: bool = false
+var player_health: int = 100
+var player_max_health: int = 100
+
+signal player_died
 var enemies: Array[EnemyController] = []
 var enemy_sprites: Array[Sprite2D] = []
 var enemy_nodes: Array[Node2D] = []
@@ -86,6 +90,7 @@ func set_context(next_ring_id: String, next_seed: int, enemy_count: int = 1) -> 
 	guard_active = false
 	encounter_enemy_count = max(1, enemy_count)
 	encounter_completed = false
+	player_health = player_max_health
 	_load_background()
 	_spawn_enemies(encounter_enemy_count)
 	player.set_guarding(false)
@@ -111,7 +116,17 @@ func _process(delta: float) -> void:
 			_enemy_suppress_ticks[index] -= 1
 			continue
 		var distance_to_player := absf(float(index - player_zone)) + 0.5
-		enemy.tick(distance_to_player, delta)
+		var did_attack := enemy.tick(distance_to_player, delta)
+		if did_attack:
+			var dmg := enemy.damage
+			if player.guarding:
+				dmg = max(1, dmg / 2)
+			player_health = max(0, player_health - dmg)
+			if AudioManager:
+				AudioManager.play_hit()
+			if player_health <= 0:
+				_on_player_died()
+				return
 	if _all_enemies_defeated():
 		encounter_completed = true
 		if AudioManager:
@@ -204,8 +219,16 @@ func _update_hud() -> void:
 	]
 
 	# Stat bars
+	if hp_bar:
+		hp_bar.value = (float(player_health) / float(player_max_health)) * 100.0
 	if stamina_bar:
 		stamina_bar.value = (player.stamina / float(player.max_stamina)) * 100.0
+
+
+func _on_player_died() -> void:
+	encounter_completed = true
+	set_arena_active(false)
+	player_died.emit()
 
 
 func _spawn_enemies(count: int) -> void:
@@ -224,7 +247,16 @@ func _spawn_enemies(count: int) -> void:
 	var spacing := arena_width / float(count + 1)
 
 	for i in count:
-		enemies.append(EnemyController.new(100, 3.5, 1.2))
+		# Pull stats from DataStore if available
+		var ring_enemies: Array = DataStore.get_enemies_for_ring(ring_id)
+		var enemy_data: Dictionary = {}
+		if not ring_enemies.is_empty():
+			enemy_data = ring_enemies[i % ring_enemies.size()]
+		var hp: int = int(enemy_data.get("health", 100))
+		var dmg: int = int(enemy_data.get("damage", 8))
+		var ec := EnemyController.new(hp, 3.5, 1.2, dmg)
+		ec.enemy_display_name = str(enemy_data.get("id", "Enemy")).replace("_", " ").capitalize()
+		enemies.append(ec)
 		_hit_flash_timers.append(0.0)
 		_enemy_suppress_ticks.append(0)
 

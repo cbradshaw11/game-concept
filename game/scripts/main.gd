@@ -149,6 +149,7 @@ func _ensure_combat_arena() -> void:
 	combat_arena.dodge_hook_triggered.connect(_on_dodge_hook_triggered)
 	combat_arena.guard_hook_changed.connect(_on_guard_hook_changed)
 	combat_arena.encounter_cleared.connect(_on_encounter_cleared)
+	combat_arena.player_died.connect(_on_player_died)
 
 func _on_attack_hook_triggered() -> void:
 	print("Combat hook: attack")

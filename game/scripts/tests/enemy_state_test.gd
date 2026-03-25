@@ -5,15 +5,18 @@ const EnemyController = preload("res://scripts/core/enemy_controller.gd")
 func _initialize() -> void:
 	var enemy := EnemyController.new(100, 6.0, 1.8)
 
-	if enemy.tick(10.0, 0.016) != EnemyController.EnemyState.IDLE:
+	enemy.tick(10.0, 0.016)
+	if enemy.state != EnemyController.EnemyState.IDLE:
 		_fail("Expected IDLE at far distance")
 		return
 
-	if enemy.tick(4.0, 0.016) != EnemyController.EnemyState.CHASE:
+	enemy.tick(4.0, 0.016)
+	if enemy.state != EnemyController.EnemyState.CHASE:
 		_fail("Expected CHASE in chase range")
 		return
 
-	if enemy.tick(1.0, 0.016) != EnemyController.EnemyState.ATTACK:
+	enemy.tick(1.0, 0.016)
+	if enemy.state != EnemyController.EnemyState.ATTACK:
 		_fail("Expected ATTACK in attack range")
 		return
 
