@@ -88,165 +88,6 @@ func _ready() -> void:
 	_setup_death_panel()
 	_setup_modifier_panel()
 	_show_prep()
-	set_available_loadouts(DataStore.weapons.get("weapons", []))
-	return_button.pressed.connect(_on_return_to_sanctuary)
-	return_button.pressed.connect(_play_ui_click)
-	descend_warden_button.pressed.connect(_on_descend_warden_pressed)
-	descend_warden_button.pressed.connect(_play_ui_click)
-	resume_button.pressed.connect(_on_resume_pressed)
-	resume_button.pressed.connect(_play_ui_click)
-	quit_to_menu_button.pressed.connect(_on_quit_to_menu_pressed)
-	quit_to_menu_button.pressed.connect(_play_ui_click)
-	settings_button.pressed.connect(_on_settings_button_pressed)
-	settings_button.pressed.connect(_play_ui_click)
-	upgrade_card_0.pressed.connect(_on_upgrade_card_selected.bind(0))
-	upgrade_card_0.pressed.connect(_play_ui_upgrade_select)
-	upgrade_card_1.pressed.connect(_on_upgrade_card_selected.bind(1))
-	upgrade_card_1.pressed.connect(_play_ui_upgrade_select)
-	upgrade_card_2.pressed.connect(_on_upgrade_card_selected.bind(2))
-	upgrade_card_2.pressed.connect(_play_ui_upgrade_select)
-	vendor_button.pressed.connect(_on_visit_vendor_pressed)
-	vendor_button.pressed.connect(_play_ui_click)
-	history_button.pressed.connect(_on_history_button_pressed)
-	history_button.pressed.connect(_play_ui_click)
-	upgrade_toast.visible = false
-	_populate_ring_selector()
-
-func _setup_ui_audio() -> void:
-	_ui_sfx_player = AudioStreamPlayer.new()
-	_ui_sfx_player.name = "UISFXPlayer"
-	_ui_sfx_player.bus = "SFX"
-	add_child(_ui_sfx_player)
-	var click_path := "res://audio/ui_click.wav"
-	if ResourceLoader.exists(click_path):
-		_ui_click_stream = load(click_path)
-	var upgrade_path := "res://audio/ui_upgrade_select.wav"
-	if ResourceLoader.exists(upgrade_path):
-		_ui_upgrade_stream = load(upgrade_path)
-
-func _play_ui_click() -> void:
-	if _ui_sfx_player and _ui_click_stream:
-		_ui_sfx_player.stream = _ui_click_stream
-		_ui_sfx_player.play()
-
-func _play_ui_upgrade_select() -> void:
-	if _ui_sfx_player and _ui_upgrade_stream:
-		_ui_sfx_player.stream = _ui_upgrade_stream
-		_ui_sfx_player.play()
-
-func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel"):
-		_handle_pause_input()
-
-func _handle_pause_input() -> void:
-	if is_instance_valid(_story_modal):
-		return
-	if not run_screen.visible:
-		return
-	if upgrade_draw_panel.visible:
-		return
-	if _is_paused:
-		_unpause()
-	else:
-		_pause()
-
-func _pause() -> void:
-	_is_paused = true
-	pause_menu.visible = true
-	get_tree().paused = true
-
-func _unpause() -> void:
-	_is_paused = false
-	pause_menu.visible = false
-	get_tree().paused = false
-
-func _on_resume_pressed() -> void:
-	_unpause()
-
-func _on_quit_to_menu_pressed() -> void:
-	get_tree().paused = false
-	_is_paused = false
-	pause_menu.visible = false
-	GameState.abandon_run()
-	var _SaveSystem := load("res://scripts/systems/save_system.gd")
-	_SaveSystem.save_state(GameState.to_save_state())
-	on_idle_ready()
-
-func _on_settings_button_pressed() -> void:
-	var settings_scene := load("res://scenes/ui/settings.tscn")
-	var settings_instance := settings_scene.instantiate()
-	add_child(settings_instance)
-	settings_instance.settings_closed.connect(_on_settings_closed.bind(settings_instance))
-
-func _on_settings_closed(settings_instance: Node) -> void:
-	settings_instance.queue_free()
-
-func _populate_ring_selector() -> void:
-	ring_selector.clear()
-	ring_selector.add_item("Ring 1 - The Inner Way")
-	ring_selector.set_item_metadata(0, "inner")
-	ring_selector.add_item("Ring 2 - The Mid Path")
-	ring_selector.set_item_metadata(1, "mid")
-	ring_selector.add_item("Ring 3 - The Outer Reaches")
-	ring_selector.set_item_metadata(2, "outer")
-	_refresh_ring_selector()
-
-func _refresh_ring_selector() -> void:
-	var rings_data: Array = DataStore.rings.get("rings", [])
-	var thresholds := {}
-	for r in rings_data:
-		thresholds[r.get("id", "")] = r.get("loot_gate_threshold", 0)
-
-	# inner (index 0): always accessible
-	ring_selector.set_item_disabled(0, false)
-	ring_selector.set_item_text(0, "Ring 1 - The Inner Way")
-
-	# mid (index 1): requires "inner" in rings_cleared AND banked_loot >= 50
-	var mid_threshold: int = thresholds.get("mid", 50)
-	var mid_progression_locked: bool = "inner" not in GameState.rings_cleared
-	var mid_loot_locked: bool = GameState.banked_loot < mid_threshold
-	var mid_locked: bool = mid_progression_locked or mid_loot_locked
-	ring_selector.set_item_disabled(1, mid_locked)
-	if mid_locked and mid_loot_locked and not mid_progression_locked:
-		ring_selector.set_item_text(1, "Ring 2 (requires %d loot)" % mid_threshold)
-	else:
-		ring_selector.set_item_text(1, "Ring 2 - The Mid Path")
-
-	# outer (index 2): requires "mid" in rings_cleared AND banked_loot >= 150
-	var outer_threshold: int = thresholds.get("outer", 150)
-	var outer_progression_locked: bool = "mid" not in GameState.rings_cleared
-	var outer_loot_locked: bool = GameState.banked_loot < outer_threshold
-	var outer_locked: bool = outer_progression_locked or outer_loot_locked
-	ring_selector.set_item_disabled(2, outer_locked)
-	if outer_locked and outer_loot_locked and not outer_progression_locked:
-		ring_selector.set_item_text(2, "Ring 3 (requires %d loot)" % outer_threshold)
-	else:
-		ring_selector.set_item_text(2, "Ring 3 - The Outer Reaches")
-
-	# Clamp selection to first available ring
-	for i in range(ring_selector.item_count):
-		if not ring_selector.is_item_disabled(i):
-			ring_selector.select(i)
-			_on_ring_selected(i)
-			break
-
-func _on_ring_selected(index: int) -> void:
-	var ring_ids = ["inner", "mid", "outer"]
-	if index < ring_ids.size():
-		GameState.current_ring = ring_ids[index]
-	_refresh_ring_briefing()
-
-func _refresh_ring_briefing() -> void:
-	var rings_data: Array = DataStore.rings.get("rings", [])
-	var briefing: String = ""
-	for r in rings_data:
-		if r.get("id", "") == GameState.current_ring:
-			briefing = r.get("briefing", "")
-			break
-	if briefing != "":
-		prep_status.text = briefing
-	else:
-		prep_status.text = "Sanctuary: choose your loadout and begin the next run."
 
 func _on_start_run_button_pressed() -> void:
 	_play_click()
@@ -657,7 +498,7 @@ func _populate_modifier_panel(choices: Array) -> void:
 		var btn := Button.new()
 		btn.text = "%s — %s" % [mod_name, mod_desc]
 		var cap_id := mod_id
-		var cap_mod := mod
+		var cap_mod: Dictionary = mod
 		btn.pressed.connect(func():
 			_play_click()
 			GameState.set_active_modifiers([cap_mod])
@@ -782,7 +623,7 @@ func _show_run_history() -> void:
 		return
 	var lines: PackedStringArray = []
 	lines.append("── Run History (last %d) ──" % history.size())
-	var start_idx := max(0, history.size() - 10)
+	var start_idx: int = max(0, history.size() - 10)
 	for i in range(history.size() - 1, start_idx - 1, -1):
 		var entry: Dictionary = history[i]
 		var ring := str(entry.get("ring", "?"))

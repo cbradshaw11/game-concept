@@ -202,34 +202,6 @@ func _update_hud() -> void:
 		"On" if guard_active else "Off",
 		enemies_text,
 	]
-	for i in slots.size():
-		var slot = slots[i]
-		if slot == null:
-			continue
-		if i < enemies.size() and enemies[i].state != EnemyController.EnemyState.DEAD:
-			slot.visible = true
-			var enemy_hp_bar: ProgressBar = slot.get_node_or_null("EnemyHPBar")
-			var enemy_name_label: Label = slot.get_node_or_null("EnemyNameLabel")
-			var enemy := enemies[i]
-			if enemy_name_label:
-				enemy_name_label.text = "%s  %d/%d" % [enemy.enemy_display_name, enemy.health, enemy.initial_health]
-			if enemy_hp_bar:
-				enemy_hp_bar.max_value = enemy.initial_health
-				enemy_hp_bar.value = enemy.health
-		else:
-			slot.visible = false
-			if i < _enemy_sprites.size() and is_instance_valid(_enemy_sprites[i]):
-				_enemy_sprites[i].visible = false
-	if is_boss_encounter and not enemies.is_empty():
-		var boss_enemy := enemies[0]
-		var phase: int = boss_enemy._current_phase
-		if GameState.warden_map_unlocked or GameState.has_purchased("warden_insight"):
-			wardan_phase_label.text = "Phase %d / 3  (Phase 2: 840HP | Phase 3: 420HP)" % phase
-		else:
-			wardan_phase_label.text = "Phase %d / 3" % phase
-		wardan_phase_label.visible = not encounter_completed
-	else:
-		wardan_phase_label.visible = false
 
 	# Stat bars
 	if stamina_bar:
