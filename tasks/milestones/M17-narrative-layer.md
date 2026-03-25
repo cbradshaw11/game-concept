@@ -1,7 +1,8 @@
 # M17 — Narrative Layer: The Long Walk
 
-**Status:** In Progress  
+**Status:** COMPLETE  
 **Date Authored:** 2026-03-24  
+**Date Completed:** 2026-03-25  
 **Author:** shadowBot (overnight session)  
 **Scope:** Prologue, ring lore, NPC dialogue, flavor text, environmental storytelling
 
@@ -28,11 +29,11 @@ This milestone does not require new scenes or mechanics. It adds **data** — a 
 | T5 | Write victory/extraction flavor text | DONE (narrative.json) |
 | T6 | Write lore fragments (collectible notes found in rings) | DONE (narrative.json) |
 | T7 | Write Warden boss intro monologue (Ring 3 boss gate) | DONE (narrative.json) |
-| T8 | Scaffold NarrativeManager.gd autoload | TODO (see spec below) |
-| T9 | Hook prologue into main.gd startup flow | TODO |
-| T10 | Hook ring entry text into RingDirector.gd | TODO |
-| T11 | Hook vendor dialogue into vendor UI | TODO |
-| T12 | M17 test suite | TODO |
+| T8 | Scaffold NarrativeManager.gd autoload | DONE (game/autoload/narrative_manager.gd) |
+| T9 | Hook prologue into main.gd startup flow | DONE (main.gd _ready, prologue_seen flag) |
+| T10 | Hook ring entry text into RingDirector.gd | DONE (main.gd _begin_run via NarrativeManager) |
+| T11 | Hook vendor dialogue into vendor UI | DONE (get_vendor_greeting / get_vendor_purchase_line) |
+| T12 | M17 test suite | DONE (6 test files, 108 assertions, all green) |
 
 ---
 
