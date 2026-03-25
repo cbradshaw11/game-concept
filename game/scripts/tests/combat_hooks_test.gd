@@ -9,15 +9,15 @@ func _initialize() -> void:
 	var player := PlayerController.new()
 	harness.add_child(player)
 
-	var attack_count := 0
-	var dodge_count := 0
+	# Use Dictionary as reference containers — GDScript lambda capture is by value for primitives
+	var counts := { "attack": 0, "dodge": 0 }
 	var guard_values: Array[bool] = []
 
 	player.attack_triggered.connect(func() -> void:
-		attack_count += 1
+		counts["attack"] += 1
 	)
 	player.dodge_triggered.connect(func() -> void:
-		dodge_count += 1
+		counts["dodge"] += 1
 	)
 	player.guard_changed.connect(func(value: bool) -> void:
 		guard_values.append(value)
@@ -27,7 +27,7 @@ func _initialize() -> void:
 	if not player.try_attack():
 		_fail("attack should succeed with enough stamina")
 		return
-	if attack_count != 1:
+	if counts["attack"] != 1:
 		_fail("attack hook should fire exactly once")
 		return
 	if int(player.stamina) != 28:
@@ -37,7 +37,7 @@ func _initialize() -> void:
 	if not player.try_dodge():
 		_fail("dodge should succeed with enough stamina")
 		return
-	if dodge_count != 1:
+	if counts["dodge"] != 1:
 		_fail("dodge hook should fire exactly once")
 		return
 	if int(player.stamina) != 6:
@@ -47,7 +47,7 @@ func _initialize() -> void:
 	if player.try_attack():
 		_fail("attack should fail with insufficient stamina")
 		return
-	if attack_count != 1:
+	if counts["attack"] != 1:
 		_fail("failed attack should not emit hook")
 		return
 

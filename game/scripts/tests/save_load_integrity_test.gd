@@ -1,9 +1,11 @@
 extends SceneTree
 
+const GameStateScript = preload("res://autoload/game_state.gd")
 const SaveSystem = preload("res://scripts/systems/save_system.gd")
 
 func _initialize() -> void:
-	var defaults := GameState.default_save_state()
+	var gs := GameStateScript.new()
+	var defaults := gs.default_save_state()
 	_reset_save_file()
 
 	# Persist a known state.

@@ -1,42 +1,44 @@
 extends SceneTree
 
+const GameStateScript = preload("res://autoload/game_state.gd")
 const RewardSystem = preload("res://scripts/systems/reward_system.gd")
 
 func _initialize() -> void:
 	var reward_system := RewardSystem.new()
 	var rings_data := _load_json("res://data/rings.json")
+	var gs := GameStateScript.new()
 
 	# Reset state baseline.
-	GameState.banked_xp = 0
-	GameState.banked_loot = 0
-	GameState.unbanked_xp = 0
-	GameState.unbanked_loot = 0
+	gs.banked_xp = 0
+	gs.banked_loot = 0
+	gs.unbanked_xp = 0
+	gs.unbanked_loot = 0
 
-	GameState.start_run(1234, "inner")
+	gs.start_run(1234, "inner")
 	var rewards := reward_system.calculate_rewards("inner", rings_data, 2)
-	GameState.add_unbanked(int(rewards["xp"]), int(rewards["loot"]))
-	GameState.extract()
+	gs.add_unbanked(int(rewards["xp"]), int(rewards["loot"]))
+	gs.extract()
 
-	if GameState.banked_xp <= 0 or GameState.banked_loot <= 0:
+	if gs.banked_xp <= 0 or gs.banked_loot <= 0:
 		_fail("Extract should bank positive rewards")
 		return
 
-	var banked_xp_after_extract := GameState.banked_xp
-	var banked_loot_after_extract := GameState.banked_loot
+	var banked_xp_after_extract: int = gs.banked_xp
+	var banked_loot_after_extract: int = gs.banked_loot
 
-	GameState.start_run(5678, "inner")
-	GameState.add_unbanked(100, 50)
-	GameState.die_in_run()
+	gs.start_run(5678, "inner")
+	gs.add_unbanked(100, 50)
+	gs.die_in_run()
 
-	if GameState.unbanked_xp != 50:
+	if gs.unbanked_xp != 50:
 		_fail("Death should preserve exactly 50 percent unbanked XP")
 		return
 
-	if GameState.unbanked_loot != 0:
+	if gs.unbanked_loot != 0:
 		_fail("Death should clear unbanked loot")
 		return
 
-	if GameState.banked_xp != banked_xp_after_extract or GameState.banked_loot != banked_loot_after_extract:
+	if gs.banked_xp != banked_xp_after_extract or gs.banked_loot != banked_loot_after_extract:
 		_fail("Death in run should not alter banked totals")
 		return
 

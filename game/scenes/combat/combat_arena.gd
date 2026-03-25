@@ -132,7 +132,8 @@ func _execute_weapon_attack() -> void:
 	var weapon_id: String = ""
 	if "selected_weapon_id" in get_parent():
 		weapon_id = str(get_parent().get("selected_weapon_id"))
-	var weapon_data := DataStore.get_weapon(weapon_id) if weapon_id != "" else {}
+	var ds := get_node_or_null("/root/DataStore")
+	var weapon_data: Dictionary = ds.get_weapon(weapon_id) if ds and weapon_id != "" else {}
 	var mechanic := str(weapon_data.get("light_mechanic", "single_target"))
 
 	match mechanic:
@@ -154,7 +155,8 @@ func execute_heavy_attack() -> void:
 	var weapon_id: String = ""
 	if "selected_weapon_id" in get_parent():
 		weapon_id = str(get_parent().get("selected_weapon_id"))
-	var weapon_data := DataStore.get_weapon(weapon_id) if weapon_id != "" else {}
+	var ds := get_node_or_null("/root/DataStore")
+	var weapon_data: Dictionary = ds.get_weapon(weapon_id) if ds and weapon_id != "" else {}
 	var mechanic := str(weapon_data.get("heavy_mechanic", "single_target"))
 
 	match mechanic:
