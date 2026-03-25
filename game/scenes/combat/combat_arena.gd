@@ -43,12 +43,40 @@ var _shake_amount: float = 0.0
 var _shake_timer: float = 0.0
 var _camera_origin: Vector2 = Vector2.ZERO
 
-# Hit flash timers per enemy
+# Hit flash timers per enemy (lerp progress, negative = hold phase)
 var _hit_flash_timers: Array[float] = []
+# Flash type per enemy: "hit" or "poise" or "warden_phase"
+var _hit_flash_types: Array[String] = []
+
+# Hit stop state
+var _hit_stop_timer: float = 0.0
+var _hit_stop_active: bool = false
+var _pre_hit_stop_time_scale: float = 1.0
+
+# Phase transition flash overlay
+var _phase_flash_overlay: ColorRect = null
 
 # Bow heavy charge state
 # _bow_suppress_ticks[enemy_index] = remaining suppression ticks
 var _enemy_suppress_ticks: Array[int] = []
+
+# ─── M19 Juice Constants ─────────────────────────────────────────────────────
+const HIT_STOP_DURATION := 0.065  # seconds (~65ms, range 50-80ms)
+const HIT_STOP_TIME_SCALE := 0.05
+
+const SHAKE_MAGNITUDE_SMALL := 5.0   # player hit
+const SHAKE_MAGNITUDE_MEDIUM := 8.0  # enemy death
+const SHAKE_MAGNITUDE_LARGE := 18.0  # Warden phase transition
+const SHAKE_DURATION_DEFAULT := 0.3
+
+const HIT_FLASH_COLOR := Color(1.5, 0.5, 0.5, 1.0)
+const HIT_FLASH_HOLD := 0.0167  # ~1 frame at 60fps
+const HIT_FLASH_LERP_DURATION := 0.15
+
+const POISE_BREAK_FLASH_COLOR := Color(0.8, 0.8, 2.0, 1.0)
+const POISE_BREAK_FLASH_DURATION := 0.2
+
+const WARDEN_PHASE_FLASH_HOLD := 0.3  # longer hold for Warden phase transition
 
 const SPRITE_BASE := "res://assets/sprites/"
 const ENEMY_SPRITE_NAMES := {
@@ -65,6 +93,7 @@ func _ready() -> void:
 	_camera_origin = camera.offset
 	_load_background()
 	_load_player_sprite()
+	_setup_phase_flash_overlay()
 	_update_hud()
 	# Start combat music when arena becomes active
 	if AudioManager:
@@ -110,6 +139,7 @@ func set_arena_active(is_active: bool) -> void:
 	process_mode = Node.PROCESS_MODE_INHERIT if is_active else Node.PROCESS_MODE_DISABLED
 
 func _process(delta: float) -> void:
+	_update_hit_stop(delta)
 	_update_camera_shake(delta)
 	_update_hit_flashes(delta)
 
@@ -131,6 +161,8 @@ func _process(delta: float) -> void:
 			if player.guarding:
 				dmg = max(1, dmg / 2)
 			player_health = max(0, player_health - dmg)
+			_trigger_hit_stop()
+			trigger_screen_shake(SHAKE_MAGNITUDE_SMALL, SHAKE_DURATION_DEFAULT)
 			if AudioManager:
 				AudioManager.play_hit()
 			if player_health <= 0:
@@ -143,7 +175,13 @@ func _process(delta: float) -> void:
 			if boss.boss_phase != _last_boss_phase:
 				_last_boss_phase = boss.boss_phase
 				boss_phase_changed.emit(boss.boss_phase)
-				trigger_screen_shake(8.0, 0.5)
+				print("WARDEN PHASE %d" % boss.boss_phase)
+				trigger_screen_shake(SHAKE_MAGNITUDE_LARGE, 0.5)
+				_trigger_phase_flash()
+				# Extended hit flash for Warden during phase transition
+				if 0 < _hit_flash_timers.size():
+					_hit_flash_timers[0] = WARDEN_PHASE_FLASH_HOLD
+					_hit_flash_types[0] = "warden_phase"
 
 	if _all_enemies_defeated():
 		encounter_completed = true
@@ -258,6 +296,7 @@ func _on_player_died() -> void:
 func _spawn_enemies(count: int) -> void:
 	enemies.clear()
 	_hit_flash_timers.clear()
+	_hit_flash_types.clear()
 	_enemy_suppress_ticks.clear()
 
 	for node in enemy_nodes:
@@ -282,6 +321,7 @@ func _spawn_enemies(count: int) -> void:
 		ec.enemy_display_name = str(enemy_data.get("id", "Enemy")).replace("_", " ").capitalize()
 		enemies.append(ec)
 		_hit_flash_timers.append(0.0)
+		_hit_flash_types.append("hit")
 		_enemy_suppress_ticks.append(0)
 
 		var archetype := "grunt"
@@ -314,6 +354,7 @@ func _spawn_enemies(count: int) -> void:
 func _spawn_boss() -> void:
 	enemies.clear()
 	_hit_flash_timers.clear()
+	_hit_flash_types.clear()
 	_enemy_suppress_ticks.clear()
 	_last_boss_phase = 1
 
@@ -334,6 +375,7 @@ func _spawn_boss() -> void:
 	ec.enemy_display_name = "The Warden"
 	enemies.append(ec)
 	_hit_flash_timers.append(0.0)
+	_hit_flash_types.append("hit")
 	_enemy_suppress_ticks.append(0)
 	encounter_enemy_count = 1
 
@@ -362,19 +404,27 @@ func _apply_damage_to_front_enemy(damage: int, force_poise_break: bool = false) 
 			var prev_state := enemy.state
 			enemy.apply_damage(damage, force_poise_break or true)
 
-			# Hit flash
+			# Hit flash — poise break gets distinct blue-white flash
 			if i < _hit_flash_timers.size():
-				_hit_flash_timers[i] = 0.1
+				if enemy.state == EnemyController.EnemyState.STAGGER and prev_state != EnemyController.EnemyState.STAGGER:
+					_hit_flash_timers[i] = POISE_BREAK_FLASH_DURATION
+					_hit_flash_types[i] = "poise"
+				else:
+					_hit_flash_timers[i] = HIT_FLASH_HOLD + HIT_FLASH_LERP_DURATION
+					_hit_flash_types[i] = "hit"
+
+			# Hit stop on every landed hit
+			_trigger_hit_stop()
 
 			if enemy.state == EnemyController.EnemyState.DEAD and prev_state != EnemyController.EnemyState.DEAD:
-				# Death: dissolve + heavy shake
+				# Death: dissolve + medium shake
 				_start_death_dissolve(i)
-				trigger_screen_shake(5.0, 0.3)
+				trigger_screen_shake(SHAKE_MAGNITUDE_MEDIUM, SHAKE_DURATION_DEFAULT)
 				if AudioManager:
 					AudioManager.play_death()
 			else:
-				# Regular hit: light shake
-				trigger_screen_shake(2.0, 0.12)
+				# Regular hit: small shake
+				trigger_screen_shake(SHAKE_MAGNITUDE_SMALL, 0.12)
 				if AudioManager:
 					AudioManager.play_hit()
 			return
@@ -392,7 +442,12 @@ func _apply_damage_to_all_enemies(damage: int) -> void:
 		hit_any = true
 
 		if i < _hit_flash_timers.size():
-			_hit_flash_timers[i] = 0.1
+			if enemy.state == EnemyController.EnemyState.STAGGER and prev_state != EnemyController.EnemyState.STAGGER:
+				_hit_flash_timers[i] = POISE_BREAK_FLASH_DURATION
+				_hit_flash_types[i] = "poise"
+			else:
+				_hit_flash_timers[i] = HIT_FLASH_HOLD + HIT_FLASH_LERP_DURATION
+				_hit_flash_types[i] = "hit"
 
 		if enemy.state == EnemyController.EnemyState.DEAD and prev_state != EnemyController.EnemyState.DEAD:
 			_start_death_dissolve(i)
@@ -403,7 +458,8 @@ func _apply_damage_to_all_enemies(damage: int) -> void:
 				AudioManager.play_hit()
 
 	if hit_any:
-		trigger_screen_shake(3.0, 0.18)
+		_trigger_hit_stop()
+		trigger_screen_shake(SHAKE_MAGNITUDE_SMALL, 0.18)
 
 
 func _suppress_front_enemy(ticks: int) -> void:
@@ -423,17 +479,56 @@ func _all_enemies_defeated() -> bool:
 	return true
 
 
-# ─── Hit Flash ────────────────────────────────────────────────────────────────
+# ─── Hit Stop (M19 T1) ───────────────────────────────────────────────────────
+
+func _trigger_hit_stop() -> void:
+	if _hit_stop_active:
+		return
+	_hit_stop_active = true
+	_hit_stop_timer = HIT_STOP_DURATION
+	_pre_hit_stop_time_scale = Engine.time_scale
+	Engine.time_scale = HIT_STOP_TIME_SCALE
+
+func _update_hit_stop(_delta: float) -> void:
+	if not _hit_stop_active:
+		return
+	# Use unscaled time for hit stop duration
+	_hit_stop_timer -= get_process_delta_time() / max(Engine.time_scale, 0.001)
+	if _hit_stop_timer <= 0.0:
+		_hit_stop_active = false
+		Engine.time_scale = _pre_hit_stop_time_scale
+
+# ─── Hit Flash (M19 T3 + T7) ────────────────────────────────────────────────
 
 func _update_hit_flashes(delta: float) -> void:
 	for i in _hit_flash_timers.size():
-		if _hit_flash_timers[i] > 0.0:
-			_hit_flash_timers[i] -= delta
-			if i < enemy_sprites.size() and is_instance_valid(enemy_sprites[i]):
-				if _hit_flash_timers[i] > 0.0:
-					enemy_sprites[i].modulate = Color(2.0, 2.0, 2.0, 1.0)
-				else:
-					enemy_sprites[i].modulate = Color(1.0, 1.0, 1.0, 1.0)
+		if _hit_flash_timers[i] <= 0.0:
+			continue
+		_hit_flash_timers[i] -= delta
+		if i >= enemy_sprites.size() or not is_instance_valid(enemy_sprites[i]):
+			continue
+		var sprite := enemy_sprites[i]
+		var flash_type := _hit_flash_types[i] if i < _hit_flash_types.size() else "hit"
+
+		if _hit_flash_timers[i] <= 0.0:
+			# Flash complete — restore
+			sprite.modulate = Color(1.0, 1.0, 1.0, 1.0)
+		elif flash_type == "poise":
+			# Poise break: solid blue-white for full duration
+			sprite.modulate = POISE_BREAK_FLASH_COLOR
+		elif flash_type == "warden_phase":
+			# Warden phase: hold the hit flash color longer
+			sprite.modulate = HIT_FLASH_COLOR
+		else:
+			# Normal hit: hold for 1 frame then lerp back
+			var remaining := _hit_flash_timers[i]
+			if remaining > HIT_FLASH_LERP_DURATION:
+				# Hold phase
+				sprite.modulate = HIT_FLASH_COLOR
+			else:
+				# Lerp phase
+				var t := 1.0 - (remaining / HIT_FLASH_LERP_DURATION)
+				sprite.modulate = HIT_FLASH_COLOR.lerp(Color(1.0, 1.0, 1.0, 1.0), t)
 
 
 # ─── Death Dissolve ───────────────────────────────────────────────────────────
@@ -448,11 +543,13 @@ func _start_death_dissolve(enemy_index: int) -> void:
 	tween.tween_property(sprite, "modulate", Color(1.0, 0.2, 0.2, 0.0), 0.4)
 
 
-# ─── Screen Shake ─────────────────────────────────────────────────────────────
+# ─── Screen Shake (M19 T2) ──────────────────────────────────────────────────
 
 func trigger_screen_shake(amount: float = 6.0, duration: float = 0.25) -> void:
-	_shake_amount = amount
-	_shake_timer = duration
+	# Only override if new shake is stronger
+	if amount >= _shake_amount:
+		_shake_amount = amount
+		_shake_timer = duration
 
 func _update_camera_shake(delta: float) -> void:
 	if _shake_timer > 0.0:
@@ -462,3 +559,25 @@ func _update_camera_shake(delta: float) -> void:
 		camera.offset = _camera_origin + Vector2(shake_x, shake_y)
 	else:
 		camera.offset = _camera_origin
+
+
+# ─── Phase Transition Flash (M19 T4) ────────────────────────────────────────
+
+func _setup_phase_flash_overlay() -> void:
+	_phase_flash_overlay = ColorRect.new()
+	_phase_flash_overlay.name = "PhaseFlashOverlay"
+	_phase_flash_overlay.color = Color(1.0, 1.0, 1.0, 0.0)
+	_phase_flash_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Add to HUD CanvasLayer so it covers the screen
+	var hud := $HUD as CanvasLayer
+	if hud:
+		var rect := _phase_flash_overlay
+		rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+		hud.add_child(rect)
+
+func _trigger_phase_flash() -> void:
+	if _phase_flash_overlay == null:
+		return
+	_phase_flash_overlay.color = Color(1.0, 1.0, 1.0, 0.3)
+	var tween := create_tween()
+	tween.tween_property(_phase_flash_overlay, "color", Color(1.0, 1.0, 1.0, 0.0), 0.5)

@@ -233,6 +233,11 @@ func on_encounter_resolved(xp_gain: int, loot_gain: int) -> void:
 
 func on_extracted(total_xp: int, total_loot: int) -> void:
 	var stats := GameState.get_run_stats()
+	# M19 T6 — Add extraction flavor text from NarrativeManager
+	var ring := str(stats.get("ring", "inner"))
+	var extraction_flavor := NarrativeManager.get_ring_text(ring, "extraction")
+	if extraction_flavor != "":
+		stats["extraction_flavor"] = extraction_flavor
 	_show_victory(stats)
 	_refresh_ring_buttons()
 
@@ -553,6 +558,11 @@ func _populate_victory_panel(stats: Dictionary) -> void:
 	var active_upgrades: Array = stats.get("vendor_upgrades", [])
 
 	var lines: PackedStringArray = []
+	# M19 T6 — Extraction flavor text
+	var extraction_flavor := str(stats.get("extraction_flavor", ""))
+	if extraction_flavor != "":
+		lines.append(extraction_flavor)
+		lines.append("")
 	lines.append("Ring reached:        %s" % ring.to_upper())
 	lines.append("Encounters cleared:  %d" % encounters)
 	lines.append("Total XP earned:     %d" % total_xp)
@@ -628,7 +638,13 @@ func _populate_death_panel(ring_id: String, killer_enemy_id: String) -> void:
 	rng.seed = abs(GameState.active_seed + ring_id.hash())
 	rng.randomize()
 	var idx := rng.randi_range(0, lines.size() - 1)
-	flavor_label.text = str(lines[idx])
+	var flavor_text := str(lines[idx])
+
+	# M19 T5 — Append narrative death flavor text from NarrativeManager
+	var narrative_death := NarrativeManager.get_ring_text(ring_id, "death")
+	if narrative_death != "":
+		flavor_text += "\n\n" + narrative_death
+	flavor_label.text = flavor_text
 
 # ── Modifier Selection Panel ──────────────────────────────────────────────────
 

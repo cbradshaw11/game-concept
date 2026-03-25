@@ -26,6 +26,10 @@ if command -v godot4 >/dev/null 2>&1; then
   godot4 --headless --path game -s res://scripts/tests/m18/m18_warden_phase_test.gd
   godot4 --headless --path game -s res://scripts/tests/m18/m18_boss_gate_test.gd
   godot4 --headless --path game -s res://scripts/tests/m18/m18_artifact_victory_test.gd
+  # M19 Combat Juice & Feel Polish
+  godot4 --headless --path game -s res://scripts/tests/m19/hit_feedback_test.gd
+  godot4 --headless --path game -s res://scripts/tests/m19/phase_transition_test.gd
+  godot4 --headless --path game -s res://scripts/tests/m19/death_screen_test.gd
 else
   echo "godot4 not found in runner. Performing structural checks only."
   test -f game/scripts/tests/replay_test.gd
@@ -50,6 +54,10 @@ else
   test -f game/scripts/tests/m18/m18_warden_phase_test.gd
   test -f game/scripts/tests/m18/m18_boss_gate_test.gd
   test -f game/scripts/tests/m18/m18_artifact_victory_test.gd
+  # M19 Combat Juice & Feel Polish
+  test -f game/scripts/tests/m19/hit_feedback_test.gd
+  test -f game/scripts/tests/m19/phase_transition_test.gd
+  test -f game/scripts/tests/m19/death_screen_test.gd
 fi
 
 echo "[headless-tests] Complete"

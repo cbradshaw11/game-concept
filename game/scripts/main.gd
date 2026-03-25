@@ -103,6 +103,9 @@ func _on_resolve_encounter_pressed() -> void:
 	flow_ui.on_objective_progress(contract)
 	active_encounter = {}
 
+# M19 T6 — Extraction hold delay
+const EXTRACTION_HOLD_DELAY := 0.5
+
 func _on_extract_pressed() -> void:
 	if GameState.current_ring == "sanctuary":
 		return
@@ -113,11 +116,15 @@ func _on_extract_pressed() -> void:
 	if current_run_ring == "outer" and not _pending_boss_fight:
 		_trigger_warden_gate()
 		return
-	GameState.extract()
+	# M19 T6 — Brief hold before routing to reward screen
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
-	contract_system.reset()
-	_save_state()
+	var timer := get_tree().create_timer(EXTRACTION_HOLD_DELAY)
+	timer.timeout.connect(func():
+		GameState.extract()
+		contract_system.reset()
+		_save_state()
+	)
 
 func _on_die_pressed() -> void:
 	if GameState.current_ring == "sanctuary":
@@ -134,11 +141,18 @@ func _on_extracted_signal(total_xp: int, total_loot: int) -> void:
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
 
+# M19 T5 — Death screen delay constant
+const DEATH_SCREEN_DELAY := 0.8
+
 func _on_player_died() -> void:
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
-	flow_ui.on_died(GameState.unbanked_xp, GameState.unbanked_loot)
-	_save_state()
+	# M19 T5 — Let the death moment breathe before showing the panel
+	var timer := get_tree().create_timer(DEATH_SCREEN_DELAY)
+	timer.timeout.connect(func():
+		flow_ui.on_died(GameState.unbanked_xp, GameState.unbanked_loot)
+		_save_state()
+	)
 
 func _on_vendor_purchase_pressed(upgrade_id: String) -> void:
 	var purchased := vendor_system.purchase(upgrade_id)
