@@ -161,6 +161,8 @@ func _process(delta: float) -> void:
 			if player.guarding:
 				dmg = max(1, dmg / 2)
 			player_health = max(0, player_health - dmg)
+			# M21 — Track damage taken
+			GameState.record_damage_taken(dmg)
 			_trigger_hit_stop()
 			trigger_screen_shake(SHAKE_MAGNITUDE_SMALL, SHAKE_DURATION_DEFAULT)
 			if AudioManager:
@@ -403,6 +405,8 @@ func _apply_damage_to_front_enemy(damage: int, force_poise_break: bool = false) 
 		if enemy.state != EnemyController.EnemyState.DEAD:
 			var prev_state := enemy.state
 			enemy.apply_damage(damage, force_poise_break or true)
+			# M21 — Track damage dealt
+			GameState.record_damage_dealt(damage)
 
 			# Hit flash — poise break gets distinct blue-white flash
 			if i < _hit_flash_timers.size():
@@ -420,6 +424,7 @@ func _apply_damage_to_front_enemy(damage: int, force_poise_break: bool = false) 
 				# Death: dissolve + medium shake
 				_start_death_dissolve(i)
 				trigger_screen_shake(SHAKE_MAGNITUDE_MEDIUM, SHAKE_DURATION_DEFAULT)
+				GameState.record_enemy_killed()
 				if AudioManager:
 					AudioManager.play_death()
 			else:
@@ -440,6 +445,8 @@ func _apply_damage_to_all_enemies(damage: int) -> void:
 		var prev_state := enemy.state
 		enemy.apply_damage(damage, false)
 		hit_any = true
+		# M21 — Track damage dealt
+		GameState.record_damage_dealt(damage)
 
 		if i < _hit_flash_timers.size():
 			if enemy.state == EnemyController.EnemyState.STAGGER and prev_state != EnemyController.EnemyState.STAGGER:
@@ -451,6 +458,7 @@ func _apply_damage_to_all_enemies(damage: int) -> void:
 
 		if enemy.state == EnemyController.EnemyState.DEAD and prev_state != EnemyController.EnemyState.DEAD:
 			_start_death_dissolve(i)
+			GameState.record_enemy_killed()
 			if AudioManager:
 				AudioManager.play_death()
 		else:

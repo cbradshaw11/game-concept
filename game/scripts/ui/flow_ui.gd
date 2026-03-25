@@ -9,6 +9,9 @@ signal loadout_selected(weapon_id: String)
 signal vendor_purchase_pressed(upgrade_id: String)
 signal modifier_selected(modifier_id: String)
 signal warden_gate_dismissed
+signal return_to_title_pressed
+
+const RunSummaryScene = preload("res://scenes/ui/run_summary.tscn")
 
 @onready var prep_screen: PanelContainer = $PrepScreen
 @onready var run_screen: PanelContainer = $RunScreen
@@ -23,10 +26,11 @@ var vendor_panel: PanelContainer = null
 var vendor_loot_label: Label = null
 var vendor_upgrade_buttons: Dictionary = {}  # upgrade_id -> Button
 
-# Victory / Death / Modifier panels (created dynamically)
+# Victory / Death / Modifier / Run Summary panels (created dynamically)
 var victory_panel: PanelContainer = null
 var death_panel: PanelContainer = null
 var modifier_panel: PanelContainer = null
+var run_summary_panel: PanelContainer = null
 
 var run_base_status: String = ""
 var objective_status: String = ""
@@ -142,6 +146,7 @@ func _show_prep() -> void:
 		death_panel.visible = false
 	if modifier_panel:
 		modifier_panel.visible = false
+	_hide_run_summary()
 	if AudioManager:
 		AudioManager.play_sanctuary_music()
 	# M20 T4 — Show return greeting toast when coming back from a run
@@ -160,6 +165,7 @@ func _show_run() -> void:
 		death_panel.visible = false
 	if modifier_panel:
 		modifier_panel.visible = false
+	_hide_run_summary()
 
 func _show_vendor() -> void:
 	prep_screen.visible = false
@@ -239,20 +245,13 @@ func on_encounter_resolved(xp_gain: int, loot_gain: int) -> void:
 	_refresh_run_status()
 
 func on_extracted(total_xp: int, total_loot: int) -> void:
-	var stats := GameState.get_run_stats()
-	# M19 T6 — Add extraction flavor text from NarrativeManager
-	var ring := str(stats.get("ring", "inner"))
-	var extraction_flavor := NarrativeManager.get_ring_text(ring, "extraction")
-	if extraction_flavor != "":
-		stats["extraction_flavor"] = extraction_flavor
-	_show_victory(stats)
+	# M21 — Route to run summary instead of old victory panel
+	_show_run_summary("extraction")
 	_refresh_ring_buttons()
 
 func on_died(unbanked_xp: int, unbanked_loot: int) -> void:
-	var ring_id := GameState.current_ring
-	if ring_id == "sanctuary":
-		ring_id = str(GameState.run_history[-1].get("ring", "inner")) if not GameState.run_history.is_empty() else "inner"
-	_show_death(ring_id, GameState.run_last_enemy_killer)
+	# M21 — Route to run summary instead of old death panel
+	_show_run_summary("death")
 	_refresh_ring_buttons()
 
 func on_idle_ready() -> void:
@@ -412,76 +411,9 @@ func show_warden_gate(lines: Array) -> void:
 	)
 	vbox.add_child(dismiss_btn)
 
-## M18 — Show artifact victory screen (final win condition).
+## M18/M21 — Show artifact victory via run summary screen.
 func show_artifact_victory(extraction_text: String, artifact_text: String) -> void:
-	prep_screen.visible = false
-	run_screen.visible = false
-	if vendor_panel:
-		vendor_panel.visible = false
-	if death_panel:
-		death_panel.visible = false
-	if modifier_panel:
-		modifier_panel.visible = false
-	if victory_panel:
-		victory_panel.visible = false
-
-	var overlay := PanelContainer.new()
-	overlay.name = "ArtifactVictoryOverlay"
-	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	overlay.z_index = 10
-	add_child(overlay)
-
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 80)
-	margin.add_theme_constant_override("margin_right", 80)
-	margin.add_theme_constant_override("margin_top", 60)
-	margin.add_theme_constant_override("margin_bottom", 60)
-	overlay.add_child(margin)
-
-	var vbox := VBoxContainer.new()
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	margin.add_child(vbox)
-
-	var title := Label.new()
-	title.text = "ARTIFACT RETRIEVED"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(title)
-
-	var sep := HSeparator.new()
-	vbox.add_child(sep)
-
-	var flavor := Label.new()
-	flavor.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	flavor.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var lines: PackedStringArray = []
-	if extraction_text != "":
-		lines.append(extraction_text)
-		lines.append("")
-	if artifact_text != "":
-		lines.append(artifact_text)
-	flavor.text = "\n".join(lines)
-	vbox.add_child(flavor)
-
-	var sep2 := HSeparator.new()
-	vbox.add_child(sep2)
-
-	var stats := GameState.get_run_stats()
-	var stats_label := Label.new()
-	stats_label.text = "Total XP: %d  |  Total Loot: %d  |  Encounters: %d" % [
-		int(stats.get("total_xp", 0)),
-		int(stats.get("total_loot", 0)),
-		int(stats.get("encounters_cleared", 0)),
-	]
-	vbox.add_child(stats_label)
-
-	var continue_btn := Button.new()
-	continue_btn.text = "The Long Walk is complete."
-	continue_btn.pressed.connect(func():
-		overlay.queue_free()
-		_show_prep()
-	)
-	vbox.add_child(continue_btn)
+	_show_run_summary("artifact")
 
 ## M17 T10 — Display a single narrative text in the run status area.
 ## Used for ring entry flavor text before a run begins.
@@ -705,6 +637,37 @@ func _populate_modifier_panel(choices: Array) -> void:
 			_show_run()
 		)
 		choices_container.add_child(btn)
+
+# ── M21 — Run Summary ────────────────────────────────────────────────────────
+
+func _show_run_summary(outcome: String) -> void:
+	prep_screen.visible = false
+	run_screen.visible = false
+	if vendor_panel:
+		vendor_panel.visible = false
+	if victory_panel:
+		victory_panel.visible = false
+	if death_panel:
+		death_panel.visible = false
+	if modifier_panel:
+		modifier_panel.visible = false
+	_hide_run_summary()  # Clean up any previous
+	run_summary_panel = RunSummaryScene.instantiate()
+	add_child(run_summary_panel)
+	run_summary_panel.populate(outcome)
+	run_summary_panel.return_to_sanctuary.connect(func():
+		_hide_run_summary()
+		_show_prep()
+	)
+	run_summary_panel.return_to_title.connect(func():
+		_hide_run_summary()
+		return_to_title_pressed.emit()
+	)
+
+func _hide_run_summary() -> void:
+	if run_summary_panel != null and is_instance_valid(run_summary_panel):
+		run_summary_panel.queue_free()
+		run_summary_panel = null
 
 # ── M20 T4 — Sanctuary Return Toast ──────────────────────────────────────────
 

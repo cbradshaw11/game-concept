@@ -41,6 +41,8 @@ func _connect_ui() -> void:
 	flow_ui.vendor_purchase_pressed.connect(_on_vendor_purchase_pressed)
 	flow_ui.modifier_selected.connect(_on_modifier_selected)
 	flow_ui.warden_gate_dismissed.connect(_on_warden_gate_dismissed)
+	# M21 — Return to title from run summary
+	flow_ui.return_to_title_pressed.connect(_on_return_to_title)
 
 func _connect_state() -> void:
 	GameState.run_started.connect(flow_ui.on_run_started)
@@ -287,3 +289,10 @@ func get_vendor_greeting() -> String:
 ## Called by flow_ui after a successful purchase.
 func get_vendor_purchase_line() -> String:
 	return NarrativeManager.get_genn_vendor_reaction("purchase")
+
+# ── M21 — Return to title from run summary ───────────────────────────────────
+
+func _on_return_to_title() -> void:
+	flow_ui.visible = false
+	_save_state()
+	_show_title_screen()

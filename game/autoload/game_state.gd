@@ -30,12 +30,24 @@ var run_history: Array = []
 
 const MAX_HISTORY := 20
 
+# ── M21 — Persistent lifetime stats ──────────────────────────────────────────
+var total_runs: int = 0
+var total_extractions: int = 0
+var total_deaths: int = 0
+var deepest_ring_reached: String = ""
+var artifact_retrievals: int = 0
+var fastest_extraction_seconds: float = 0.0  # 0 = no record yet
+
 # ── Per-run tracking (cleared on start_run) ───────────────────────────────────
 var run_encounters_cleared: int = 0
 var run_total_xp: int = 0
 var run_total_loot: int = 0
 var run_active_modifiers: Array = []
 var run_last_enemy_killer: String = ""
+
+# M21 — Detailed per-run stats dictionary (reset on start_run)
+var current_run_stats: Dictionary = {}
+var _run_start_time: float = 0.0
 
 func default_save_state() -> Dictionary:
 	return {
@@ -48,6 +60,13 @@ func default_save_state() -> Dictionary:
 		"vendor_upgrades": {},
 		"run_history": [],
 		"artifact_retrieved": false,
+		# v8 — M21 lifetime stats
+		"total_runs": 0,
+		"total_extractions": 0,
+		"total_deaths": 0,
+		"deepest_ring_reached": "",
+		"artifact_retrievals": 0,
+		"fastest_extraction_seconds": 0.0,
 	}
 
 func to_save_state() -> Dictionary:
@@ -61,6 +80,13 @@ func to_save_state() -> Dictionary:
 		"vendor_upgrades": vendor_upgrades.duplicate(true),
 		"run_history": run_history.duplicate(true),
 		"artifact_retrieved": artifact_retrieved,
+		# v8 — M21 lifetime stats
+		"total_runs": total_runs,
+		"total_extractions": total_extractions,
+		"total_deaths": total_deaths,
+		"deepest_ring_reached": deepest_ring_reached,
+		"artifact_retrievals": artifact_retrievals,
+		"fastest_extraction_seconds": fastest_extraction_seconds,
 	}
 
 func apply_save_state(data: Dictionary) -> void:
@@ -77,6 +103,13 @@ func apply_save_state(data: Dictionary) -> void:
 	run_history = rh if typeof(rh) == TYPE_ARRAY else []
 	# v7 migration guard — artifact_retrieved
 	artifact_retrieved = bool(data.get("artifact_retrieved", false))
+	# v8 migration guard — M21 lifetime stats
+	total_runs = int(data.get("total_runs", 0))
+	total_extractions = int(data.get("total_extractions", 0))
+	total_deaths = int(data.get("total_deaths", 0))
+	deepest_ring_reached = str(data.get("deepest_ring_reached", ""))
+	artifact_retrievals = int(data.get("artifact_retrievals", 0))
+	fastest_extraction_seconds = float(data.get("fastest_extraction_seconds", 0.0))
 
 func start_run(seed: int, ring_id: String) -> void:
 	active_seed = seed
@@ -87,6 +120,18 @@ func start_run(seed: int, ring_id: String) -> void:
 	run_total_xp = 0
 	run_total_loot = 0
 	run_last_enemy_killer = ""
+	# M21 — Reset per-run stats
+	_run_start_time = Time.get_unix_time_from_system()
+	current_run_stats = {
+		"rings_cleared": [],
+		"enemies_killed": 0,
+		"damage_taken": 0,
+		"damage_dealt": 0,
+		"silver_earned": 0,
+		"silver_spent": 0,
+		"run_duration_seconds": 0.0,
+		"extraction_ring": "",
+	}
 	telemetry.log_event("run_started", {
 		"seed": active_seed,
 		"ring": current_ring,
@@ -99,6 +144,8 @@ func add_unbanked(xp_value: int, loot_value: int) -> void:
 	run_encounters_cleared += 1
 	run_total_xp += xp_value
 	run_total_loot += loot_value
+	# M21 — Track silver earned
+	current_run_stats["silver_earned"] = int(current_run_stats.get("silver_earned", 0)) + loot_value
 	telemetry.log_event("encounter_completed", {
 		"seed": active_seed,
 		"ring": current_ring,
@@ -118,6 +165,15 @@ func extract() -> void:
 
 	# Record run history entry
 	_add_history_entry(event_ring, true)
+
+	# M21 — Finalize run stats and update lifetime counters
+	_finalize_run_stats(event_ring, "extraction")
+	total_runs += 1
+	total_extractions += 1
+	_update_deepest_ring(event_ring)
+	var duration := float(current_run_stats.get("run_duration_seconds", 0.0))
+	if duration > 0.0 and (fastest_extraction_seconds <= 0.0 or duration < fastest_extraction_seconds):
+		fastest_extraction_seconds = duration
 
 	unbanked_xp = 0
 	unbanked_loot = 0
@@ -141,6 +197,15 @@ func retrieve_artifact() -> void:
 	var prev_count: int = int(extractions_by_ring.get(event_ring, 0))
 	extractions_by_ring[event_ring] = prev_count + 1
 	_add_history_entry(event_ring, true)
+	# M21 — Finalize run stats and update lifetime counters
+	_finalize_run_stats(event_ring, "artifact")
+	total_runs += 1
+	total_extractions += 1
+	artifact_retrievals += 1
+	_update_deepest_ring(event_ring)
+	var duration := float(current_run_stats.get("run_duration_seconds", 0.0))
+	if duration > 0.0 and (fastest_extraction_seconds <= 0.0 or duration < fastest_extraction_seconds):
+		fastest_extraction_seconds = duration
 	unbanked_xp = 0
 	unbanked_loot = 0
 	current_ring = "sanctuary"
@@ -159,6 +224,12 @@ func die_in_run() -> void:
 
 	# Record run history entry (failed)
 	_add_history_entry(event_ring, false)
+
+	# M21 — Finalize run stats and update lifetime counters
+	_finalize_run_stats(event_ring, "death")
+	total_runs += 1
+	total_deaths += 1
+	_update_deepest_ring(event_ring)
 
 	current_ring = "sanctuary"
 	telemetry.log_event("player_died", {
@@ -200,6 +271,8 @@ func purchase_upgrade(upgrade_id: String, cost: int) -> bool:
 	if banked_loot < cost:
 		return false
 	banked_loot -= cost
+	# M21 — Track silver spent (vendor purchases happen between runs but count toward stats)
+	record_silver_spent(cost)
 	vendor_upgrades[upgrade_id] = int(vendor_upgrades.get(upgrade_id, 0)) + 1
 	telemetry.log_event("vendor_purchase", {
 		"upgrade_id": upgrade_id,
@@ -248,6 +321,66 @@ func _get_active_upgrade_names() -> Array:
 
 func set_killer_enemy(enemy_id: String) -> void:
 	run_last_enemy_killer = enemy_id
+
+# ── M21 — Combat stat helpers (called from combat_arena) ─────────────────────
+
+func record_enemy_killed() -> void:
+	current_run_stats["enemies_killed"] = int(current_run_stats.get("enemies_killed", 0)) + 1
+
+func record_damage_dealt(amount: int) -> void:
+	current_run_stats["damage_dealt"] = int(current_run_stats.get("damage_dealt", 0)) + amount
+
+func record_damage_taken(amount: int) -> void:
+	current_run_stats["damage_taken"] = int(current_run_stats.get("damage_taken", 0)) + amount
+
+func record_silver_spent(amount: int) -> void:
+	current_run_stats["silver_spent"] = int(current_run_stats.get("silver_spent", 0)) + amount
+
+# ── M21 — Run finalization helpers ────────────────────────────────────────────
+
+const RING_DEPTH := {"inner": 1, "mid": 2, "outer": 3}
+
+func _finalize_run_stats(event_ring: String, outcome: String) -> void:
+	current_run_stats["extraction_ring"] = event_ring if outcome != "death" else "death"
+	if _run_start_time > 0.0:
+		current_run_stats["run_duration_seconds"] = Time.get_unix_time_from_system() - _run_start_time
+	if not current_run_stats.get("rings_cleared", []).has(event_ring):
+		var rings_arr: Array = current_run_stats.get("rings_cleared", [])
+		rings_arr.append(event_ring)
+		current_run_stats["rings_cleared"] = rings_arr
+
+func _update_deepest_ring(ring_id: String) -> void:
+	var new_depth: int = int(RING_DEPTH.get(ring_id, 0))
+	var old_depth: int = int(RING_DEPTH.get(deepest_ring_reached, 0))
+	if new_depth > old_depth:
+		deepest_ring_reached = ring_id
+
+func get_personal_bests(outcome: String) -> Array:
+	## Returns an Array of Strings describing any personal bests set this run.
+	var bests: Array = []
+	var event_ring := str(current_run_stats.get("extraction_ring", ""))
+	if event_ring == "death":
+		event_ring = ""
+	# New deepest ring?
+	if event_ring != "":
+		var new_depth: int = int(RING_DEPTH.get(event_ring, 0))
+		# Compare against what deepest_ring_reached was BEFORE this run updated it
+		# Since we call this after _update_deepest_ring, check if it equals event_ring
+		# and old saved depth was less
+		var saved_depth: int = int(RING_DEPTH.get(deepest_ring_reached, 0))
+		if saved_depth == new_depth and total_extractions <= 1 and outcome != "death":
+			# First extraction from this ring depth
+			if new_depth > 1 or total_extractions == 1:
+				bests.append("Personal Best: Deepest Ring")
+	# Fastest extraction?
+	if outcome != "death":
+		var duration := float(current_run_stats.get("run_duration_seconds", 0.0))
+		if duration > 0.0 and duration == fastest_extraction_seconds:
+			bests.append("Personal Best: Fastest Run")
+	# First artifact?
+	if outcome == "artifact" and artifact_retrievals == 1:
+		bests.append("First Artifact Retrieved")
+	return bests
 
 # ── Run History ───────────────────────────────────────────────────────────────
 
