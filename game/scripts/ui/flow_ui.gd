@@ -285,21 +285,60 @@ func refresh_vendor() -> void:
 func show_prologue(beats: Array) -> void:
 	if beats.is_empty():
 		return
-	# Display the prologue beats as concatenated text in prep_status for now.
-	# A full cinematic sequence can be layered on in a future milestone.
+
+	# Build a scrollable modal overlay so nothing gets cut off
+	var overlay := PanelContainer.new()
+	overlay.name = "PrologueOverlay"
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.z_index = 10
+	add_child(overlay)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 60)
+	margin.add_theme_constant_override("margin_right", 60)
+	margin.add_theme_constant_override("margin_top", 40)
+	margin.add_theme_constant_override("margin_bottom", 40)
+	overlay.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	margin.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "THE LONG WALK"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+
+	var sep := HSeparator.new()
+	vbox.add_child(sep)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(scroll)
+
+	var content := Label.new()
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var lines: PackedStringArray = []
 	for beat in beats:
-		var beat_lines: Array = beat.get("lines", [])
-		for line in beat_lines:
+		for line in beat.get("lines", []):
 			lines.append(str(line))
-		# Add dialogue choices summary if present
 		var choices: Array = beat.get("choices", [])
 		if not choices.is_empty():
 			lines.append("")
 			for choice in choices:
 				lines.append("[%s] %s" % [str(choice.get("text", "")), str(choice.get("response", ""))])
 		lines.append("")
-	prep_status.text = "\n".join(lines)
+	content.text = "\n".join(lines)
+	scroll.add_child(content)
+
+	var dismiss_btn := Button.new()
+	dismiss_btn.text = "Continue →"
+	dismiss_btn.pressed.connect(func():
+		overlay.queue_free()
+	)
+	vbox.add_child(dismiss_btn)
 
 ## M17 T10 — Display a single narrative text in the run status area.
 ## Used for ring entry flavor text before a run begins.
