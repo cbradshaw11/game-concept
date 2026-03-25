@@ -9,6 +9,7 @@ signal extracted(total_xp: int, total_loot: int)
 signal player_died()
 signal vendor_upgrade_purchased(upgrade_id: String)
 signal artifact_retrieved_signal
+signal fragment_collected(fragment_id: String)
 
 var current_ring: String = "sanctuary"
 var artifact_retrieved: bool = false
@@ -37,6 +38,10 @@ var total_deaths: int = 0
 var deepest_ring_reached: String = ""
 var artifact_retrievals: int = 0
 var fastest_extraction_seconds: float = 0.0  # 0 = no record yet
+
+# ── M23 — Collected lore fragments ──────────────────────────────────────────
+var collected_fragments: Array = []  # Array of fragment id strings
+var current_run_fragments: Array = []  # Fragments found this run (reset on start_run)
 
 # ── Per-run tracking (cleared on start_run) ───────────────────────────────────
 var run_encounters_cleared: int = 0
@@ -67,6 +72,8 @@ func default_save_state() -> Dictionary:
 		"deepest_ring_reached": "",
 		"artifact_retrievals": 0,
 		"fastest_extraction_seconds": 0.0,
+		# v9 — M23 collected lore fragments
+		"collected_fragments": [],
 	}
 
 func to_save_state() -> Dictionary:
@@ -87,6 +94,8 @@ func to_save_state() -> Dictionary:
 		"deepest_ring_reached": deepest_ring_reached,
 		"artifact_retrievals": artifact_retrievals,
 		"fastest_extraction_seconds": fastest_extraction_seconds,
+		# v9 — M23 collected lore fragments
+		"collected_fragments": collected_fragments.duplicate(),
 	}
 
 func apply_save_state(data: Dictionary) -> void:
@@ -110,6 +119,9 @@ func apply_save_state(data: Dictionary) -> void:
 	deepest_ring_reached = str(data.get("deepest_ring_reached", ""))
 	artifact_retrievals = int(data.get("artifact_retrievals", 0))
 	fastest_extraction_seconds = float(data.get("fastest_extraction_seconds", 0.0))
+	# v9 migration guard — M23 collected lore fragments
+	var cf: Variant = data.get("collected_fragments", [])
+	collected_fragments = cf if typeof(cf) == TYPE_ARRAY else []
 
 func start_run(seed: int, ring_id: String) -> void:
 	active_seed = seed
@@ -120,6 +132,8 @@ func start_run(seed: int, ring_id: String) -> void:
 	run_total_xp = 0
 	run_total_loot = 0
 	run_last_enemy_killer = ""
+	# M23 — Reset per-run fragment tracking
+	current_run_fragments = []
 	# M21 — Reset per-run stats
 	_run_start_time = Time.get_unix_time_from_system()
 	current_run_stats = {
@@ -404,3 +418,32 @@ func get_run_history() -> Array:
 ## Used by title screen to decide Begin routing (prologue vs sanctuary).
 func is_first_run() -> bool:
 	return run_history.is_empty()
+
+# ── M23 — Lore Fragment Helpers ──────────────────────────────────────────────
+
+func has_fragment(fragment_id: String) -> bool:
+	return collected_fragments.has(fragment_id)
+
+func collect_fragment(fragment_id: String) -> void:
+	if not collected_fragments.has(fragment_id):
+		collected_fragments.append(fragment_id)
+		current_run_fragments.append(fragment_id)
+		fragment_collected.emit(fragment_id)
+
+func roll_fragment_drop(encounter_seed: int) -> String:
+	## Roll for a lore fragment drop (15% chance). Returns fragment_id or "".
+	var all_ids: Array = NarrativeManager.get_all_lore_fragment_ids()
+	# Filter to uncollected only
+	var available: Array = []
+	for fid in all_ids:
+		if not collected_fragments.has(str(fid)):
+			available.append(str(fid))
+	if available.is_empty():
+		return ""
+	# 15% drop chance
+	var rng := RandomNumberGenerator.new()
+	rng.seed = encounter_seed
+	if rng.randf() > 0.15:
+		return ""
+	# Pick a random available fragment
+	return str(available[rng.randi_range(0, available.size() - 1)])

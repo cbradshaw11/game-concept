@@ -94,6 +94,7 @@ func _ready() -> void:
 	_setup_vendor_panel()
 	_setup_history_button()
 	_setup_how_to_play_button()
+	_setup_recovered_notes_button()
 	_setup_victory_panel()
 	_setup_death_panel()
 	_setup_modifier_panel()
@@ -149,6 +150,10 @@ func _show_prep() -> void:
 	if modifier_panel:
 		modifier_panel.visible = false
 	_hide_run_summary()
+	# M23 — Show/hide Recovered Notes button based on collected fragments
+	var notes_btn := prep_screen.find_child("RecoveredNotesButton", true, false)
+	if notes_btn is Button:
+		notes_btn.visible = not GameState.collected_fragments.is_empty()
 	if AudioManager:
 		AudioManager.play_sanctuary_music()
 	# M20 T4 — Show return greeting toast when coming back from a run
@@ -847,6 +852,20 @@ func _setup_how_to_play_button() -> void:
 	)
 	prep_vbox.add_child(btn)
 
+func _setup_recovered_notes_button() -> void:
+	var prep_vbox := prep_screen.get_node("PrepVBox")
+	if prep_vbox == null:
+		return
+	var btn := Button.new()
+	btn.name = "RecoveredNotesButton"
+	btn.text = "Recovered Notes"
+	btn.visible = not GameState.collected_fragments.is_empty()
+	btn.pressed.connect(func():
+		_play_click()
+		_show_recovered_notes()
+	)
+	prep_vbox.add_child(btn)
+
 const HowToPlayScene = preload("res://scenes/ui/how_to_play.tscn")
 
 func _show_how_to_play() -> void:
@@ -913,6 +932,161 @@ func show_vendor_purchase_toast(line: String) -> void:
 		if is_instance_valid(toast_ref):
 			toast_ref.queue_free()
 	)
+
+# ── M23 — Lore Fragment Pickup Modal ──────────────────────────────────────────
+
+signal fragment_pickup_dismissed
+
+func show_fragment_pickup(fragment: Dictionary) -> void:
+	## Display a "RECOVERED NOTE" modal for a newly found lore fragment.
+	if fragment.is_empty():
+		fragment_pickup_dismissed.emit()
+		return
+
+	var overlay := PanelContainer.new()
+	overlay.name = "FragmentPickupOverlay"
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.z_index = 12
+	add_child(overlay)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 80)
+	margin.add_theme_constant_override("margin_right", 80)
+	margin.add_theme_constant_override("margin_top", 50)
+	margin.add_theme_constant_override("margin_bottom", 50)
+	overlay.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	margin.add_child(vbox)
+
+	var header := Label.new()
+	header.text = "RECOVERED NOTE"
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	header.add_theme_font_size_override("font_size", 18)
+	header.add_theme_color_override("font_color", Color(0.85, 0.8, 0.65, 1.0))
+	vbox.add_child(header)
+
+	var sep := HSeparator.new()
+	vbox.add_child(sep)
+
+	var title_label := Label.new()
+	title_label.text = str(fragment.get("title", "Unknown Document"))
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label.add_theme_font_size_override("font_size", 14)
+	title_label.add_theme_color_override("font_color", Color(0.7, 0.65, 0.85, 1.0))
+	vbox.add_child(title_label)
+
+	var author_label := Label.new()
+	var author := str(fragment.get("author", ""))
+	if author != "":
+		author_label.text = "— %s" % author
+		author_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		author_label.add_theme_font_size_override("font_size", 11)
+		author_label.add_theme_color_override("font_color", Color(0.6, 0.55, 0.5, 0.8))
+		vbox.add_child(author_label)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(scroll)
+
+	var body := Label.new()
+	body.name = "FragmentBody"
+	body.text = str(fragment.get("text", ""))
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_theme_color_override("font_color", Color(0.8, 0.78, 0.72, 1.0))
+	scroll.add_child(body)
+
+	var sep2 := HSeparator.new()
+	vbox.add_child(sep2)
+
+	var btn := Button.new()
+	btn.text = "Pocket It"
+	btn.pressed.connect(func():
+		_play_click()
+		overlay.queue_free()
+		fragment_pickup_dismissed.emit()
+	)
+	vbox.add_child(btn)
+
+# ── M23 — Recovered Notes Archive ────────────────────────────────────────────
+
+func _show_recovered_notes() -> void:
+	var overlay := PanelContainer.new()
+	overlay.name = "RecoveredNotesOverlay"
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.z_index = 10
+	add_child(overlay)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 60)
+	margin.add_theme_constant_override("margin_right", 60)
+	margin.add_theme_constant_override("margin_top", 40)
+	margin.add_theme_constant_override("margin_bottom", 40)
+	overlay.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	margin.add_child(vbox)
+
+	var header := Label.new()
+	header.text = "RECOVERED NOTES  (%d / 5)" % GameState.collected_fragments.size()
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	header.add_theme_font_size_override("font_size", 16)
+	header.add_theme_color_override("font_color", Color(0.85, 0.8, 0.65, 1.0))
+	vbox.add_child(header)
+
+	var sep := HSeparator.new()
+	vbox.add_child(sep)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.add_child(scroll)
+
+	var notes_vbox := VBoxContainer.new()
+	notes_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(notes_vbox)
+
+	for frag_id in GameState.collected_fragments:
+		var frag := NarrativeManager.get_lore_fragment(str(frag_id))
+		if frag.is_empty():
+			continue
+		var frag_title := str(frag.get("title", "Unknown"))
+		var frag_author := str(frag.get("author", ""))
+		var frag_text := str(frag.get("text", ""))
+
+		# Collapsible entry: title button toggles body visibility
+		var entry_btn := Button.new()
+		entry_btn.text = frag_title
+		entry_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		notes_vbox.add_child(entry_btn)
+
+		var entry_body := Label.new()
+		entry_body.text = frag_text
+		if frag_author != "":
+			entry_body.text += "\n\n— %s" % frag_author
+		entry_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		entry_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		entry_body.visible = false
+		entry_body.add_theme_color_override("font_color", Color(0.8, 0.78, 0.72, 1.0))
+		notes_vbox.add_child(entry_body)
+
+		var body_ref := entry_body
+		entry_btn.pressed.connect(func():
+			body_ref.visible = not body_ref.visible
+		)
+
+	var close_btn := Button.new()
+	close_btn.text = "Close"
+	close_btn.pressed.connect(func():
+		_play_click()
+		overlay.queue_free()
+	)
+	vbox.add_child(close_btn)
 
 func _show_run_history() -> void:
 	# Display run history in prep_status for simplicity

@@ -187,6 +187,14 @@ func _on_guard_hook_changed(is_guarding: bool) -> void:
 func _on_encounter_cleared(enemy_count: int) -> void:
 	print("Combat hook: encounter cleared (%d enemies)" % enemy_count)
 	_on_resolve_encounter_pressed()
+	# M23 — Roll for lore fragment drop after encounter reward
+	var frag_seed := abs(GameState.active_seed + GameState.run_encounters_cleared)
+	var frag_id := GameState.roll_fragment_drop(frag_seed)
+	if frag_id != "":
+		GameState.collect_fragment(frag_id)
+		var frag := NarrativeManager.get_lore_fragment(frag_id)
+		if not frag.is_empty():
+			flow_ui.show_fragment_pickup(frag)
 
 func _initialize_loadouts() -> void:
 	var weapons: Array = DataStore.weapons.get("weapons", [])

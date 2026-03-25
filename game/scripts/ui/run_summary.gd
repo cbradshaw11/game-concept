@@ -66,6 +66,15 @@ func _build_ui() -> void:
 	badges_label.visible = false
 	vbox.add_child(badges_label)
 
+	# M23 — Lore fragment counter
+	var frag_label := Label.new()
+	frag_label.name = "FragmentLabel"
+	frag_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	frag_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	frag_label.visible = false
+	frag_label.add_theme_color_override("font_color", Color(0.85, 0.8, 0.65, 1.0))
+	vbox.add_child(frag_label)
+
 	vbox.add_child(HSeparator.new())
 
 	# Flavor text
@@ -163,6 +172,18 @@ func populate(outcome: String) -> void:
 			badges_label.visible = true
 		else:
 			badges_label.visible = false
+
+	# M23 — Lore fragment counter
+	var frag_label := find_child("FragmentLabel", true, false) as Label
+	if frag_label:
+		var total := GameState.collected_fragments.size()
+		var lines_frag: PackedStringArray = []
+		lines_frag.append("Notes Recovered:   %d / 5" % total)
+		# "First Note!" badge if this run collected fragment 1
+		if GameState.current_run_fragments.has("fragment_001"):
+			lines_frag.append("First Note!")
+		frag_label.text = "\n".join(lines_frag)
+		frag_label.visible = total > 0
 
 	# Flavor text
 	var flavor_label := find_child("FlavorLabel", true, false) as Label
