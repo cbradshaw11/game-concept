@@ -27,6 +27,10 @@ func _ready() -> void:
 	_connect_state()
 	_initialize_loadouts()
 	flow_ui.on_idle_ready()
+	# M17 T9 — show prologue on first launch
+	if not _has_seen_prologue():
+		flow_ui.show_prologue(NarrativeManager.get_prologue())
+		_mark_prologue_seen()
 
 func _connect_ui() -> void:
 	flow_ui.start_run_pressed.connect(_on_start_run_pressed)
@@ -59,6 +63,10 @@ func _on_modifier_selected(_modifier_id: String) -> void:
 
 func _begin_run(ring_id: String, seed: int) -> void:
 	current_run_ring = ring_id
+	# M17 T10 — show ring entry flavor text before run begins
+	var entry_text := NarrativeManager.get_ring_text(ring_id, "entry")
+	if entry_text != "":
+		flow_ui.show_narrative_text(entry_text)
 	GameState.start_run(seed, ring_id)
 	# Get contract target from ring data
 	var ring_data := DataStore.get_ring(ring_id)
@@ -172,3 +180,26 @@ func _load_save_state() -> void:
 
 func _save_state() -> void:
 	SaveSystem.save_state(GameState.to_save_state())
+
+# ── M17 T9 — Prologue seen flag ───────────────────────────────────────────────
+
+const _PROLOGUE_FLAG_PATH := "user://prologue_seen.flag"
+
+func _has_seen_prologue() -> bool:
+	return FileAccess.file_exists(_PROLOGUE_FLAG_PATH)
+
+func _mark_prologue_seen() -> void:
+	var f := FileAccess.open(_PROLOGUE_FLAG_PATH, FileAccess.WRITE)
+	if f != null:
+		f.store_string("1")
+		f.close()
+
+# ── M17 T11 — Vendor dialogue integration ────────────────────────────────────
+
+## Called by flow_ui when the player opens the vendor screen.
+func get_vendor_greeting() -> String:
+	return NarrativeManager.get_npc_line("genn_vendor")
+
+## Called by flow_ui after a successful purchase.
+func get_vendor_purchase_line() -> String:
+	return NarrativeManager.get_genn_vendor_reaction("purchase")

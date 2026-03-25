@@ -9,6 +9,7 @@ run/main_scene="res://scenes/main.tscn"
 GameState="*res://autoload/game_state.gd"
 DataStore="*res://autoload/data_store.gd"
 AudioManager="*res://autoload/audio_manager.gd"
+NarrativeManager="*res://autoload/narrative_manager.gd"
 
 [rendering]
 renderer/rendering_method="forward_plus"

@@ -278,6 +278,38 @@ func show_modifier_selection(seed: int) -> void:
 func refresh_vendor() -> void:
 	_refresh_vendor_ui()
 
+# ── M17 Narrative hooks ───────────────────────────────────────────────────────
+
+## M17 T9 — Display prologue sequence (once, on first launch).
+## beats: Array of prologue beat Dictionaries from NarrativeManager.get_prologue()
+func show_prologue(beats: Array) -> void:
+	if beats.is_empty():
+		return
+	# Display the prologue beats as concatenated text in prep_status for now.
+	# A full cinematic sequence can be layered on in a future milestone.
+	var lines: PackedStringArray = []
+	for beat in beats:
+		var beat_lines: Array = beat.get("lines", [])
+		for line in beat_lines:
+			lines.append(str(line))
+		# Add dialogue choices summary if present
+		var choices: Array = beat.get("choices", [])
+		if not choices.is_empty():
+			lines.append("")
+			for choice in choices:
+				lines.append("[%s] %s" % [str(choice.get("text", "")), str(choice.get("response", ""))])
+		lines.append("")
+	prep_status.text = "\n".join(lines)
+
+## M17 T10 — Display a single narrative text in the run status area.
+## Used for ring entry flavor text before a run begins.
+func show_narrative_text(text: String) -> void:
+	if text == "":
+		return
+	# Prepend flavor text to run_base_status so it appears alongside run info.
+	run_base_status = text
+	_refresh_run_status()
+
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
 func _refresh_run_status() -> void:

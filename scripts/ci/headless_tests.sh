@@ -15,6 +15,13 @@ if command -v godot4 >/dev/null 2>&1; then
   godot4 --headless --path game -s res://scripts/tests/combat_hooks_test.gd
   godot4 --headless --path game -s res://scripts/tests/contract_system_test.gd
   godot4 --headless --path game -s res://scripts/tests/telemetry_lifecycle_test.gd
+  # M17 Narrative Layer
+  godot4 --headless --path game -s res://scripts/tests/m17/m17_narrative_json_structure_test.gd
+  godot4 --headless --path game -s res://scripts/tests/m17/m17_narrative_manager_load_test.gd
+  godot4 --headless --path game -s res://scripts/tests/m17/m17_narrative_api_test.gd
+  godot4 --headless --path game -s res://scripts/tests/m17/m17_lore_fragments_test.gd
+  godot4 --headless --path game -s res://scripts/tests/m17/m17_warden_intro_test.gd
+  godot4 --headless --path game -s res://scripts/tests/m17/m17_prologue_hooks_test.gd
 else
   echo "godot4 not found in runner. Performing structural checks only."
   test -f game/scripts/tests/replay_test.gd
@@ -28,6 +35,13 @@ else
   test -f game/scripts/tests/combat_hooks_test.gd
   test -f game/scripts/tests/contract_system_test.gd
   test -f game/scripts/tests/telemetry_lifecycle_test.gd
+  # M17 Narrative Layer
+  test -f game/scripts/tests/m17/m17_narrative_json_structure_test.gd
+  test -f game/scripts/tests/m17/m17_narrative_manager_load_test.gd
+  test -f game/scripts/tests/m17/m17_narrative_api_test.gd
+  test -f game/scripts/tests/m17/m17_lore_fragments_test.gd
+  test -f game/scripts/tests/m17/m17_warden_intro_test.gd
+  test -f game/scripts/tests/m17/m17_prologue_hooks_test.gd
 fi
 
 echo "[headless-tests] Complete"
