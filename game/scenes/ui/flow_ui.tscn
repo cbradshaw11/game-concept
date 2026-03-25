@@ -102,10 +102,15 @@ content_margin_bottom = 16.0
 script = ExtResource("1_jn33y")
 
 [node name="PrepScreen" type="PanelContainer" parent="."]
-offset_left = 24.0
-offset_top = 24.0
-offset_right = 480.0
-offset_bottom = 320.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
 [node name="PrepVBox" type="VBoxContainer" parent="PrepScreen"]
@@ -156,10 +161,15 @@ theme_override_font_sizes/font_size = 14
 
 [node name="RunScreen" type="PanelContainer" parent="."]
 visible = false
-offset_left = 24.0
-offset_top = 110.0
-offset_right = 520.0
-offset_bottom = 400.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="RunVBox" type="VBoxContainer" parent="RunScreen"]
 theme_override_constants/separation = 10
