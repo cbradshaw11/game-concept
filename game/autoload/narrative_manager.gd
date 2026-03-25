@@ -179,6 +179,11 @@ func get_warden_intro() -> Array:
 	var warden: Dictionary = _data.get("warden_intro", {})
 	return warden.get("lines", [])
 
+## Returns a random artifact extraction flavor line (final victory text).
+func get_artifact_text() -> String:
+	var flavor: Dictionary = _data.get("extraction_flavor", {})
+	return _random_line(flavor.get("artifact", []))
+
 # ── Internal ─────────────────────────────────────────────────────────────────
 
 func _random_line(lines: Array) -> String:

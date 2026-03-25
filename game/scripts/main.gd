@@ -19,6 +19,7 @@ var combat_arena: CombatArena = null
 var current_run_ring: String = "inner"
 var pending_run_ring: String = ""
 var pending_run_seed: int = 0
+var _pending_boss_fight: bool = false
 
 func _ready() -> void:
 	print("The Long Walk MVP Slice 1 booted")
@@ -40,6 +41,7 @@ func _connect_ui() -> void:
 	flow_ui.loadout_selected.connect(_on_loadout_selected)
 	flow_ui.vendor_purchase_pressed.connect(_on_vendor_purchase_pressed)
 	flow_ui.modifier_selected.connect(_on_modifier_selected)
+	flow_ui.warden_gate_dismissed.connect(_on_warden_gate_dismissed)
 
 func _connect_state() -> void:
 	GameState.run_started.connect(flow_ui.on_run_started)
@@ -106,6 +108,10 @@ func _on_extract_pressed() -> void:
 		return
 	if not contract_system.can_extract():
 		flow_ui.on_extract_blocked(contract_system.get_contract())
+		return
+	# Outer ring: completing the contract triggers the Warden boss gate
+	if current_run_ring == "outer" and not _pending_boss_fight:
+		_trigger_warden_gate()
 		return
 	GameState.extract()
 	if combat_arena != null:
@@ -194,6 +200,36 @@ func _mark_prologue_seen() -> void:
 	if f != null:
 		f.store_string("1")
 		f.close()
+
+# ── M18 — Warden Boss Gate + Artifact Extraction ─────────────────────────────
+
+func _trigger_warden_gate() -> void:
+	_pending_boss_fight = true
+	if combat_arena != null:
+		combat_arena.set_arena_active(false)
+	var warden_lines := NarrativeManager.get_warden_intro()
+	flow_ui.show_warden_gate(warden_lines)
+
+func _on_warden_gate_dismissed() -> void:
+	if not _pending_boss_fight:
+		return
+	# Start boss combat
+	_ensure_combat_arena()
+	combat_arena.set_context(current_run_ring, GameState.active_seed, 1, true)
+	combat_arena.set_arena_active(true)
+	combat_arena.boss_defeated.connect(_on_boss_defeated, CONNECT_ONE_SHOT)
+
+func _on_boss_defeated() -> void:
+	_pending_boss_fight = false
+	if combat_arena != null:
+		combat_arena.set_arena_active(false)
+	# Artifact extraction sequence
+	var extraction_text := NarrativeManager.get_ring_text("outer", "extraction")
+	var artifact_text := NarrativeManager.get_artifact_text()
+	GameState.retrieve_artifact()
+	contract_system.reset()
+	_save_state()
+	flow_ui.show_artifact_victory(extraction_text, artifact_text)
 
 # ── M17 T11 — Vendor dialogue integration ────────────────────────────────────
 

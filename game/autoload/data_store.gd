@@ -72,6 +72,12 @@ func get_modifier(modifier_id: String) -> Dictionary:
 func get_modifier_choices_per_run() -> int:
 	return int(modifiers.get("choices_per_run", 3))
 
+func get_boss(ring_id: String) -> Dictionary:
+	for boss in enemies.get("bosses", []):
+		if str(boss.get("ring", "")) == ring_id:
+			return boss
+	return {}
+
 func get_random_modifiers(count: int, rng_seed: int) -> Array:
 	var all_mods := get_all_modifiers()
 	if all_mods.is_empty():

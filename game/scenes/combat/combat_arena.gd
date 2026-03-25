@@ -8,6 +8,8 @@ signal attack_hook_triggered
 signal dodge_hook_triggered
 signal guard_hook_changed(is_guarding: bool)
 signal encounter_cleared(enemy_count: int)
+signal boss_phase_changed(phase: int)
+signal boss_defeated
 
 @onready var player: PlayerController = $Player
 @onready var player_sprite: Sprite2D = $Player/PlayerSprite
@@ -33,6 +35,8 @@ var enemy_sprites: Array[Sprite2D] = []
 var enemy_nodes: Array[Node2D] = []
 var encounter_enemy_count: int = 0
 var encounter_completed: bool = false
+var is_boss_encounter: bool = false
+var _last_boss_phase: int = 1
 
 # Camera shake state
 var _shake_amount: float = 0.0
@@ -67,10 +71,11 @@ func _ready() -> void:
 		AudioManager.play_combat_music()
 
 func _load_background() -> void:
-	# Check for ring-specific background first, fallback to default
-	var bg_name := "arena_bg.png"
-	if ring_id == "mid":
-		bg_name = "arena_bg_mid.png"
+	# Check ring data for a named background, fallback to default
+	var ring_data := DataStore.get_ring(ring_id)
+	var bg_name := str(ring_data.get("background", ""))
+	if bg_name == "":
+		bg_name = "arena_bg.png"
 	var bg_path := "res://assets/backgrounds/" + bg_name
 	if ResourceLoader.exists(bg_path):
 		arena_bg.texture = load(bg_path) as Texture2D
@@ -82,7 +87,7 @@ func _load_player_sprite() -> void:
 	if ResourceLoader.exists(path):
 		player_sprite.texture = load(path) as Texture2D
 
-func set_context(next_ring_id: String, next_seed: int, enemy_count: int = 1) -> void:
+func set_context(next_ring_id: String, next_seed: int, enemy_count: int = 1, boss_fight: bool = false) -> void:
 	ring_id = next_ring_id
 	seed = next_seed
 	attack_count = 0
@@ -90,9 +95,13 @@ func set_context(next_ring_id: String, next_seed: int, enemy_count: int = 1) -> 
 	guard_active = false
 	encounter_enemy_count = max(1, enemy_count)
 	encounter_completed = false
+	is_boss_encounter = boss_fight
 	player_health = player_max_health
 	_load_background()
-	_spawn_enemies(encounter_enemy_count)
+	if boss_fight:
+		_spawn_boss()
+	else:
+		_spawn_enemies(encounter_enemy_count)
 	player.set_guarding(false)
 	_update_hud()
 
@@ -127,11 +136,23 @@ func _process(delta: float) -> void:
 			if player_health <= 0:
 				_on_player_died()
 				return
+	# Check boss phase transitions for visual signals
+	if is_boss_encounter and not enemies.is_empty():
+		var boss := enemies[0]
+		if boss.is_boss and boss.state != EnemyController.EnemyState.DEAD:
+			if boss.boss_phase != _last_boss_phase:
+				_last_boss_phase = boss.boss_phase
+				boss_phase_changed.emit(boss.boss_phase)
+				trigger_screen_shake(8.0, 0.5)
+
 	if _all_enemies_defeated():
 		encounter_completed = true
 		if AudioManager:
 			AudioManager.play_victory()
-		encounter_cleared.emit(encounter_enemy_count)
+		if is_boss_encounter:
+			boss_defeated.emit()
+		else:
+			encounter_cleared.emit(encounter_enemy_count)
 	_update_hud()
 
 func _on_attack_triggered() -> void:
@@ -288,6 +309,45 @@ func _spawn_enemies(count: int) -> void:
 
 		enemy_nodes.append(node)
 		enemy_sprites.append(sprite)
+
+
+func _spawn_boss() -> void:
+	enemies.clear()
+	_hit_flash_timers.clear()
+	_enemy_suppress_ticks.clear()
+	_last_boss_phase = 1
+
+	for node in enemy_nodes:
+		if is_instance_valid(node):
+			node.queue_free()
+	enemy_nodes.clear()
+	enemy_sprites.clear()
+
+	var boss_data := DataStore.get_boss(ring_id)
+	var hp: int = int(boss_data.get("health", 1200))
+	var dmg: int = int(boss_data.get("damage", 18))
+	var cooldown: float = float(boss_data.get("attack_cooldown", 2.5))
+	var phases: int = int(boss_data.get("phases", 3))
+
+	var ec := EnemyController.new(hp, 4.0, 1.5, dmg)
+	ec.setup_boss(phases, cooldown)
+	ec.enemy_display_name = "The Warden"
+	enemies.append(ec)
+	_hit_flash_timers.append(0.0)
+	_enemy_suppress_ticks.append(0)
+	encounter_enemy_count = 1
+
+	var node := Node2D.new()
+	var sprite := Sprite2D.new()
+	var tex_path := SPRITE_BASE + "enemy_warden.png"
+	if ResourceLoader.exists(tex_path):
+		sprite.texture = load(tex_path) as Texture2D
+	sprite.scale = Vector2(2.5, 2.5)
+	node.add_child(sprite)
+	enemy_container.add_child(node)
+	node.position = Vector2(480.0, 280.0)
+	enemy_nodes.append(node)
+	enemy_sprites.append(sprite)
 
 
 func _player_zone() -> int:

@@ -8,6 +8,7 @@ signal die_pressed
 signal loadout_selected(weapon_id: String)
 signal vendor_purchase_pressed(upgrade_id: String)
 signal modifier_selected(modifier_id: String)
+signal warden_gate_dismissed
 
 @onready var prep_screen: PanelContainer = $PrepScreen
 @onready var run_screen: PanelContainer = $RunScreen
@@ -96,6 +97,10 @@ func _on_start_run_button_pressed() -> void:
 func _on_start_ring2_button_pressed() -> void:
 	_play_click()
 	start_run_pressed.emit("mid")
+
+func _on_start_ring3_button_pressed() -> void:
+	_play_click()
+	start_run_pressed.emit("outer")
 
 func _on_resolve_encounter_button_pressed() -> void:
 	_play_click()
@@ -340,6 +345,132 @@ func show_prologue(beats: Array) -> void:
 	)
 	vbox.add_child(dismiss_btn)
 
+## M18 — Display the Warden boss gate intro as sequential text cards.
+## lines: Array of Strings from NarrativeManager.get_warden_intro()
+func show_warden_gate(lines: Array) -> void:
+	if lines.is_empty():
+		warden_gate_dismissed.emit()
+		return
+
+	var overlay := PanelContainer.new()
+	overlay.name = "WardenGateOverlay"
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.z_index = 10
+	add_child(overlay)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 80)
+	margin.add_theme_constant_override("margin_right", 80)
+	margin.add_theme_constant_override("margin_top", 60)
+	margin.add_theme_constant_override("margin_bottom", 60)
+	overlay.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	margin.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "THE WARDEN"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+
+	var sep := HSeparator.new()
+	vbox.add_child(sep)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(scroll)
+
+	var content := Label.new()
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var text_lines: PackedStringArray = []
+	for line in lines:
+		text_lines.append(str(line))
+		text_lines.append("")
+	content.text = "\n".join(text_lines)
+	scroll.add_child(content)
+
+	var dismiss_btn := Button.new()
+	dismiss_btn.text = "Face the Warden →"
+	dismiss_btn.pressed.connect(func():
+		overlay.queue_free()
+		warden_gate_dismissed.emit()
+	)
+	vbox.add_child(dismiss_btn)
+
+## M18 — Show artifact victory screen (final win condition).
+func show_artifact_victory(extraction_text: String, artifact_text: String) -> void:
+	prep_screen.visible = false
+	run_screen.visible = false
+	if vendor_panel:
+		vendor_panel.visible = false
+	if death_panel:
+		death_panel.visible = false
+	if modifier_panel:
+		modifier_panel.visible = false
+	if victory_panel:
+		victory_panel.visible = false
+
+	var overlay := PanelContainer.new()
+	overlay.name = "ArtifactVictoryOverlay"
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.z_index = 10
+	add_child(overlay)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 80)
+	margin.add_theme_constant_override("margin_right", 80)
+	margin.add_theme_constant_override("margin_top", 60)
+	margin.add_theme_constant_override("margin_bottom", 60)
+	overlay.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	margin.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "ARTIFACT RETRIEVED"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+
+	var sep := HSeparator.new()
+	vbox.add_child(sep)
+
+	var flavor := Label.new()
+	flavor.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	flavor.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var lines: PackedStringArray = []
+	if extraction_text != "":
+		lines.append(extraction_text)
+		lines.append("")
+	if artifact_text != "":
+		lines.append(artifact_text)
+	flavor.text = "\n".join(lines)
+	vbox.add_child(flavor)
+
+	var sep2 := HSeparator.new()
+	vbox.add_child(sep2)
+
+	var stats := GameState.get_run_stats()
+	var stats_label := Label.new()
+	stats_label.text = "Total XP: %d  |  Total Loot: %d  |  Encounters: %d" % [
+		int(stats.get("total_xp", 0)),
+		int(stats.get("total_loot", 0)),
+		int(stats.get("encounters_cleared", 0)),
+	]
+	vbox.add_child(stats_label)
+
+	var continue_btn := Button.new()
+	continue_btn.text = "The Long Walk is complete."
+	continue_btn.pressed.connect(func():
+		overlay.queue_free()
+		_show_prep()
+	)
+	vbox.add_child(continue_btn)
+
 ## M17 T10 — Display a single narrative text in the run status area.
 ## Used for ring entry flavor text before a run begins.
 func show_narrative_text(text: String) -> void:
@@ -366,6 +497,12 @@ func _refresh_ring_buttons() -> void:
 		var unlocked := GameState.has_extracted_from("inner")
 		ring2_btn.visible = unlocked
 		ring2_btn.disabled = not unlocked
+	# Show Ring 3 button only if mid extracted
+	var ring3_btn := prep_screen.find_child("Ring3Button", true, false)
+	if ring3_btn is Button:
+		var unlocked3 := GameState.has_extracted_from("mid")
+		ring3_btn.visible = unlocked3
+		ring3_btn.disabled = not unlocked3
 
 # ── Victory Panel ─────────────────────────────────────────────────────────────
 
@@ -558,6 +695,13 @@ func _setup_ring2_button() -> void:
 	btn.visible = false  # Hidden until unlocked
 	btn.pressed.connect(_on_start_ring2_button_pressed)
 	prep_vbox.add_child(btn)
+
+	var btn3 := Button.new()
+	btn3.name = "Ring3Button"
+	btn3.text = "▶  Enter Ring 3 (Outer Ring)"
+	btn3.visible = false
+	btn3.pressed.connect(_on_start_ring3_button_pressed)
+	prep_vbox.add_child(btn3)
 
 func _setup_vendor_panel() -> void:
 	# Build a simple vendor panel as a sibling of PrepScreen

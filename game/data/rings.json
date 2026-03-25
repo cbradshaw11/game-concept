@@ -35,7 +35,9 @@
       "xp_multiplier": 1.85,
       "loot_multiplier": 2.2,
       "contract_target": 5,
-      "description": "Elite threats and Warden approach path."
+      "unlock_condition": "extracted_mid_once",
+      "description": "Elite threats and Warden approach path.",
+      "background": "arena_bg_outer.png"
     }
   ]
 }

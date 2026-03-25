@@ -8,8 +8,10 @@ signal encounter_completed(reward_xp: int, reward_loot: int)
 signal extracted(total_xp: int, total_loot: int)
 signal player_died()
 signal vendor_upgrade_purchased(upgrade_id: String)
+signal artifact_retrieved_signal
 
 var current_ring: String = "sanctuary"
+var artifact_retrieved: bool = false
 var active_seed: int = 0
 var banked_xp: int = 0
 var banked_loot: int = 0
@@ -45,6 +47,7 @@ func default_save_state() -> Dictionary:
 		"extractions_by_ring": {},
 		"vendor_upgrades": {},
 		"run_history": [],
+		"artifact_retrieved": false,
 	}
 
 func to_save_state() -> Dictionary:
@@ -57,6 +60,7 @@ func to_save_state() -> Dictionary:
 		"extractions_by_ring": extractions_by_ring.duplicate(true),
 		"vendor_upgrades": vendor_upgrades.duplicate(true),
 		"run_history": run_history.duplicate(true),
+		"artifact_retrieved": artifact_retrieved,
 	}
 
 func apply_save_state(data: Dictionary) -> void:
@@ -71,6 +75,8 @@ func apply_save_state(data: Dictionary) -> void:
 	vendor_upgrades = vu if typeof(vu) == TYPE_DICTIONARY else {}
 	var rh: Variant = data.get("run_history", [])
 	run_history = rh if typeof(rh) == TYPE_ARRAY else []
+	# v7 migration guard — artifact_retrieved
+	artifact_retrieved = bool(data.get("artifact_retrieved", false))
 
 func start_run(seed: int, ring_id: String) -> void:
 	active_seed = seed
@@ -123,6 +129,28 @@ func extract() -> void:
 		"banked_loot": banked_loot,
 	})
 	extracted.emit(banked_xp, banked_loot)
+
+## Called when the Warden is defeated and the Artifact is retrieved.
+## This is the MVP win condition.
+func retrieve_artifact() -> void:
+	artifact_retrieved = true
+	# Bank everything — the player earned it
+	banked_xp += unbanked_xp
+	banked_loot += unbanked_loot
+	var event_ring := current_ring
+	var prev_count: int = int(extractions_by_ring.get(event_ring, 0))
+	extractions_by_ring[event_ring] = prev_count + 1
+	_add_history_entry(event_ring, true)
+	unbanked_xp = 0
+	unbanked_loot = 0
+	current_ring = "sanctuary"
+	telemetry.log_event("artifact_retrieved", {
+		"seed": active_seed,
+		"ring": event_ring,
+		"banked_xp": banked_xp,
+		"banked_loot": banked_loot,
+	})
+	artifact_retrieved_signal.emit()
 
 func die_in_run() -> void:
 	var event_ring := current_ring

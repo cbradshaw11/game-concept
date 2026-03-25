@@ -81,6 +81,8 @@
       "phases": 3,
       "health": 1200,
       "poise": 250,
+      "damage": 18,
+      "attack_cooldown": 2.5,
       "damage_profile": "heavy_commitment_punish"
     }
   ]
