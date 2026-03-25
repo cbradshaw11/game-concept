@@ -1,0 +1,214 @@
+{
+  "prologue": [
+    {
+      "id": "prologue_arrival",
+      "beat": 1,
+      "type": "screen_text",
+      "lines": [
+        "The road brought you here. Or you brought yourself — by this point the distinction matters less than it used to.",
+        "A waystation. Firelight. The smell of something being cooked that might generously be called stew.",
+        "Someone is waiting."
+      ]
+    },
+    {
+      "id": "prologue_briefing",
+      "beat": 2,
+      "type": "npc_dialogue",
+      "npc": "genn",
+      "lines": [
+        "I'm Genn. I've been stationed here since before the last expedition stopped coming back. That's the honest version.",
+        "The Artifact is in the Outer Ring. The Rings between here and there are... contested. Don't ask me by what — the records on that got complicated.",
+        "Three extractors made it to the Mid before I stopped counting. You'll get their notes if you find them. Whether that helps you or just tells you how they died is hard to say in advance.",
+        "Contracts pay silver. Silver buys upgrades. Upgrades are the difference between 'made it back' and 'became part of the record.' Any questions?"
+      ],
+      "choices": [
+        {
+          "id": "no_questions",
+          "text": "No questions.",
+          "response": "Good. I appreciate efficiency."
+        },
+        {
+          "id": "what_is_artifact",
+          "text": "What's the Artifact?",
+          "response": "Something the Compact built at the end of their good period. It stabilizes Resonance in a radius. If it works, this whole waystation becomes a livable settlement again. If it doesn't... well. I've been wrong before."
+        },
+        {
+          "id": "why_me",
+          "text": "Why me?",
+          "response": "You were walking past. That's usually how these things go."
+        }
+      ]
+    },
+    {
+      "id": "prologue_departure",
+      "beat": 3,
+      "type": "gate_text",
+      "lines": [
+        "The Inner Ring isn't far. Nothing out here is. The problem is everything between here and there has opinions about your presence.",
+        "Extract when it feels wrong. The silver will wait. The dead don't get paid."
+      ]
+    }
+  ],
+
+  "ring_entry": {
+    "sanctuary": {
+      "return": [
+        "The stew is worse every time. Genn takes this as a point of pride.",
+        "The fire's still going. Small mercies.",
+        "Same waystation. Different you. Hard to say if that's better."
+      ]
+    },
+    "inner": {
+      "first": [
+        "The Inner Ring has the particular smell of a place that used to be lived in and isn't quite anymore. Ash and old cooking. Something sweet underneath that you decide not to investigate.",
+        "Grunt tracks in the mud. Recent. They know someone new is working the Ring.",
+        "The architecture here is almost normal. Roads that lead places. Buildings with roofs. The Compact knew what they were doing, right up until they didn't."
+      ],
+      "repeat": [
+        "Back again. The Inner has a rhythm to it now. You know the rhythm.",
+        "You know this stretch. That doesn't make it easier. Just familiar.",
+        "The Inner feels smaller than it did the first time. The threats don't."
+      ]
+    },
+    "mid": {
+      "first": [
+        "The Mid Reaches feel older than they should. The road gets stranger the further you go — stones that don't match each other, archways that start and don't finish. The Compact was building something and then stopped, and the thing they were building kept going without them for a while."
+      ],
+      "repeat": [
+        "You know this stretch now. That doesn't make it easier. It just makes it familiar, which is a different category of problem.",
+        "The ash flankers hunt in overlapping patterns. You learned that the expensive way.",
+        "The Mid again. The Mid again. The Compact had a word for places that pulled you back — 'resonant.' Make of that what you will."
+      ]
+    },
+    "outer": {
+      "first": [
+        "Whatever happened here, the record calls it an 'incursion event' and then goes quiet. You've read enough Compact documents to know that 'incursion event' is what they wrote when they didn't want to describe what they actually saw.",
+        "The light is wrong at the edge of the Outer. Not dark — just angled differently than it should be, like the Ring is somewhere else and also here at the same time."
+      ],
+      "repeat": [
+        "Back again. The Outer doesn't care. It just keeps being the Outer.",
+        "The Outer has a weight to it that the other rings don't. You feel it in your shoulders.",
+        "You know the shape of this place now. The shape hasn't gotten friendlier."
+      ]
+    }
+  },
+
+  "npc_dialogue": {
+    "genn_vendor": {
+      "greeting": [
+        "Back in one piece. Good. Spend what you've got — silver's only useful if you're moving.",
+        "I've been keeping a tally. You're at the top of the list for longest-surviving current Itinerant. Don't read too much into that.",
+        "You want upgrades or are you just here to use the fire?",
+        "Welcome back. The fire's yours."
+      ],
+      "after_first_death": [
+        "You came back. That's more than some of them managed on the first one.",
+        "The Inner's not forgiving of overconfidence. Now you know. Come on, let's look at your loadout."
+      ],
+      "after_mid_unlock": [
+        "The Mid changes people, if they let it. Most of the ones who made it back from there got quieter. Not sadder — just quieter. Like they figured out what they actually needed to say."
+      ],
+      "after_outer_unlock": [
+        "I won't tell you to be careful. You know the stakes. I'll just say: the Artifact was the Compact's best thing. They made it to be useful. Whatever's guarding it... made itself to stop that."
+      ],
+      "on_purchase": [
+        "Good choice.",
+        "That one kept the last extractor alive through mid-Ring. Probably.",
+        "You're thinking about this the right way."
+      ],
+      "on_browse_no_purchase": [
+        "Take your time. The Ring will wait.",
+        "Silver spends. But so does time.",
+        "No rush. Usually."
+      ]
+    }
+  },
+
+  "death_flavor": {
+    "inner": [
+      "The Inner gets everyone eventually, if they push too hard. The question is whether you pushed far enough to learn something.",
+      "They found you before you found them. Adjust.",
+      "Three things killed more Itinerants than anything: overconfidence, underestimation, and a very specific kind of optimism that says 'just one more encounter.'"
+    ],
+    "mid": [
+      "The Mid Reaches were built to be navigated. Carefully. In the direction of caution.",
+      "The ash flankers work in overlapping arcs. The ones who know that are the ones who talk about it afterward.",
+      "The Compact's records on the Mid use the phrase 'acceptable risk profile.' They were measuring for a different traveler."
+    ],
+    "outer": [
+      "The Outer doesn't kill you out of malice. It kills you because it has a job and you were in the way of it.",
+      "You got further than most. That's real. The record shows that.",
+      "Something in the Outer was set to guard something. You got close enough to remind it."
+    ]
+  },
+
+  "extraction_flavor": {
+    "inner": [
+      "You learned the shape of it. That's worth more than the silver, eventually.",
+      "Out clean. The Inner remembers that you respect the rules.",
+      "Extracted. The waystation is still standing. The stew is technically still food. Acceptable."
+    ],
+    "mid": [
+      "Mid extracted. Genn doesn't say 'I told you so' but her expression has opinions.",
+      "You know what the Mid Reaches look like at the back of a run now. That's something.",
+      "Out. Whole. The ash flankers will be angrier next time — they adapt. So will you."
+    ],
+    "outer": [
+      "The Outer let you go. Or you took it anyway. The distinction matters more to the historians than to you.",
+      "Out from the Outer. Most of the people who'd want to know that you did it aren't around to ask."
+    ],
+    "artifact": [
+      "It's heavier than you expected. All the important things are.",
+      "The Compact built this to last. It did. Whether what comes next lasts — that's on you now."
+    ]
+  },
+
+  "lore_fragments": [
+    {
+      "id": "fragment_001",
+      "title": "Expedition Report — Third Year Post-Unspooling",
+      "author": "Commissioned Itinerant Vera Sasch",
+      "ring": "inner",
+      "text": "The Inner Ring is passable. Repeat: passable. Take three or more. Do not push after dark. The things that hunt there hunt by hearing and they have excellent ears.\n\n— Commissioned Itinerant Vera Sasch, Inner Survey"
+    },
+    {
+      "id": "fragment_002",
+      "title": "Personal Note — Author Unknown",
+      "author": "Unknown",
+      "ring": "mid",
+      "text": "If you're reading this you found the loose stone in the east arch. Congratulations on being thorough.\n\nThe second wave is always worse than the first. Bring extra stamina tonic and ignore the gate that says 'DO NOT OPEN.' It lies. The gate you want is behind the rubble on the north approach, thirty paces from the big rock that looks like a sleeping dog.\n\nGood luck. You're going to need slightly less of it than you think."
+    },
+    {
+      "id": "fragment_003",
+      "title": "Compact Infrastructure Report — Mid Ring, Final Entry",
+      "author": "Chief Architect Minna Dross",
+      "ring": "mid",
+      "text": "...the arch expansion was 40% complete when the Unspooling interrupted the Resonance weave. The arch cannot be finished now — the Resonance pattern required to complete the keystone no longer exists in stable form. The arch will remain standing indefinitely. It cannot fall. It also cannot be used for its original purpose.\n\nWe are recommending this be documented as a permanent feature.\n\n— Chief Architect Minna Dross, Compact Survey Office"
+    },
+    {
+      "id": "fragment_004",
+      "title": "Outer Ring Survey — CLASSIFIED",
+      "author": "Surveyor Orin Takt",
+      "ring": "outer",
+      "text": "INCURSION CLASSIFICATION: ACTIVE. Do not record the specifics of what was encountered at survey point 7. The decision has been made to Compact-seal this record pending review.\n\nWhat I will say for the historians who eventually open this: whatever is in the Outer Ring was not there before the Unspooling. It arrived with the fracture, or shortly after. It has a purpose. We have not been able to determine what the purpose is, only that it is consistent and has been, since the beginning, pointed at the Artifact.\n\nIf you are reading this, good luck. I mean that without irony.\n\n— Surveyor Orin Takt, Compact Intelligence Division"
+    },
+    {
+      "id": "fragment_005",
+      "title": "Note on the Sanctuary Inner Door",
+      "author": "Genn",
+      "ring": "sanctuary",
+      "text": "To whoever comes through after me:\n\nThe fire takes two logs in the morning, one at night. The stew needs the third jar from the left, not the second — the second is something I found and have not identified.\n\nThe records on the Artifact are in the chest under the workbench. Read them. Then make your own decision.\n\nIf you're reading this because I'm not here: I lasted longer than expected. Don't let that become your benchmark.\n\n— G"
+    }
+  ],
+
+  "warden_intro": {
+    "lines": [
+      "...",
+      "The thing at the end of the Outer Ring has no name in the records. The Compact sealed those documents. You know it as the Warden because that's what Genn called it, and Genn calls things what they are.",
+      "You have the smell of the Compact on you. Old tools. Old methods. Old hope.",
+      "I was given a purpose. I have executed it for three hundred years. I am very good at my purpose.",
+      "You're going to try anyway. I know. They all do.",
+      "It moves."
+    ]
+  }
+}
