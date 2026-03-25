@@ -210,13 +210,16 @@ func _update_hud() -> void:
 		var enemy := enemies[index]
 		state_parts.append("E%d:%s(%d)" % [index + 1, EnemyController.state_name(enemy.state), enemy.health])
 	var enemies_text := " | ".join(state_parts)
-	combat_status.text = "Ring %s | Atk %d Dodge %d Guard %s | %s" % [
-		ring_id,
-		attack_count,
-		dodge_count,
-		"On" if guard_active else "Off",
-		enemies_text,
-	]
+	if OS.is_debug_build():
+		combat_status.text = "Ring %s | Atk %d Dodge %d Guard %s | %s" % [
+			ring_id,
+			attack_count,
+			dodge_count,
+			"On" if guard_active else "Off",
+			enemies_text,
+		]
+	else:
+		combat_status.visible = false
 
 	# Stat bars
 	if hp_bar:
