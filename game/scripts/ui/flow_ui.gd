@@ -30,6 +30,8 @@ var modifier_panel: PanelContainer = null
 
 var run_base_status: String = ""
 var objective_status: String = ""
+var _initial_show_done: bool = false
+var _return_toast: Label = null
 
 # Death flavor lines keyed by ring id and/or enemy type
 const DEATH_FLAVOR: Dictionary = {
@@ -85,6 +87,7 @@ func _ready() -> void:
 	_setup_ring2_button()
 	_setup_vendor_panel()
 	_setup_history_button()
+	_setup_how_to_play_button()
 	_setup_victory_panel()
 	_setup_death_panel()
 	_setup_modifier_panel()
@@ -141,6 +144,10 @@ func _show_prep() -> void:
 		modifier_panel.visible = false
 	if AudioManager:
 		AudioManager.play_sanctuary_music()
+	# M20 T4 — Show return greeting toast when coming back from a run
+	if _initial_show_done and not GameState.run_history.is_empty():
+		_show_return_toast()
+	_initial_show_done = true
 
 func _show_run() -> void:
 	prep_screen.visible = false
@@ -699,6 +706,37 @@ func _populate_modifier_panel(choices: Array) -> void:
 		)
 		choices_container.add_child(btn)
 
+# ── M20 T4 — Sanctuary Return Toast ──────────────────────────────────────────
+
+func _show_return_toast() -> void:
+	# Clean up any existing toast
+	if _return_toast != null and is_instance_valid(_return_toast):
+		_return_toast.queue_free()
+
+	var greeting := NarrativeManager.get_ring_text("sanctuary", "entry")
+	if greeting == "":
+		return
+
+	_return_toast = Label.new()
+	_return_toast.name = "ReturnToast"
+	_return_toast.text = greeting
+	_return_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_return_toast.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	_return_toast.offset_top = 8
+	_return_toast.offset_bottom = 40
+	_return_toast.add_theme_font_size_override("font_size", 13)
+	_return_toast.add_theme_color_override("font_color", Color(0.7, 0.65, 0.85, 1.0))
+	_return_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	add_child(_return_toast)
+
+	# Auto-dismiss after 3 seconds
+	var timer := get_tree().create_timer(3.0)
+	var toast_ref := _return_toast
+	timer.timeout.connect(func():
+		if is_instance_valid(toast_ref):
+			toast_ref.queue_free()
+	)
+
 # ── Dynamic UI construction ───────────────────────────────────────────────────
 
 func _setup_ring2_button() -> void:
@@ -799,6 +837,25 @@ func _setup_history_button() -> void:
 		_show_run_history()
 	)
 	prep_vbox.add_child(btn)
+
+func _setup_how_to_play_button() -> void:
+	var prep_vbox := prep_screen.get_node("PrepVBox")
+	if prep_vbox == null:
+		return
+	var btn := Button.new()
+	btn.name = "HowToPlayButton"
+	btn.text = "?  How to Play"
+	btn.pressed.connect(func():
+		_play_click()
+		_show_how_to_play()
+	)
+	prep_vbox.add_child(btn)
+
+const HowToPlayScene = preload("res://scenes/ui/how_to_play.tscn")
+
+func _show_how_to_play() -> void:
+	var htp := HowToPlayScene.instantiate()
+	add_child(htp)
 
 func _refresh_vendor_ui() -> void:
 	if vendor_loot_label:

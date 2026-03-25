@@ -31,29 +31,29 @@ horizontal_alignment = 1
 
 [node name="Subtitle" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-text = "Survive the rings. Claim the Artifact."
+text = "A game set in the world of CAULDRON"
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.55, 0.52, 0.65, 1)
 horizontal_alignment = 1
 
 [node name="Spacer" type="Control" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 32)
 
-[node name="NewGame" type="Button" parent="CenterContainer/VBoxContainer"]
+[node name="Begin" type="Button" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-text = "New Game"
+text = "Begin"
 
 [node name="Continue" type="Button" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
 text = "Continue"
 
-[node name="Settings" type="Button" parent="CenterContainer/VBoxContainer"]
+[node name="Spacer2" type="Control" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-text = "Settings"
+custom_minimum_size = Vector2(0, 48)
 
-[node name="Quit" type="Button" parent="CenterContainer/VBoxContainer"]
+[node name="FlavorLine" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-text = "Quit"
-
-[node name="NewGameConfirm" type="ConfirmationDialog" parent="."]
-title = "Start New Game?"
-dialog_text = "Starting a new game will erase your current progress. Are you sure?"
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.45, 0.42, 0.55, 0.8)
+horizontal_alignment = 1

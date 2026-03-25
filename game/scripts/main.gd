@@ -6,6 +6,7 @@ const SaveSystem = preload("res://scripts/systems/save_system.gd")
 const CombatArenaScene = preload("res://scenes/combat/combat_arena.tscn")
 const ContractSystem = preload("res://scripts/systems/contract_system.gd")
 const VendorSystem = preload("res://scripts/systems/vendor_system.gd")
+const TitleScreenScene = preload("res://scenes/ui/title_screen.tscn")
 
 @onready var flow_ui: FlowUI = $FlowUI
 
@@ -20,6 +21,7 @@ var current_run_ring: String = "inner"
 var pending_run_ring: String = ""
 var pending_run_seed: int = 0
 var _pending_boss_fight: bool = false
+var title_screen: Node = null
 
 func _ready() -> void:
 	print("The Long Walk MVP Slice 1 booted")
@@ -27,11 +29,8 @@ func _ready() -> void:
 	_connect_ui()
 	_connect_state()
 	_initialize_loadouts()
-	flow_ui.on_idle_ready()
-	# M17 T9 — show prologue on first launch
-	if not _has_seen_prologue():
-		flow_ui.show_prologue(NarrativeManager.get_prologue())
-		_mark_prologue_seen()
+	# M20 — Show title screen as entry point instead of jumping straight to sanctuary
+	_show_title_screen()
 
 func _connect_ui() -> void:
 	flow_ui.start_run_pressed.connect(_on_start_run_pressed)
@@ -201,6 +200,40 @@ func _load_save_state() -> void:
 
 func _save_state() -> void:
 	SaveSystem.save_state(GameState.to_save_state())
+
+# ── M20 — Title Screen ────────────────────────────────────────────────────────
+
+func _show_title_screen() -> void:
+	# Hide FlowUI until title screen is dismissed
+	flow_ui.visible = false
+	title_screen = TitleScreenScene.instantiate()
+	add_child(title_screen)
+	var has_save := not GameState.is_first_run() or GameState.banked_xp > 0 or GameState.banked_loot > 0
+	title_screen.set_continue_visible(has_save)
+	title_screen.begin_pressed.connect(_on_title_begin)
+	title_screen.continue_pressed.connect(_on_title_continue)
+
+func _on_title_begin() -> void:
+	_dismiss_title_screen()
+	flow_ui.visible = true
+	if GameState.is_first_run() and not _has_seen_prologue():
+		# First run — show prologue, then sanctuary
+		flow_ui.on_idle_ready()
+		flow_ui.show_prologue(NarrativeManager.get_prologue())
+		_mark_prologue_seen()
+	else:
+		# Returning player chose Begin (new run from scratch)
+		flow_ui.on_idle_ready()
+
+func _on_title_continue() -> void:
+	_dismiss_title_screen()
+	flow_ui.visible = true
+	flow_ui.on_idle_ready()
+
+func _dismiss_title_screen() -> void:
+	if title_screen != null:
+		title_screen.queue_free()
+		title_screen = null
 
 # ── M17 T9 — Prologue seen flag ───────────────────────────────────────────────
 

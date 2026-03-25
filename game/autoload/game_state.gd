@@ -266,3 +266,8 @@ func _add_history_entry(ring_id: String, extracted_ok: bool) -> void:
 
 func get_run_history() -> Array:
 	return run_history.duplicate(true)
+
+## Returns true if no completed runs exist and prologue has not been seen.
+## Used by title screen to decide Begin routing (prologue vs sanctuary).
+func is_first_run() -> bool:
+	return run_history.is_empty()

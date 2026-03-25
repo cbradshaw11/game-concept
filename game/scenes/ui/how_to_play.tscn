@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://how_to_play_tlw"]
+
+[ext_resource type="Script" path="res://scripts/ui/how_to_play.gd" id="1_htp"]
+
+[node name="HowToPlay" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_htp")
