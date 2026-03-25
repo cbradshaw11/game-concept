@@ -160,6 +160,9 @@ func _on_vendor_purchase_pressed(upgrade_id: String) -> void:
 	if purchased:
 		_save_state()
 		flow_ui.refresh_vendor()
+		# M22 — Show Genn purchase reaction toast
+		var purchase_line := get_vendor_purchase_line()
+		flow_ui.show_vendor_purchase_toast(purchase_line)
 
 func _ensure_combat_arena() -> void:
 	if combat_arena != null:

@@ -38,6 +38,10 @@ if command -v godot4 >/dev/null 2>&1; then
   godot4 --headless --path game -s res://scripts/tests/m21/run_stats_test.gd
   godot4 --headless --path game -s res://scripts/tests/m21/run_summary_test.gd
   godot4 --headless --path game -s res://scripts/tests/m21/personal_best_test.gd
+  # M22 Upgrade Shop Polish & Economy Balance
+  godot4 --headless --path game -s res://scripts/tests/m22/upgrade_data_test.gd
+  godot4 --headless --path game -s res://scripts/tests/m22/economy_balance_test.gd
+  godot4 --headless --path game -s res://scripts/tests/m22/shop_ui_test.gd
 else
   echo "godot4 not found in runner. Performing structural checks only."
   test -f game/scripts/tests/replay_test.gd
@@ -74,6 +78,10 @@ else
   test -f game/scripts/tests/m21/run_stats_test.gd
   test -f game/scripts/tests/m21/run_summary_test.gd
   test -f game/scripts/tests/m21/personal_best_test.gd
+  # M22 Upgrade Shop Polish & Economy Balance
+  test -f game/scripts/tests/m22/upgrade_data_test.gd
+  test -f game/scripts/tests/m22/economy_balance_test.gd
+  test -f game/scripts/tests/m22/shop_ui_test.gd
 fi
 
 echo "[headless-tests] Complete"

@@ -25,6 +25,8 @@ const RunSummaryScene = preload("res://scenes/ui/run_summary.tscn")
 var vendor_panel: PanelContainer = null
 var vendor_loot_label: Label = null
 var vendor_upgrade_buttons: Dictionary = {}  # upgrade_id -> Button
+var vendor_upgrade_labels: Dictionary = {}  # upgrade_id -> Label (row label)
+var _vendor_toast: Label = null
 
 # Victory / Death / Modifier / Run Summary panels (created dynamically)
 var victory_panel: PanelContainer = null
@@ -721,53 +723,85 @@ func _setup_ring2_button() -> void:
 	prep_vbox.add_child(btn3)
 
 func _setup_vendor_panel() -> void:
-	# Build a simple vendor panel as a sibling of PrepScreen
+	# Build a vendor panel as a sibling of PrepScreen, grouped by category
 	vendor_panel = PanelContainer.new()
 	vendor_panel.name = "VendorPanel"
 	vendor_panel.visible = false
 	vendor_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(vendor_panel)
 
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 40)
+	margin.add_theme_constant_override("margin_right", 40)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	vendor_panel.add_child(margin)
+
 	var vbox := VBoxContainer.new()
-	vendor_panel.add_child(vbox)
+	vbox.name = "VendorVBox"
+	margin.add_child(vbox)
 
 	var title := Label.new()
-	title.text = "🏪  VENDOR — Spend your loot"
+	title.text = "VENDOR — Spend your silver"
 	vbox.add_child(title)
 
 	vendor_loot_label = Label.new()
-	vendor_loot_label.text = "Loot: 0"
+	vendor_loot_label.text = "Silver: 0"
 	vbox.add_child(vendor_loot_label)
 
 	var sep := HSeparator.new()
 	vbox.add_child(sep)
 
-	# Upgrade buttons
-	for upg in DataStore.get_vendor_upgrades():
-		var upg_id := str(upg.get("id", ""))
-		var upg_name := str(upg.get("name", upg_id))
-		var upg_desc := str(upg.get("description", ""))
-		var upg_cost := int(upg.get("cost", 0))
-		var max_level := int(upg.get("max_level", 1))
+	# Group upgrades by category
+	var upgrades := DataStore.get_vendor_upgrades()
+	var by_category: Dictionary = {}  # category -> Array of upgrade dicts
+	for upg in upgrades:
+		var cat := str(upg.get("category", "other"))
+		if not by_category.has(cat):
+			by_category[cat] = []
+		by_category[cat].append(upg)
 
-		var row := HBoxContainer.new()
-		vbox.add_child(row)
+	var category_order := ["combat", "survival", "mobility"]
+	var category_labels := {"combat": "COMBAT", "survival": "SURVIVAL", "mobility": "MOBILITY"}
+	for cat in category_order:
+		if not by_category.has(cat):
+			continue
+		# Category header
+		var header := Label.new()
+		header.text = "── %s ──" % str(category_labels.get(cat, cat.to_upper()))
+		header.add_theme_font_size_override("font_size", 13)
+		header.add_theme_color_override("font_color", Color(0.7, 0.65, 0.85, 1.0))
+		vbox.add_child(header)
 
-		var lbl := Label.new()
-		lbl.text = "%s — %s  (cost: %d loot, max %d)" % [upg_name, upg_desc, upg_cost, max_level]
-		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(lbl)
+		for upg in by_category[cat]:
+			var upg_id := str(upg.get("id", ""))
+			var upg_name := str(upg.get("name", upg_id))
+			var upg_desc := str(upg.get("description", ""))
 
-		var btn := Button.new()
-		btn.name = "VendorBtn_" + upg_id
-		btn.text = "Buy"
-		var cap_id := upg_id  # capture for lambda
-		btn.pressed.connect(func(): _on_vendor_button_pressed(cap_id))
-		row.add_child(btn)
-		vendor_upgrade_buttons[upg_id] = btn
+			var row := HBoxContainer.new()
+			vbox.add_child(row)
+
+			var lbl := Label.new()
+			lbl.name = "VendorLbl_" + upg_id
+			lbl.text = "%s — %s" % [upg_name, upg_desc]
+			lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			row.add_child(lbl)
+
+			var btn := Button.new()
+			btn.name = "VendorBtn_" + upg_id
+			btn.text = "Buy"
+			var cap_id := upg_id
+			btn.pressed.connect(func(): _on_vendor_button_pressed(cap_id))
+			row.add_child(btn)
+			vendor_upgrade_buttons[upg_id] = btn
+			vendor_upgrade_labels[upg_id] = lbl
+
+	var sep2 := HSeparator.new()
+	vbox.add_child(sep2)
 
 	var back_btn := Button.new()
-	back_btn.text = "← Back to Sanctuary"
+	back_btn.text = "<- Back to Sanctuary"
 	back_btn.pressed.connect(func(): _show_prep())
 	vbox.add_child(back_btn)
 
@@ -776,10 +810,9 @@ func _setup_vendor_panel() -> void:
 	if existing_vendor_btn is Button:
 		existing_vendor_btn.pressed.connect(func(): _show_vendor())
 	else:
-		# Add a vendor button to prep vbox
 		var vendor_nav_btn := Button.new()
 		vendor_nav_btn.name = "VendorButton"
-		vendor_nav_btn.text = "🏪  Visit Vendor"
+		vendor_nav_btn.text = "Visit Vendor"
 		vendor_nav_btn.pressed.connect(func():
 			_play_click()
 			_show_vendor()
@@ -822,7 +855,7 @@ func _show_how_to_play() -> void:
 
 func _refresh_vendor_ui() -> void:
 	if vendor_loot_label:
-		vendor_loot_label.text = "Loot available: %d" % GameState.banked_loot
+		vendor_loot_label.text = "Silver available: %d" % GameState.banked_loot
 
 	for upg_id in vendor_upgrade_buttons:
 		var btn: Button = vendor_upgrade_buttons[upg_id]
@@ -830,9 +863,56 @@ func _refresh_vendor_ui() -> void:
 		var cost := int(upg.get("cost", 9999))
 		var max_level := int(upg.get("max_level", 1))
 		var current_level := GameState.get_upgrade_level(upg_id)
-		var can_buy := current_level < max_level and GameState.banked_loot >= cost
-		btn.text = "Buy (Lv %d/%d)" % [current_level, max_level]
-		btn.disabled = not can_buy
+		var is_maxed := current_level >= max_level
+		var can_buy := not is_maxed and GameState.banked_loot >= cost
+
+		if is_maxed:
+			btn.text = "Owned (MAX)"
+			btn.disabled = true
+		elif current_level > 0:
+			btn.text = "Owned Lv %d — Upgrade (%d)" % [current_level, cost]
+			btn.disabled = not can_buy
+		else:
+			btn.text = "Buy (%d)" % cost
+			btn.disabled = not can_buy
+
+		# Update label styling for owned upgrades
+		if vendor_upgrade_labels.has(upg_id):
+			var lbl: Label = vendor_upgrade_labels[upg_id]
+			if is_maxed:
+				lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 0.7))
+			elif current_level > 0:
+				lbl.add_theme_color_override("font_color", Color(0.6, 0.8, 0.6, 1.0))
+			else:
+				lbl.remove_theme_color_override("font_color")
+
+# ── M22 — Genn purchase toast ─────────────────────────────────────────────────
+
+func show_vendor_purchase_toast(line: String) -> void:
+	if line == "":
+		return
+	# Clean up any existing vendor toast
+	if _vendor_toast != null and is_instance_valid(_vendor_toast):
+		_vendor_toast.queue_free()
+	_vendor_toast = Label.new()
+	_vendor_toast.name = "VendorToast"
+	_vendor_toast.text = "Genn: \"%s\"" % line
+	_vendor_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_vendor_toast.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	_vendor_toast.offset_top = -50
+	_vendor_toast.offset_bottom = -10
+	_vendor_toast.add_theme_font_size_override("font_size", 13)
+	_vendor_toast.add_theme_color_override("font_color", Color(0.85, 0.8, 0.65, 1.0))
+	_vendor_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_vendor_toast.z_index = 5
+	add_child(_vendor_toast)
+	# Auto-dismiss after 2.5 seconds
+	var timer := get_tree().create_timer(2.5)
+	var toast_ref := _vendor_toast
+	timer.timeout.connect(func():
+		if is_instance_valid(toast_ref):
+			toast_ref.queue_free()
+	)
 
 func _show_run_history() -> void:
 	# Display run history in prep_status for simplicity
