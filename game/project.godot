@@ -6,12 +6,12 @@ config/name="TheLongWalk"
 run/main_scene="res://scenes/main.tscn"
 
 [autoload]
+SettingsManager="*res://autoload/settings_manager.gd"
 GameState="*res://autoload/game_state.gd"
 DataStore="*res://autoload/data_store.gd"
 AudioManager="*res://autoload/audio_manager.gd"
 NarrativeManager="*res://autoload/narrative_manager.gd"
 ModifierManager="*res://autoload/modifier_manager.gd"
-SettingsManager="*res://autoload/settings_manager.gd"
 ChallengeManager="*res://autoload/challenge_manager.gd"
 AchievementManager="*res://autoload/achievement_manager.gd"
 

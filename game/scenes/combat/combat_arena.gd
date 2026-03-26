@@ -12,6 +12,14 @@ signal encounter_cleared(enemy_count: int)
 signal boss_phase_changed(phase: int)
 signal boss_defeated
 
+# ── Safe autoload accessors (avoid compile-time identifier resolution) ────────
+func _gs() -> Node:
+	return get_node_or_null("/root/GameState")
+func _am() -> Node:
+	return get_node_or_null("/root/AudioManager")
+func _cm() -> Node:
+	return get_node_or_null("/root/ChallengeManager")
+
 @onready var player: PlayerController = $Player
 @onready var player_sprite: Sprite2D = $Player/PlayerSprite
 @onready var combat_status: Label = $HUD/CombatStatus
@@ -107,7 +115,8 @@ func _ready() -> void:
 
 func _load_background() -> void:
 	# Check ring data for a named background, fallback to default
-	var ring_data := DataStore.get_ring(ring_id)
+	var _ds_bg: Node = get_node_or_null("/root/DataStore")
+	var ring_data: Dictionary = _ds_bg.get_ring(ring_id) if _ds_bg else {}
 	var bg_name := str(ring_data.get("background", ""))
 	if bg_name == "":
 		bg_name = "arena_bg.png"
@@ -132,7 +141,8 @@ func set_context(next_ring_id: String, next_seed: int, enemy_count: int = 1, bos
 	encounter_completed = false
 	is_boss_encounter = boss_fight
 	# M31 — iron_road: preserve HP between encounters (no healing)
-	if ChallengeManager and ChallengeManager.has_challenge("iron_road") and player_health > 0:
+	var _cm_ctx := _cm()
+	if _cm_ctx and _cm_ctx.has_challenge("iron_road") and player_health > 0:
 		pass  # Keep current HP, no reset
 	else:
 		player_health = player_max_health
@@ -177,17 +187,18 @@ func _process(delta: float) -> void:
 		if did_attack:
 			var dmg := enemy.damage
 			# M31 — cursed_ground: +25% enemy damage
-			if ChallengeManager and ChallengeManager.has_challenge("cursed_ground"):
+			var _cm_cg := _cm()
+		if _cm_cg and _cm_cg.has_challenge("cursed_ground"):
 				dmg = int(ceil(float(dmg) * 1.25))
 			if player.guarding:
 				dmg = max(1, dmg / 2)
 			player_health = max(0, player_health - dmg)
 			# M21 — Track damage taken
-			GameState.record_damage_taken(dmg)
+			if _gs(): _gs().record_damage_taken(dmg)
 			_trigger_hit_stop()
 			trigger_screen_shake(SHAKE_MAGNITUDE_SMALL, SHAKE_DURATION_DEFAULT)
-			if AudioManager:
-				AudioManager.play_sfx("hit_player")
+			if _am():
+				_am().play_sfx("hit_player")
 			if player_health <= 0:
 				_on_player_died()
 				return
@@ -196,7 +207,7 @@ func _process(delta: float) -> void:
 		if zone_dmg > 0.0:
 			var zone_int := int(ceil(zone_dmg))
 			player_health = max(0, player_health - zone_int)
-			GameState.record_damage_taken(zone_int)
+			if _gs(): _gs().record_damage_taken(zone_int)
 			if player_health <= 0:
 				_on_player_died()
 				return
@@ -208,8 +219,8 @@ func _process(delta: float) -> void:
 				_last_boss_phase = boss.boss_phase
 				boss_phase_changed.emit(boss.boss_phase)
 				print("WARDEN PHASE %d" % boss.boss_phase)
-				if AudioManager:
-					AudioManager.play_sfx("warden_phase")
+				if _am():
+					_am().play_sfx("warden_phase")
 				trigger_screen_shake(SHAKE_MAGNITUDE_LARGE, 0.5)
 				_trigger_phase_flash()
 				# Extended hit flash for Warden during phase transition
@@ -281,15 +292,15 @@ func execute_heavy_attack() -> void:
 func _on_dodge_triggered() -> void:
 	dodge_count += 1
 	dodge_hook_triggered.emit()
-	if AudioManager:
-		AudioManager.play_sfx("dodge")
+	if _am():
+		_am().play_sfx("dodge")
 	_update_hud()
 
 func _on_guard_changed(is_guarding: bool) -> void:
 	guard_active = is_guarding
 	guard_hook_changed.emit(is_guarding)
-	if is_guarding and AudioManager:
-		AudioManager.play_sfx("guard_break")
+	if is_guarding and _am():
+		_am().play_sfx("guard_break")
 	_update_hud()
 
 func _update_hud() -> void:
@@ -319,8 +330,8 @@ func _update_hud() -> void:
 
 func _on_player_died() -> void:
 	encounter_completed = true
-	if AudioManager:
-		AudioManager.play_sfx("player_death")
+	if _am():
+		_am().play_sfx("player_death")
 	set_arena_active(false)
 	player_died.emit()
 
@@ -333,7 +344,7 @@ func _on_death_explosion(enemy_index: int) -> void:
 		if player.guarding:
 			dmg = max(1, dmg / 2)
 		player_health = max(0, player_health - dmg)
-		GameState.record_damage_taken(dmg)
+		if _gs(): _gs().record_damage_taken(dmg)
 		trigger_screen_shake(SHAKE_MAGNITUDE_MEDIUM, SHAKE_DURATION_DEFAULT)
 		if player_health <= 0:
 			_on_player_died()
@@ -357,7 +368,8 @@ func _spawn_enemies(count: int) -> void:
 
 	for i in count:
 		# Pull stats from DataStore if available
-		var ring_enemies: Array = DataStore.get_enemies_for_ring(ring_id)
+		var _ds_en: Node = get_node_or_null("/root/DataStore")
+		var ring_enemies: Array = _ds_en.get_enemies_for_ring(ring_id) if _ds_en else []
 		var enemy_data: Dictionary = {}
 		if not ring_enemies.is_empty():
 			enemy_data = ring_enemies[i % ring_enemies.size()]
@@ -445,7 +457,8 @@ func _spawn_boss() -> void:
 	enemy_nodes.clear()
 	enemy_sprites.clear()
 
-	var boss_data := DataStore.get_boss(ring_id)
+	var _ds_boss: Node = get_node_or_null("/root/DataStore")
+	var boss_data: Dictionary = _ds_boss.get_boss(ring_id) if _ds_boss else {}
 	var hp: int = int(boss_data.get("health", 1200))
 	var dmg: int = int(boss_data.get("damage", 18))
 	var cooldown: float = float(boss_data.get("attack_cooldown", 2.5))
@@ -488,7 +501,7 @@ func _apply_damage_to_front_enemy(damage: int, force_poise_break: bool = false) 
 				if player.guarding:
 					counter_dmg = max(1, counter_dmg / 2)
 				player_health = max(0, player_health - counter_dmg)
-				GameState.record_damage_taken(counter_dmg)
+				if _gs(): _gs().record_damage_taken(counter_dmg)
 				trigger_screen_shake(SHAKE_MAGNITUDE_SMALL, SHAKE_DURATION_DEFAULT)
 				if player_health <= 0:
 					_on_player_died()
@@ -503,12 +516,12 @@ func _apply_damage_to_front_enemy(damage: int, force_poise_break: bool = false) 
 				if i < _hit_flash_timers.size():
 					_hit_flash_timers[i] = PHASE_PHANTOM_FLASH_DURATION
 					_hit_flash_types[i] = "phase_immune"
-				if AudioManager:
-					AudioManager.play_sfx("hit_enemy")
+				if _am():
+					_am().play_sfx("hit_enemy")
 				return
 
 			# M21 — Track damage dealt
-			GameState.record_damage_dealt(damage)
+			if _gs(): _gs().record_damage_dealt(damage)
 
 			# Hit flash — poise break gets distinct blue-white flash
 			if i < _hit_flash_timers.size():
@@ -526,20 +539,20 @@ func _apply_damage_to_front_enemy(damage: int, force_poise_break: bool = false) 
 				# Death: dissolve + medium shake
 				_start_death_dissolve(i)
 				trigger_screen_shake(SHAKE_MAGNITUDE_MEDIUM, SHAKE_DURATION_DEFAULT)
-				GameState.record_enemy_killed()
-				if AudioManager:
-					AudioManager.play_sfx("enemy_death")
+				if _gs(): _gs().record_enemy_killed()
+				if _am():
+					_am().play_sfx("enemy_death")
 			elif enemy.state == EnemyController.EnemyState.STAGGER and prev_state != EnemyController.EnemyState.STAGGER:
 				# Poise break: distinct sound
 				trigger_screen_shake(SHAKE_MAGNITUDE_SMALL, 0.12)
-				GameState.record_poise_break()
-				if AudioManager:
-					AudioManager.play_sfx("poise_break")
+				if _gs(): _gs().record_poise_break()
+				if _am():
+					_am().play_sfx("poise_break")
 			else:
 				# Regular hit: small shake
 				trigger_screen_shake(SHAKE_MAGNITUDE_SMALL, 0.12)
-				if AudioManager:
-					AudioManager.play_sfx("hit_enemy")
+				if _am():
+					_am().play_sfx("hit_enemy")
 			return
 
 
@@ -563,7 +576,7 @@ func _apply_damage_to_all_enemies(damage: int) -> void:
 
 		hit_any = true
 		# M21 — Track damage dealt
-		GameState.record_damage_dealt(damage)
+		if _gs(): _gs().record_damage_dealt(damage)
 
 		if i < _hit_flash_timers.size():
 			if enemy.state == EnemyController.EnemyState.STAGGER and prev_state != EnemyController.EnemyState.STAGGER:
@@ -575,16 +588,16 @@ func _apply_damage_to_all_enemies(damage: int) -> void:
 
 		if enemy.state == EnemyController.EnemyState.DEAD and prev_state != EnemyController.EnemyState.DEAD:
 			_start_death_dissolve(i)
-			GameState.record_enemy_killed()
-			if AudioManager:
-				AudioManager.play_sfx("enemy_death")
+			if _gs(): _gs().record_enemy_killed()
+			if _am():
+				_am().play_sfx("enemy_death")
 		elif enemy.state == EnemyController.EnemyState.STAGGER and prev_state != EnemyController.EnemyState.STAGGER:
-			GameState.record_poise_break()
-			if AudioManager:
-				AudioManager.play_sfx("poise_break")
+			if _gs(): _gs().record_poise_break()
+			if _am():
+				_am().play_sfx("poise_break")
 		else:
-			if AudioManager:
-				AudioManager.play_sfx("hit_enemy")
+			if _am():
+				_am().play_sfx("hit_enemy")
 
 	if hit_any:
 		_trigger_hit_stop()

@@ -252,7 +252,7 @@ func _on_encounter_cleared(enemy_count: int) -> void:
 	var is_silent := ChallengeManager and ChallengeManager.has_challenge("silent_run")
 	# M23 — Roll for lore fragment drop after encounter reward
 	if not is_silent:
-		var frag_seed := abs(GameState.active_seed + GameState.run_encounters_cleared)
+		var frag_seed: int = abs(GameState.active_seed + GameState.run_encounters_cleared)
 		var frag_id := GameState.roll_fragment_drop(frag_seed)
 		if frag_id != "":
 			GameState.collect_fragment(frag_id)
@@ -269,7 +269,7 @@ func _on_encounter_cleared(enemy_count: int) -> void:
 # ── M26 — Between-encounter modifier card offer ──────────────────────────────
 
 func _offer_run_modifier() -> void:
-	var mod_seed := abs(GameState.active_seed + GameState.run_encounters_cleared * 7)
+	var mod_seed: int = abs(GameState.active_seed + GameState.run_encounters_cleared * 7)
 	var offered := ModifierManager.roll_modifier_offer(mod_seed)
 	flow_ui.show_modifier_card_offer(offered)
 

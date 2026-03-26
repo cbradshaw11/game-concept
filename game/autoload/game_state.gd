@@ -495,7 +495,8 @@ func collect_fragment(fragment_id: String) -> void:
 
 func roll_fragment_drop(encounter_seed: int) -> String:
 	## Roll for a lore fragment drop (15% chance). Returns fragment_id or "".
-	var all_ids: Array = NarrativeManager.get_all_lore_fragment_ids()
+	var nm: Node = Engine.get_main_loop().root.get_node_or_null("NarrativeManager") if Engine.get_main_loop() else null
+	var all_ids: Array = nm.get_all_lore_fragment_ids() if nm else []
 	# Filter to uncollected only
 	var available: Array = []
 	for fid in all_ids:
@@ -545,12 +546,16 @@ func award_run_shards(outcome: String) -> int:
 	## Award shards at end of run. Returns shards earned.
 	var earned := calculate_shards_earned(outcome)
 	# M31 — Challenge run shard bonus on successful completion (not death)
-	if ChallengeManager and ChallengeManager.is_challenge_active():
+	var _cm: Node = Engine.get_main_loop().root.get_node_or_null("ChallengeManager") if Engine.get_main_loop() else null
+	if _cm and _cm.has_method("is_challenge_active") and _cm.is_challenge_active():
 		if outcome != "death":
-			earned += ChallengeManager.get_shard_bonus()
+			earned += int(_cm.get_shard_bonus())
 			# M32 — Track completed challenge for achievements
-			record_challenge_completed(ChallengeManager.active_challenge)
-		ChallengeManager.end_run()
+			record_challenge_completed(str(_cm.active_challenge))
+		_cm.end_run()
+	# M33 — Actually credit shards to the player's account
+	resonance_shards += earned
+	last_run_shards_earned = earned
 	return earned
 
 func has_permanent_unlock(unlock_id: String) -> bool:
@@ -578,7 +583,9 @@ func get_available_shards() -> int:
 func _store_artifact_echo_modifier() -> void:
 	## Pick a random rare (tier 3) run modifier and store its id for next run.
 	var rares: Array = []
-	for mod in DataStore.get_run_modifiers():
+	var _ds: Node = Engine.get_main_loop().root.get_node_or_null("DataStore") if Engine.get_main_loop() else null
+	var _run_mods: Array = _ds.get_run_modifiers() if _ds and _ds.has_method("get_run_modifiers") else []
+	for mod in _run_mods:
 		if int(mod.get("tier", 0)) == 3:
 			rares.append(mod)
 	if rares.is_empty():

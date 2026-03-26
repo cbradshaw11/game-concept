@@ -36,11 +36,23 @@ Open `game/project.godot` in Godot 4.6+. Press F5 to run.
 
 ### Autoload Singletons (always available globally)
 
-- **GameState** (`game/autoload/game_state.gd`) - Single source of truth for all run state: current ring, banked/unbanked XP and loot, active upgrades, active modifiers, run history (last 20), and permanent progression. Emits signals (`run_started`, `encounter_completed`, `extracted`, `player_died`) that drive UI and system transitions. Save format is versioned (currently v6) with backward-compatible migration guards.
+Registered in `project.godot` in dependency order:
 
-- **DataStore** (`game/autoload/data_store.gd`) - Loads 7 JSON files on `_ready()`: `rings.json`, `enemies.json`, `weapons.json`, `encounter_templates.json`, `upgrades.json`, `shop_items.json`, `modifiers.json`. All game content is data-driven from these files.
+1. **SettingsManager** (`game/autoload/settings_manager.gd`) — Persists audio bus volumes and display settings to `user://settings.json`. No dependencies.
 
-- **SettingsManager** (`game/autoload/settings_manager.gd`) - Persists audio bus volumes and display settings to `user://settings.json`.
+2. **GameState** (`game/autoload/game_state.gd`) — Single source of truth for all run state: current ring, banked/unbanked XP and loot, active upgrades, active modifiers, run history (last 20), resonance shards, permanent unlocks, achievement stats, and lifetime progression. Emits signals (`run_started`, `encounter_completed`, `extracted`, `player_died`, `artifact_retrieved_signal`, `fragment_collected`) that drive UI and system transitions. Save format uses merge-with-defaults migration (currently v11 fields covering M21–M32 additions).
+
+3. **DataStore** (`game/autoload/data_store.gd`) — Loads 8 JSON files on `_ready()`: `rings.json`, `enemies.json`, `weapons.json`, `encounter_templates.json`, `upgrades.json`, `shop_items.json`, `modifiers.json`, `achievements.json`. All game content is data-driven from these files.
+
+4. **AudioManager** (`game/autoload/audio_manager.gd`) — SFX and music playback. 17 SFX entries + 7 music tracks. Silent-fail on missing audio files (push_warning, no crash). Creates SFX and Music audio buses at runtime. Depends on SettingsManager for volume levels.
+
+5. **NarrativeManager** (`game/autoload/narrative_manager.gd`) — Loads `narrative.json` and exposes the narrative text API: prologue beats, ring entry/extraction/death flavor, NPC dialogue (Genn vendor), lore fragments, Warden intro. Depends on DataStore.
+
+6. **ModifierManager** (`game/autoload/modifier_manager.gd`) — Run modifier cards. 20 modifiers across 3 tiers loaded from `modifiers.json`. Manages `active_modifiers` array, stat bonus aggregation (`get_stat_bonus()`), boolean flag checks (`has_flag()`). Clears on run start via `run_started` signal. Depends on DataStore, GameState.
+
+7. **ChallengeManager** (`game/autoload/challenge_manager.gd`) — 8 challenge runs with unlock conditions (total_runs, artifact_retrievals thresholds). Enforcement hooks in main.gd (time_pressure timer, warden_hunt extraction block, one_life instant death, naked_run vendor lock, silent_run skip lore/modifiers). `end_run()` clears active challenge. Depends on GameState, DataStore.
+
+8. **AchievementManager** (`game/autoload/achievement_manager.gd`) — 20 local achievements across 4 categories. Connects to GameState signals for automatic checking (`check_after_encounter`, `check_after_extraction`, `check_after_death`, `check_after_artifact`, `check_after_lore_collection`, `check_after_run_start`). Toast notifications via FlowUI. Depends on GameState, ModifierManager, ChallengeManager.
 
 ### Game Loop (main.gd)
 
@@ -60,22 +72,28 @@ Open `game/project.godot` in Godot 4.6+. Press F5 to run.
 
 ### UI Layer
 
-`FlowUI` (`game/scripts/ui/flow_ui.gd`) manages scene transitions: title → prologue → sanctuary → ring selection → combat → victory/death. Each screen is a subscene loaded by FlowUI in response to GameState signals.
+`FlowUI` (`game/scripts/ui/flow_ui.gd`) manages scene transitions: title → prologue → sanctuary → ring selection → combat → victory/death. Each screen is a subscene loaded by FlowUI in response to GameState signals. Sanctuary hub has navigation to: Vendor, Resonance Shrine, Challenge Runs, Achievements, Recovered Notes, How to Play, Settings.
 
 ### Script/Scene Layout
 
 ```
 game/scripts/
-├── core/          # PlayerController, EnemyController
+├── core/          # PlayerController, EnemyController, behavior_profiles
 ├── systems/       # RingDirector, RewardSystem, ContractSystem, SaveSystem, Telemetry
-├── ui/            # FlowUI and all screen controllers
-├── tests/         # 48+ test files (milestone-scoped under m4/-m13/, combat/ subtests)
+├── ui/            # FlowUI and all screen controllers (run_summary, title_screen, how_to_play, etc.)
+├── tests/         # 70+ test files (milestone-scoped under m4/ through m32/)
+│   ├── m4/-m13/   # Core gameplay tests
+│   ├── m18/-m24/  # Boss, death, onboarding, stats, economy, fragments, behavior tests
+│   └── combat/    # Combat-specific subtests
 └── tools/         # Asset generation
 
 game/scenes/
 ├── main.tscn              # Root scene
 ├── combat/combat_arena.tscn
 └── ui/                    # One .tscn per screen
+
+game/data/                 # All JSON data files
+game/audio/                # SFX and music assets (sfx/, music/)
 ```
 
 ---
@@ -88,7 +106,7 @@ Two test modes used in the harness:
 - `run_test` - 60s timeout, hard fail on non-zero exit
 - `run_scene_test` - 10s timeout (tolerates Godot physics shutdown hang), parses PASS/FAIL markers
 
-Milestone-scoped tests live under `game/scripts/tests/m4/` through `game/scripts/tests/m13/`. When adding features for a milestone, add tests in the matching subdirectory.
+Milestone-scoped tests live under `game/scripts/tests/m4/` through `game/scripts/tests/m32/`. When adding features for a milestone, add tests in the matching subdirectory.
 
 ---
 
@@ -100,7 +118,7 @@ All PRs must pass four GitHub Actions workflows: `headless-tests`, `lint`, `smok
 
 ## Data Files
 
-All JSON is under `game/data/`. When adding new rings, enemies, or upgrades, update the relevant JSON file rather than hardcoding in GDScript. DataStore exposes typed lookup methods (e.g., `DataStore.get_ring(id)`, `DataStore.get_enemies_for_ring(ring_id)`).
+All JSON is under `game/data/`. When adding new rings, enemies, or upgrades, update the relevant JSON file rather than hardcoding in GDScript. DataStore exposes typed lookup methods (e.g., `DataStore.get_ring(id)`, `DataStore.get_enemies_for_ring(ring_id)`). Key data files: `rings.json`, `enemies.json`, `weapons.json`, `encounter_templates.json`, `upgrades.json`, `shop_items.json`, `modifiers.json`, `achievements.json`, `narrative.json`.
 
 ---
 
@@ -113,10 +131,10 @@ A summary file **must** be written and committed as the final step of every mile
 - Status: `DONE`
 - Commit it with the test suite: `feat: TASK-NNN MN test suite + milestone summary`
 
-Missing summaries break project continuity. M6-M13 had to be reconstructed from git history after the fact because this was skipped.
+Missing summaries break project continuity. M6-M13 had to be reconstructed from git history after the fact because this was skipped. Milestones M24–M33 cover the overnight batch (behavior profiles through integration pass).
 
 ---
 
 ## Save Versioning
 
-When adding fields to GameState, always add a migration guard in the save loading path and increment the save version constant. Check existing v1-v6 migrations in `game_state.gd` as reference.
+GameState uses merge-with-defaults migration: `default_save_state()` defines all fields, and `SaveSystem._merge_with_defaults()` fills missing keys from old saves. Current field set covers v11 (M32 achievements, lifetime_kills, lifetime_poise_breaks, completed_challenges). When adding fields to GameState, add them to both `default_save_state()` and `to_save_state()`, with a migration guard comment in `apply_save_state()`.
