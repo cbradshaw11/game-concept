@@ -79,6 +79,12 @@ const POISE_BREAK_FLASH_DURATION := 0.2
 
 const WARDEN_PHASE_FLASH_HOLD := 0.3  # longer hold for Warden phase transition
 
+# M30 — Phase phantom (Resonance Wraith) flash colors
+const PHASE_IMMUNE_FLASH_COLOR := Color(0.3, 0.3, 2.0, 0.8)
+const PHASE_VULNERABLE_FLASH_COLOR := Color(1.8, 1.0, 0.2, 1.0)
+const PHASE_INVULNERABLE_FLASH_COLOR := Color(0.1, 0.1, 0.8, 1.0)
+const PHASE_PHANTOM_FLASH_DURATION := 0.25
+
 const SPRITE_BASE := "res://assets/sprites/"
 const ENEMY_SPRITE_NAMES := {
 	"grunt": "enemy_grunt.png",
@@ -361,6 +367,14 @@ func _spawn_enemies(count: int) -> void:
 		# glass_cannon_aggro: wire death explosion
 		if profile == Profiles.GLASS_CANNON_AGGRO:
 			ec.death_explosion.connect(_on_death_explosion.bind(i))
+		# phase_phantom: wire phase signals + configure durations from data
+		if profile == Profiles.PHASE_PHANTOM:
+			var p_dur := float(enemy_data.get("phase_duration", 2.5))
+			var v_dur := float(enemy_data.get("vulnerable_duration", 1.8))
+			ec.set_phase_durations(p_dur, v_dur)
+			ec.damage_absorbed.connect(_on_damage_absorbed.bind(i))
+			ec.phase_vulnerable.connect(_on_phase_vulnerable.bind(i))
+			ec.phase_invulnerable.connect(_on_phase_invulnerable.bind(i))
 		enemies.append(ec)
 		_hit_flash_timers.append(0.0)
 		_hit_flash_types.append("hit")
@@ -391,6 +405,24 @@ func _spawn_enemies(count: int) -> void:
 
 		enemy_nodes.append(node)
 		enemy_sprites.append(sprite)
+
+
+# ─── M30 Phase Phantom Signal Handlers ───────────────────────────────────────
+
+func _on_damage_absorbed(enemy_index: int) -> void:
+	if enemy_index < _hit_flash_timers.size():
+		_hit_flash_timers[enemy_index] = PHASE_PHANTOM_FLASH_DURATION
+		_hit_flash_types[enemy_index] = "phase_immune"
+
+func _on_phase_vulnerable(enemy_index: int) -> void:
+	if enemy_index < _hit_flash_timers.size():
+		_hit_flash_timers[enemy_index] = PHASE_PHANTOM_FLASH_DURATION
+		_hit_flash_types[enemy_index] = "phase_vulnerable"
+
+func _on_phase_invulnerable(enemy_index: int) -> void:
+	if enemy_index < _hit_flash_timers.size():
+		_hit_flash_timers[enemy_index] = PHASE_PHANTOM_FLASH_DURATION
+		_hit_flash_types[enemy_index] = "phase_invulnerable"
 
 
 func _spawn_boss() -> void:
@@ -454,8 +486,20 @@ func _apply_damage_to_front_enemy(damage: int, force_poise_break: bool = false) 
 				if player_health <= 0:
 					_on_player_died()
 				return
+			var prev_health := enemy.health
 			var prev_state := enemy.state
 			enemy.apply_damage(damage, force_poise_break or true)
+
+			# phase_phantom: if health unchanged and not dead, damage was absorbed
+			if enemy.behavior_profile == Profiles.PHASE_PHANTOM and enemy.health == prev_health and enemy.state != EnemyController.EnemyState.DEAD:
+				# Immune flash — no damage tracked, no hit stop
+				if i < _hit_flash_timers.size():
+					_hit_flash_timers[i] = PHASE_PHANTOM_FLASH_DURATION
+					_hit_flash_types[i] = "phase_immune"
+				if AudioManager:
+					AudioManager.play_sfx("hit_enemy")
+				return
+
 			# M21 — Track damage dealt
 			GameState.record_damage_dealt(damage)
 
@@ -498,8 +542,17 @@ func _apply_damage_to_all_enemies(damage: int) -> void:
 		var enemy := enemies[i]
 		if enemy.state == EnemyController.EnemyState.DEAD:
 			continue
+		var prev_health := enemy.health
 		var prev_state := enemy.state
 		enemy.apply_damage(damage, false)
+
+		# phase_phantom: if health unchanged and not dead, damage was absorbed
+		if enemy.behavior_profile == Profiles.PHASE_PHANTOM and enemy.health == prev_health and enemy.state != EnemyController.EnemyState.DEAD:
+			if i < _hit_flash_timers.size():
+				_hit_flash_timers[i] = PHASE_PHANTOM_FLASH_DURATION
+				_hit_flash_types[i] = "phase_immune"
+			continue
+
 		hit_any = true
 		# M21 — Track damage dealt
 		GameState.record_damage_dealt(damage)
@@ -586,6 +639,15 @@ func _update_hit_flashes(delta: float) -> void:
 		elif flash_type == "warden_phase":
 			# Warden phase: hold the hit flash color longer
 			sprite.modulate = HIT_FLASH_COLOR
+		elif flash_type == "phase_immune":
+			# M30 — Phase phantom: immune flash (blue-white pulse)
+			sprite.modulate = PHASE_IMMUNE_FLASH_COLOR
+		elif flash_type == "phase_vulnerable":
+			# M30 — Phase phantom: vulnerability window opening
+			sprite.modulate = PHASE_VULNERABLE_FLASH_COLOR
+		elif flash_type == "phase_invulnerable":
+			# M30 — Phase phantom: invulnerability resumed
+			sprite.modulate = PHASE_INVULNERABLE_FLASH_COLOR
 		else:
 			# Normal hit: hold for 1 frame then lerp back
 			var remaining := _hit_flash_timers[i]

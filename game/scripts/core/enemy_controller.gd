@@ -14,6 +14,9 @@ enum EnemyState {
 }
 
 signal death_explosion
+signal damage_absorbed
+signal phase_vulnerable
+signal phase_invulnerable
 
 var state: EnemyState = EnemyState.IDLE
 var health: int
@@ -64,6 +67,12 @@ var zone_radius: float = 2.5
 # elite_pressure profile
 var player_hp_percent: float = 1.0
 var _poise_immune: bool = false
+
+# phase_phantom profile
+var phase_timer: float = 0.0
+var is_vulnerable: bool = false
+var phase_duration: float = 2.5
+var vulnerable_duration: float = 1.8
 
 
 func _init(max_health: int = 100, chase_distance: float = 6.0, attack_distance: float = 1.8, base_dmg: int = 8) -> void:
@@ -125,6 +134,13 @@ func apply_profile(profile: String) -> void:
 			attack_cooldown = 1.0
 			base_attack_cooldown = 1.0
 			_poise_immune = true
+		Profiles.PHASE_PHANTOM:
+			chase_range = 7.0
+			attack_range = 1.8
+			attack_cooldown = 1.2
+			base_attack_cooldown = 1.2
+			is_vulnerable = false
+			phase_timer = phase_duration
 
 ## Configure this enemy as a boss with phase transitions.
 func setup_boss(phases: int, cooldown: float) -> void:
@@ -155,6 +171,7 @@ func tick(distance_to_player: float, delta: float) -> bool:
 	_update_zone_control(delta)
 	_update_kite_fallback(delta)
 	_update_elite_pressure_damage()
+	_update_phase_phantom(delta)
 
 	# Guard state blocks normal action
 	if guarding:
@@ -264,10 +281,39 @@ func _update_elite_pressure_damage() -> void:
 func set_player_hp_percent(percent: float) -> void:
 	player_hp_percent = percent
 
+## Update phase_phantom phase cycling timer.
+func _update_phase_phantom(delta: float) -> void:
+	if behavior_profile != Profiles.PHASE_PHANTOM:
+		return
+	phase_timer -= delta
+	if phase_timer <= 0.0:
+		if is_vulnerable:
+			# Transition to invulnerable
+			is_vulnerable = false
+			phase_timer = phase_duration
+			phase_invulnerable.emit()
+		else:
+			# Transition to vulnerable
+			is_vulnerable = true
+			phase_timer = vulnerable_duration
+			phase_vulnerable.emit()
+
+## Configure phase durations from enemy data.
+func set_phase_durations(p_duration: float, v_duration: float) -> void:
+	phase_duration = p_duration
+	vulnerable_duration = v_duration
+	if not is_vulnerable:
+		phase_timer = phase_duration
+
 var _poise_damage_accumulated: int = 0
 
 func apply_damage(amount: int, poise_break: bool = false) -> EnemyState:
 	if state == EnemyState.DEAD:
+		return state
+
+	# phase_phantom: absorb damage while invulnerable
+	if behavior_profile == Profiles.PHASE_PHANTOM and not is_vulnerable:
+		damage_absorbed.emit()
 		return state
 
 	health = max(health - amount, 0)

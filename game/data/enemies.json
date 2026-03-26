@@ -72,6 +72,18 @@
       "damage": 8,
       "guard_efficiency": 0.8,
       "behavior_profile": "poise_gate_tank"
+    },
+    {
+      "id": "resonance_wraith",
+      "role": "phantom",
+      "rings": ["outer"],
+      "health": 95,
+      "poise": 10,
+      "damage": 18,
+      "behavior_profile": "phase_phantom",
+      "phase_duration": 2.5,
+      "vulnerable_duration": 1.8,
+      "phase_cycle_start": "invulnerable"
     }
   ],
   "bosses": [

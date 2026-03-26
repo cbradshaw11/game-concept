@@ -8,6 +8,7 @@ const ZONE_CONTROL := "zone_control"
 const GLASS_CANNON_AGGRO := "glass_cannon_aggro"
 const POISE_GATE_TANK := "poise_gate_tank"
 const ELITE_PRESSURE := "elite_pressure"
+const PHASE_PHANTOM := "phase_phantom"
 
 const ALL_PROFILES := [
 	FRONTLINE_BASIC,
@@ -18,4 +19,5 @@ const ALL_PROFILES := [
 	GLASS_CANNON_AGGRO,
 	POISE_GATE_TANK,
 	ELITE_PRESSURE,
+	PHASE_PHANTOM,
 ]

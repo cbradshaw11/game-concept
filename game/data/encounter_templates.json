@@ -247,6 +247,22 @@
       "enemy_ids": ["warden_hunter", "rift_caster", "ash_flanker"],
       "weight": 5,
       "flavor_text": "Hunter, caster, flanker. The standard outer ring gauntlet."
+    },
+    {
+      "id": "outer_phantom_screen",
+      "ring": "outer",
+      "name": "Phantom Screen",
+      "enemy_ids": ["resonance_wraith", "warden_hunter"],
+      "weight": 4,
+      "flavor_text": "The hunter forces engagement. The wraith phases in and out. Time your strikes."
+    },
+    {
+      "id": "outer_twin_phantoms",
+      "ring": "outer",
+      "name": "Twin Phantoms",
+      "enemy_ids": ["resonance_wraith", "resonance_wraith"],
+      "weight": 3,
+      "flavor_text": "Two wraiths. Their cycles drift apart. A timing puzzle with teeth."
     }
   ]
 }
