@@ -7,6 +7,7 @@ const CombatArenaScene = preload("res://scenes/combat/combat_arena.tscn")
 const ContractSystem = preload("res://scripts/systems/contract_system.gd")
 const VendorSystem = preload("res://scripts/systems/vendor_system.gd")
 const TitleScreenScene = preload("res://scenes/ui/title_screen.tscn")
+const SettingsScreenScene = preload("res://scenes/ui/settings_screen.tscn")
 
 @onready var flow_ui: FlowUI = $FlowUI
 
@@ -269,6 +270,7 @@ func _show_title_screen() -> void:
 	title_screen.set_continue_visible(has_save)
 	title_screen.begin_pressed.connect(_on_title_begin)
 	title_screen.continue_pressed.connect(_on_title_continue)
+	title_screen.settings_pressed.connect(_open_settings)
 
 func _on_title_begin() -> void:
 	_dismiss_title_screen()
@@ -286,6 +288,10 @@ func _on_title_continue() -> void:
 	_dismiss_title_screen()
 	flow_ui.visible = true
 	flow_ui.on_idle_ready()
+
+func _open_settings() -> void:
+	var settings := SettingsScreenScene.instantiate()
+	add_child(settings)
 
 func _dismiss_title_screen() -> void:
 	if title_screen != null:

@@ -2,6 +2,7 @@ extends CanvasLayer
 
 signal begin_pressed
 signal continue_pressed
+signal settings_pressed
 
 const FLAVOR_LINES: Array[String] = [
 	"The road brought you here.",
@@ -13,6 +14,7 @@ const FLAVOR_LINES: Array[String] = [
 const FLAVOR_CYCLE_TIME := 8.0
 
 @onready var continue_btn: Button = $CenterContainer/VBoxContainer/Continue
+@onready var settings_btn: Button = $CenterContainer/VBoxContainer/Settings
 @onready var subtitle_label: Label = $CenterContainer/VBoxContainer/Subtitle
 @onready var flavor_label: Label = $CenterContainer/VBoxContainer/FlavorLine
 @onready var begin_btn: Button = $CenterContainer/VBoxContainer/Begin
@@ -32,6 +34,10 @@ func _ready() -> void:
 	continue_btn.pressed.connect(func():
 		_play_click()
 		continue_pressed.emit()
+	)
+	settings_btn.pressed.connect(func():
+		_play_click()
+		settings_pressed.emit()
 	)
 
 func _process(delta: float) -> void:

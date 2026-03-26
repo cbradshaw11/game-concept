@@ -101,6 +101,7 @@ func _ready() -> void:
 	_setup_history_button()
 	_setup_how_to_play_button()
 	_setup_recovered_notes_button()
+	_setup_settings_button()
 	_setup_shrine_panel()
 	_setup_victory_panel()
 	_setup_death_panel()
@@ -1214,6 +1215,25 @@ func _setup_recovered_notes_button() -> void:
 		_show_recovered_notes()
 	)
 	prep_vbox.add_child(btn)
+
+func _setup_settings_button() -> void:
+	var prep_vbox := prep_screen.get_node("PrepVBox")
+	if prep_vbox == null:
+		return
+	var btn := Button.new()
+	btn.name = "SettingsButton"
+	btn.text = "Settings"
+	btn.pressed.connect(func():
+		_play_click()
+		_open_settings_modal()
+	)
+	prep_vbox.add_child(btn)
+
+const SettingsScreenScene = preload("res://scenes/ui/settings_screen.tscn")
+
+func _open_settings_modal() -> void:
+	var settings := SettingsScreenScene.instantiate()
+	add_child(settings)
 
 const HowToPlayScene = preload("res://scenes/ui/how_to_play.tscn")
 
