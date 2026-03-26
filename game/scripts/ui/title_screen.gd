@@ -48,4 +48,4 @@ func set_continue_visible(show: bool) -> void:
 
 func _play_click() -> void:
 	if AudioManager:
-		AudioManager.play_ui_click()
+		AudioManager.play_sfx("ui_confirm")

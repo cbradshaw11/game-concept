@@ -141,7 +141,11 @@ func _on_vendor_button_pressed(upgrade_id: String) -> void:
 
 func _play_click() -> void:
 	if AudioManager:
-		AudioManager.play_ui_click()
+		AudioManager.play_sfx("ui_confirm")
+
+func _play_cancel() -> void:
+	if AudioManager:
+		AudioManager.play_sfx("ui_cancel")
 
 # ── Screen visibility ─────────────────────────────────────────────────────────
 
@@ -163,8 +167,9 @@ func _show_prep() -> void:
 	var notes_btn := prep_screen.find_child("RecoveredNotesButton", true, false)
 	if notes_btn is Button:
 		notes_btn.visible = not GameState.collected_fragments.is_empty()
+	# M28 — Sanctuary music
 	if AudioManager:
-		AudioManager.play_sanctuary_music()
+		AudioManager.play_music("sanctuary")
 	# M20 T4 — Show return greeting toast when coming back from a run
 	if _initial_show_done and not GameState.run_history.is_empty():
 		_show_return_toast()
@@ -783,7 +788,8 @@ func _build_modifier_card(modifier: Dictionary) -> void:
 	var accept_btn := Button.new()
 	accept_btn.text = "Accept"
 	accept_btn.pressed.connect(func():
-		_play_click()
+		if AudioManager:
+			AudioManager.play_sfx("modifier_accept")
 		ModifierManager.add_modifier(mod_id)
 		_dismiss_modifier_card()
 	)
@@ -796,7 +802,7 @@ func _build_modifier_card(modifier: Dictionary) -> void:
 	var decline_btn := Button.new()
 	decline_btn.text = "Decline"
 	decline_btn.pressed.connect(func():
-		_play_click()
+		_play_cancel()
 		_dismiss_modifier_card()
 	)
 	btn_row.add_child(decline_btn)
@@ -980,7 +986,10 @@ func _setup_vendor_panel() -> void:
 
 	var back_btn := Button.new()
 	back_btn.text = "<- Back to Sanctuary"
-	back_btn.pressed.connect(func(): _show_prep())
+	back_btn.pressed.connect(func():
+		_play_cancel()
+		_show_prep()
+	)
 	vbox.add_child(back_btn)
 
 	# Wire the existing vendor button in PrepScreen if it exists
@@ -1099,7 +1108,10 @@ func _setup_shrine_panel() -> void:
 
 	var back_btn := Button.new()
 	back_btn.text = "<- Back to Sanctuary"
-	back_btn.pressed.connect(func(): _show_prep())
+	back_btn.pressed.connect(func():
+		_play_cancel()
+		_show_prep()
+	)
 	vbox.add_child(back_btn)
 
 	# Add shrine navigation button to prep screen
@@ -1130,9 +1142,11 @@ func _show_shrine() -> void:
 		_refresh_shrine_ui()
 
 func _on_shrine_unlock_pressed(unlock_id: String, cost: int) -> void:
-	_play_click()
 	var success := GameState.purchase_permanent_unlock(unlock_id, cost)
 	if success:
+		# M28 — Shard unlock SFX
+		if AudioManager:
+			AudioManager.play_sfx("shard_earn")
 		_refresh_shrine_ui()
 
 func _refresh_shrine_ui() -> void:

@@ -97,8 +97,7 @@ func _ready() -> void:
 	_setup_phase_flash_overlay()
 	_update_hud()
 	# Start combat music when arena becomes active
-	if AudioManager:
-		AudioManager.play_combat_music()
+	# M28 — Music is now driven by FlowUI/main based on ring; no-op here
 
 func _load_background() -> void:
 	# Check ring data for a named background, fallback to default
@@ -175,7 +174,7 @@ func _process(delta: float) -> void:
 			_trigger_hit_stop()
 			trigger_screen_shake(SHAKE_MAGNITUDE_SMALL, SHAKE_DURATION_DEFAULT)
 			if AudioManager:
-				AudioManager.play_hit()
+				AudioManager.play_sfx("hit_player")
 			if player_health <= 0:
 				_on_player_died()
 				return
@@ -196,6 +195,8 @@ func _process(delta: float) -> void:
 				_last_boss_phase = boss.boss_phase
 				boss_phase_changed.emit(boss.boss_phase)
 				print("WARDEN PHASE %d" % boss.boss_phase)
+				if AudioManager:
+					AudioManager.play_sfx("warden_phase")
 				trigger_screen_shake(SHAKE_MAGNITUDE_LARGE, 0.5)
 				_trigger_phase_flash()
 				# Extended hit flash for Warden during phase transition
@@ -205,8 +206,6 @@ func _process(delta: float) -> void:
 
 	if _all_enemies_defeated():
 		encounter_completed = true
-		if AudioManager:
-			AudioManager.play_victory()
 		if is_boss_encounter:
 			boss_defeated.emit()
 		else:
@@ -217,8 +216,6 @@ func _on_attack_triggered() -> void:
 	attack_count += 1
 	_execute_weapon_attack()
 	attack_hook_triggered.emit()
-	if AudioManager:
-		AudioManager.play_attack()
 	_update_hud()
 
 func _execute_weapon_attack() -> void:
@@ -272,14 +269,14 @@ func _on_dodge_triggered() -> void:
 	dodge_count += 1
 	dodge_hook_triggered.emit()
 	if AudioManager:
-		AudioManager.play_dodge()
+		AudioManager.play_sfx("dodge")
 	_update_hud()
 
 func _on_guard_changed(is_guarding: bool) -> void:
 	guard_active = is_guarding
 	guard_hook_changed.emit(is_guarding)
 	if is_guarding and AudioManager:
-		AudioManager.play_guard()
+		AudioManager.play_sfx("guard_break")
 	_update_hud()
 
 func _update_hud() -> void:
@@ -309,6 +306,8 @@ func _update_hud() -> void:
 
 func _on_player_died() -> void:
 	encounter_completed = true
+	if AudioManager:
+		AudioManager.play_sfx("player_death")
 	set_arena_active(false)
 	player_died.emit()
 
@@ -478,12 +477,17 @@ func _apply_damage_to_front_enemy(damage: int, force_poise_break: bool = false) 
 				trigger_screen_shake(SHAKE_MAGNITUDE_MEDIUM, SHAKE_DURATION_DEFAULT)
 				GameState.record_enemy_killed()
 				if AudioManager:
-					AudioManager.play_death()
+					AudioManager.play_sfx("enemy_death")
+			elif enemy.state == EnemyController.EnemyState.STAGGER and prev_state != EnemyController.EnemyState.STAGGER:
+				# Poise break: distinct sound
+				trigger_screen_shake(SHAKE_MAGNITUDE_SMALL, 0.12)
+				if AudioManager:
+					AudioManager.play_sfx("poise_break")
 			else:
 				# Regular hit: small shake
 				trigger_screen_shake(SHAKE_MAGNITUDE_SMALL, 0.12)
 				if AudioManager:
-					AudioManager.play_hit()
+					AudioManager.play_sfx("hit_enemy")
 			return
 
 
@@ -512,10 +516,13 @@ func _apply_damage_to_all_enemies(damage: int) -> void:
 			_start_death_dissolve(i)
 			GameState.record_enemy_killed()
 			if AudioManager:
-				AudioManager.play_death()
+				AudioManager.play_sfx("enemy_death")
+		elif enemy.state == EnemyController.EnemyState.STAGGER and prev_state != EnemyController.EnemyState.STAGGER:
+			if AudioManager:
+				AudioManager.play_sfx("poise_break")
 		else:
 			if AudioManager:
-				AudioManager.play_hit()
+				AudioManager.play_sfx("hit_enemy")
 
 	if hit_any:
 		_trigger_hit_stop()

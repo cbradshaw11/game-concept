@@ -94,7 +94,7 @@ func _build_ui() -> void:
 	run_again_btn.text = "Run Again"
 	run_again_btn.pressed.connect(func():
 		if AudioManager:
-			AudioManager.play_ui_click()
+			AudioManager.play_sfx("ui_confirm")
 		return_to_sanctuary.emit()
 	)
 	btn_box.add_child(run_again_btn)
@@ -104,7 +104,7 @@ func _build_ui() -> void:
 	title_btn.text = "Title"
 	title_btn.pressed.connect(func():
 		if AudioManager:
-			AudioManager.play_ui_click()
+			AudioManager.play_sfx("ui_confirm")
 		return_to_title.emit()
 	)
 	btn_box.add_child(title_btn)

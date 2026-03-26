@@ -66,6 +66,12 @@ func _on_modifier_selected(_modifier_id: String) -> void:
 
 func _begin_run(ring_id: String, seed: int) -> void:
 	current_run_ring = ring_id
+	# M28 — Ring enter SFX + combat music by ring
+	if AudioManager:
+		AudioManager.play_sfx("ring_enter")
+		var music_map := {"inner": "combat_inner", "mid": "combat_mid", "outer": "combat_outer"}
+		var track: String = music_map.get(ring_id, "combat_inner")
+		AudioManager.play_music(track)
 	# M17 T10 — show ring entry flavor text before run begins
 	var entry_text := NarrativeManager.get_ring_text(ring_id, "entry")
 	if entry_text != "":
@@ -131,6 +137,9 @@ func _on_extract_pressed() -> void:
 	# M19 T6 — Brief hold before routing to reward screen
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
+	# M28 — Extraction SFX
+	if AudioManager:
+		AudioManager.play_sfx("extraction")
 	var timer := get_tree().create_timer(EXTRACTION_HOLD_DELAY)
 	timer.timeout.connect(func():
 		GameState.extract()
@@ -149,6 +158,9 @@ func _on_die_pressed() -> void:
 	_save_state()
 
 func _on_extracted_signal(total_xp: int, total_loot: int) -> void:
+	# M28 — Victory music on extraction
+	if AudioManager:
+		AudioManager.play_music("victory")
 	flow_ui.on_extracted(total_xp, total_loot)
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
@@ -172,6 +184,9 @@ func _on_vendor_purchase_pressed(upgrade_id: String) -> void:
 		return
 	var purchased := vendor_system.purchase(upgrade_id)
 	if purchased:
+		# M28 — Upgrade purchase SFX
+		if AudioManager:
+			AudioManager.play_sfx("upgrade_purchase")
 		_save_state()
 		flow_ui.refresh_vendor()
 		# M22 — Show Genn purchase reaction toast
@@ -206,6 +221,9 @@ func _on_encounter_cleared(enemy_count: int) -> void:
 	var frag_id := GameState.roll_fragment_drop(frag_seed)
 	if frag_id != "":
 		GameState.collect_fragment(frag_id)
+		# M28 — Lore fragment SFX
+		if AudioManager:
+			AudioManager.play_sfx("lore_fragment")
 		var frag := NarrativeManager.get_lore_fragment(frag_id)
 		if not frag.is_empty():
 			flow_ui.show_fragment_pickup(frag)
@@ -240,6 +258,9 @@ func _save_state() -> void:
 # ── M20 — Title Screen ────────────────────────────────────────────────────────
 
 func _show_title_screen() -> void:
+	# M28 — Title music
+	if AudioManager:
+		AudioManager.play_music("title")
 	# Hide FlowUI until title screen is dismissed
 	flow_ui.visible = false
 	title_screen = TitleScreenScene.instantiate()
@@ -296,6 +317,9 @@ func _trigger_warden_gate() -> void:
 func _on_warden_gate_dismissed() -> void:
 	if not _pending_boss_fight:
 		return
+	# M28 — Warden boss music
+	if AudioManager:
+		AudioManager.play_music("warden")
 	# Start boss combat
 	_ensure_combat_arena()
 	combat_arena.set_context(current_run_ring, GameState.active_seed, 1, true)
@@ -306,6 +330,10 @@ func _on_boss_defeated() -> void:
 	_pending_boss_fight = false
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
+	# M28 — Artifact pickup SFX + victory music
+	if AudioManager:
+		AudioManager.play_sfx("artifact_pickup")
+		AudioManager.play_music("victory")
 	# Artifact extraction sequence
 	var extraction_text := NarrativeManager.get_ring_text("outer", "extraction")
 	var artifact_text := NarrativeManager.get_artifact_text()
