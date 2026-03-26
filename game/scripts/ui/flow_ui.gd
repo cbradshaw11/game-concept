@@ -10,6 +10,7 @@ signal vendor_purchase_pressed(upgrade_id: String)
 signal modifier_selected(modifier_id: String)
 signal warden_gate_dismissed
 signal return_to_title_pressed
+signal run_modifier_resolved
 
 const RunSummaryScene = preload("res://scenes/ui/run_summary.tscn")
 
@@ -666,6 +667,138 @@ func _populate_modifier_panel(choices: Array) -> void:
 			_show_run()
 		)
 		choices_container.add_child(btn)
+
+# ── M26 — Between-Encounter Modifier Card ─────────────────────────────────────
+
+var modifier_card_panel: PanelContainer = null
+var _modifier_card_timer: SceneTreeTimer = null
+
+func show_modifier_card_offer(modifier: Dictionary) -> void:
+	## Display a modifier card offer after an encounter. Accept or Decline.
+	## Auto-dismisses as Decline after 12 seconds.
+	if modifier.is_empty():
+		run_modifier_resolved.emit()
+		return
+	_build_modifier_card(modifier)
+
+func _build_modifier_card(modifier: Dictionary) -> void:
+	# Clean up any previous card
+	if modifier_card_panel != null and is_instance_valid(modifier_card_panel):
+		modifier_card_panel.queue_free()
+
+	modifier_card_panel = PanelContainer.new()
+	modifier_card_panel.name = "ModifierCardPanel"
+	modifier_card_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	modifier_card_panel.z_index = 11
+	add_child(modifier_card_panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 120)
+	margin.add_theme_constant_override("margin_right", 120)
+	margin.add_theme_constant_override("margin_top", 80)
+	margin.add_theme_constant_override("margin_bottom", 80)
+	modifier_card_panel.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	margin.add_child(vbox)
+
+	# Header
+	var header := Label.new()
+	header.text = "MODIFIER OFFERED"
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	header.add_theme_font_size_override("font_size", 18)
+	header.add_theme_color_override("font_color", Color(0.85, 0.8, 0.65, 1.0))
+	vbox.add_child(header)
+
+	var sep := HSeparator.new()
+	vbox.add_child(sep)
+
+	# Tier label
+	var tier := int(modifier.get("tier", 1))
+	var tier_names := {1: "Common", 2: "Uncommon", 3: "Rare"}
+	var tier_colors := {1: Color(0.7, 0.7, 0.7), 2: Color(0.4, 0.7, 0.9), 3: Color(0.9, 0.7, 0.3)}
+	var tier_label := Label.new()
+	tier_label.text = str(tier_names.get(tier, "Common"))
+	tier_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tier_label.add_theme_font_size_override("font_size", 12)
+	tier_label.add_theme_color_override("font_color", tier_colors.get(tier, Color(0.7, 0.7, 0.7)))
+	vbox.add_child(tier_label)
+
+	# Name
+	var name_label := Label.new()
+	name_label.text = str(modifier.get("name", "Unknown"))
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.add_theme_font_size_override("font_size", 20)
+	vbox.add_child(name_label)
+
+	# Effect description
+	var desc_label := Label.new()
+	desc_label.text = str(modifier.get("description", ""))
+	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vbox.add_child(desc_label)
+
+	# Flavor text
+	var flavor := str(modifier.get("flavor", ""))
+	if flavor != "":
+		var spacer := Control.new()
+		spacer.custom_minimum_size.y = 12
+		vbox.add_child(spacer)
+		var flavor_label := Label.new()
+		flavor_label.text = flavor
+		flavor_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		flavor_label.add_theme_font_size_override("font_size", 12)
+		flavor_label.add_theme_color_override("font_color", Color(0.65, 0.6, 0.55, 0.8))
+		flavor_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		vbox.add_child(flavor_label)
+
+	var sep2 := HSeparator.new()
+	vbox.add_child(sep2)
+
+	# Buttons
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_child(btn_row)
+
+	var mod_id := str(modifier.get("id", ""))
+
+	var accept_btn := Button.new()
+	accept_btn.text = "Accept"
+	accept_btn.pressed.connect(func():
+		_play_click()
+		ModifierManager.add_modifier(mod_id)
+		_dismiss_modifier_card()
+	)
+	btn_row.add_child(accept_btn)
+
+	var spacer2 := Control.new()
+	spacer2.custom_minimum_size.x = 40
+	btn_row.add_child(spacer2)
+
+	var decline_btn := Button.new()
+	decline_btn.text = "Decline"
+	decline_btn.pressed.connect(func():
+		_play_click()
+		_dismiss_modifier_card()
+	)
+	btn_row.add_child(decline_btn)
+
+	# Auto-dismiss timer (12s)
+	_modifier_card_timer = get_tree().create_timer(12.0)
+	var panel_ref := modifier_card_panel
+	_modifier_card_timer.timeout.connect(func():
+		if is_instance_valid(panel_ref) and panel_ref.visible:
+			_dismiss_modifier_card()
+	)
+
+func _dismiss_modifier_card() -> void:
+	_modifier_card_timer = null
+	if modifier_card_panel != null and is_instance_valid(modifier_card_panel):
+		modifier_card_panel.queue_free()
+		modifier_card_panel = null
+	run_modifier_resolved.emit()
 
 # ── M21 — Run Summary ────────────────────────────────────────────────────────
 

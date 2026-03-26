@@ -45,5 +45,187 @@
       "value": 50
     }
   ],
-  "choices_per_run": 3
+  "choices_per_run": 3,
+  "run_modifiers": [
+    {
+      "id": "iron_rations",
+      "name": "Iron Rations",
+      "description": "+15 max HP",
+      "flavor": "You found a sealed pack. Old but intact.",
+      "tier": 1,
+      "weight": 10,
+      "effects": { "max_hp_flat": 15 }
+    },
+    {
+      "id": "sharp_edge",
+      "name": "Sharp Edge",
+      "description": "+12% damage",
+      "flavor": "Someone took care of this.",
+      "tier": 1,
+      "weight": 10,
+      "effects": { "damage_pct": 0.12 }
+    },
+    {
+      "id": "light_step",
+      "name": "Light Step",
+      "description": "Dodge costs 4 less stamina",
+      "flavor": "Move like you mean it.",
+      "tier": 1,
+      "weight": 10,
+      "effects": { "dodge_cost_flat": -4 }
+    },
+    {
+      "id": "quick_hands",
+      "name": "Quick Hands",
+      "description": "Attack cooldown -0.15s",
+      "flavor": "Muscle memory from somewhere.",
+      "tier": 1,
+      "weight": 10,
+      "effects": { "attack_cooldown_flat": -0.15 }
+    },
+    {
+      "id": "thick_skin",
+      "name": "Thick Skin",
+      "description": "Take 8% less damage",
+      "flavor": "Scars have their uses.",
+      "tier": 1,
+      "weight": 10,
+      "effects": { "damage_taken_pct": -0.08 }
+    },
+    {
+      "id": "silver_eye",
+      "name": "Silver Eye",
+      "description": "+20% loot from encounters",
+      "flavor": "You know what to look for.",
+      "tier": 1,
+      "weight": 10,
+      "effects": { "loot_pct": 0.2 }
+    },
+    {
+      "id": "berserk_pact",
+      "name": "Berserk Pact",
+      "description": "+30% damage, -20% max HP",
+      "flavor": "The math works if you're fast.",
+      "tier": 2,
+      "weight": 5,
+      "effects": { "damage_pct": 0.3, "max_hp_pct": -0.2 }
+    },
+    {
+      "id": "glass_armor",
+      "name": "Glass Armor",
+      "description": "-35% damage taken, guard breaks in one hit",
+      "flavor": "Fragile. Effective.",
+      "tier": 2,
+      "weight": 5,
+      "effects": { "damage_taken_pct": -0.35, "guard_break_one_hit": true }
+    },
+    {
+      "id": "adrenaline",
+      "name": "Adrenaline",
+      "description": "Each kill restores 8 HP",
+      "flavor": "Stay moving. Stay alive.",
+      "tier": 2,
+      "weight": 5,
+      "effects": { "hp_on_kill": 8 }
+    },
+    {
+      "id": "overload",
+      "name": "Overload",
+      "description": "+25% damage, +25% damage taken",
+      "flavor": "All the way in.",
+      "tier": 2,
+      "weight": 5,
+      "effects": { "damage_pct": 0.25, "damage_taken_pct": 0.25 }
+    },
+    {
+      "id": "extraction_bounty",
+      "name": "Extraction Bounty",
+      "description": "Silver on extraction +40%",
+      "flavor": "Incentives.",
+      "tier": 2,
+      "weight": 5,
+      "effects": { "extraction_silver_pct": 0.4 }
+    },
+    {
+      "id": "stamina_well",
+      "name": "Stamina Well",
+      "description": "+40 max stamina",
+      "flavor": "You could run forever. Almost.",
+      "tier": 2,
+      "weight": 5,
+      "effects": { "max_stamina_flat": 40 }
+    },
+    {
+      "id": "poise_breaker",
+      "name": "Poise Breaker",
+      "description": "All hits cause poise damage",
+      "flavor": "Every strike lands with intent.",
+      "tier": 2,
+      "weight": 5,
+      "effects": { "poise_damage_all_hits": true }
+    },
+    {
+      "id": "death_pact",
+      "name": "Death Pact",
+      "description": "Start next encounter at 40% HP, +60% damage",
+      "flavor": "The Compact called this acceptable.",
+      "tier": 3,
+      "weight": 2,
+      "effects": { "damage_pct": 0.6, "start_hp_pct": 0.4 }
+    },
+    {
+      "id": "resonance_surge",
+      "name": "Resonance Surge",
+      "description": "Every 3rd hit deals double damage",
+      "flavor": "The world still remembers the old patterns.",
+      "tier": 3,
+      "weight": 2,
+      "effects": { "every_nth_hit_multiplier": 2.0, "every_nth_hit_count": 3 }
+    },
+    {
+      "id": "last_stand",
+      "name": "Last Stand",
+      "description": "Below 25% HP, deal +50% damage",
+      "flavor": "Something happens at the edge.",
+      "tier": 3,
+      "weight": 2,
+      "effects": { "low_hp_damage_pct": 0.5, "low_hp_threshold_pct": 0.25 }
+    },
+    {
+      "id": "phantom_dodge",
+      "name": "Phantom Dodge",
+      "description": "One free dodge per encounter (no stamina cost)",
+      "flavor": "Once. Make it count.",
+      "tier": 3,
+      "weight": 2,
+      "effects": { "free_dodges_per_encounter": 1 }
+    },
+    {
+      "id": "cursed_silver",
+      "name": "Cursed Silver",
+      "description": "+80% silver but cannot spend at vendor until extraction",
+      "flavor": "It spends fine. Just not here.",
+      "tier": 3,
+      "weight": 2,
+      "effects": { "loot_pct": 0.8, "vendor_locked": true }
+    },
+    {
+      "id": "warden_mark",
+      "name": "Warden's Mark",
+      "description": "All enemies +15% damage, Warden -20% HP",
+      "flavor": "It knows you are coming.",
+      "tier": 3,
+      "weight": 2,
+      "effects": { "enemy_damage_pct": 0.15, "warden_hp_pct": -0.2 }
+    },
+    {
+      "id": "full_commitment",
+      "name": "Full Commitment",
+      "description": "Cannot extract early, silver yield +50%",
+      "flavor": "See it through.",
+      "tier": 3,
+      "weight": 2,
+      "effects": { "loot_pct": 0.5, "block_early_extraction": true }
+    }
+  ]
 }

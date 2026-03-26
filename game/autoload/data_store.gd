@@ -78,6 +78,15 @@ func get_boss(ring_id: String) -> Dictionary:
 			return boss
 	return {}
 
+func get_run_modifiers() -> Array:
+	return modifiers.get("run_modifiers", [])
+
+func get_run_modifier(modifier_id: String) -> Dictionary:
+	for mod in get_run_modifiers():
+		if str(mod.get("id", "")) == modifier_id:
+			return mod
+	return {}
+
 func get_random_modifiers(count: int, rng_seed: int) -> Array:
 	var all_mods := get_all_modifiers()
 	if all_mods.is_empty():

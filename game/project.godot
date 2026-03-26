@@ -10,6 +10,7 @@ GameState="*res://autoload/game_state.gd"
 DataStore="*res://autoload/data_store.gd"
 AudioManager="*res://autoload/audio_manager.gd"
 NarrativeManager="*res://autoload/narrative_manager.gd"
+ModifierManager="*res://autoload/modifier_manager.gd"
 
 [debug]
 

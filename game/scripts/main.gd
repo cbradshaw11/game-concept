@@ -114,6 +114,10 @@ const EXTRACTION_HOLD_DELAY := 0.5
 func _on_extract_pressed() -> void:
 	if GameState.current_ring == "sanctuary":
 		return
+	# M26 — full_commitment modifier blocks early extraction
+	if ModifierManager and ModifierManager.has_flag("block_early_extraction"):
+		flow_ui.on_extract_blocked(contract_system.get_contract())
+		return
 	if not contract_system.can_extract():
 		flow_ui.on_extract_blocked(contract_system.get_contract())
 		return
@@ -160,6 +164,9 @@ func _on_player_died() -> void:
 	)
 
 func _on_vendor_purchase_pressed(upgrade_id: String) -> void:
+	# M26 — cursed_silver blocks vendor purchases during a run
+	if ModifierManager and ModifierManager.has_flag("vendor_locked"):
+		return
 	var purchased := vendor_system.purchase(upgrade_id)
 	if purchased:
 		_save_state()
@@ -199,6 +206,15 @@ func _on_encounter_cleared(enemy_count: int) -> void:
 		var frag := NarrativeManager.get_lore_fragment(frag_id)
 		if not frag.is_empty():
 			flow_ui.show_fragment_pickup(frag)
+	# M26 — Offer a between-encounter run modifier card
+	_offer_run_modifier()
+
+# ── M26 — Between-encounter modifier card offer ──────────────────────────────
+
+func _offer_run_modifier() -> void:
+	var mod_seed := abs(GameState.active_seed + GameState.run_encounters_cleared * 7)
+	var offered := ModifierManager.roll_modifier_offer(mod_seed)
+	flow_ui.show_modifier_card_offer(offered)
 
 func _initialize_loadouts() -> void:
 	var weapons: Array = DataStore.weapons.get("weapons", [])
