@@ -3,6 +3,7 @@ class_name CombatArena
 
 const EnemyController = preload("res://scripts/core/enemy_controller.gd")
 const PlayerController = preload("res://scripts/core/player_controller.gd")
+const Profiles = preload("res://scripts/core/behavior_profiles.gd")
 
 signal attack_hook_triggered
 signal dodge_hook_triggered
@@ -146,6 +147,7 @@ func _process(delta: float) -> void:
 	if enemies.is_empty() or encounter_completed:
 		return
 	var player_zone := _player_zone()
+	var hp_percent := float(player_health) / float(player_max_health)
 	for index in enemies.size():
 		var enemy := enemies[index]
 		if enemy.state == EnemyController.EnemyState.DEAD:
@@ -154,7 +156,14 @@ func _process(delta: float) -> void:
 		if index < _enemy_suppress_ticks.size() and _enemy_suppress_ticks[index] > 0:
 			_enemy_suppress_ticks[index] -= 1
 			continue
+		# elite_pressure: update player HP tracking each tick
+		if enemy.behavior_profile == Profiles.ELITE_PRESSURE:
+			enemy.set_player_hp_percent(hp_percent)
 		var distance_to_player := absf(float(index - player_zone)) + 0.5
+		# kite_volley: if retreating and at arena edge, enter melee fallback
+		if enemy.state == EnemyController.EnemyState.RETREAT:
+			if index >= enemies.size() - 1:
+				enemy.enter_melee_fallback()
 		var did_attack := enemy.tick(distance_to_player, delta)
 		if did_attack:
 			var dmg := enemy.damage
@@ -167,6 +176,15 @@ func _process(delta: float) -> void:
 			trigger_screen_shake(SHAKE_MAGNITUDE_SMALL, SHAKE_DURATION_DEFAULT)
 			if AudioManager:
 				AudioManager.play_hit()
+			if player_health <= 0:
+				_on_player_died()
+				return
+		# zone_control: apply proximity damage
+		var zone_dmg := enemy.get_zone_damage(distance_to_player, delta)
+		if zone_dmg > 0.0:
+			var zone_int := int(ceil(zone_dmg))
+			player_health = max(0, player_health - zone_int)
+			GameState.record_damage_taken(zone_int)
 			if player_health <= 0:
 				_on_player_died()
 				return
@@ -294,6 +312,20 @@ func _on_player_died() -> void:
 	set_arena_active(false)
 	player_died.emit()
 
+func _on_death_explosion(enemy_index: int) -> void:
+	# glass_cannon_aggro: deal 8 damage to player if within 2 zones
+	var player_zone := _player_zone()
+	var distance := absf(float(enemy_index - player_zone)) + 0.5
+	if distance <= 2.0:
+		var dmg := 8
+		if player.guarding:
+			dmg = max(1, dmg / 2)
+		player_health = max(0, player_health - dmg)
+		GameState.record_damage_taken(dmg)
+		trigger_screen_shake(SHAKE_MAGNITUDE_MEDIUM, SHAKE_DURATION_DEFAULT)
+		if player_health <= 0:
+			_on_player_died()
+
 
 func _spawn_enemies(count: int) -> void:
 	enemies.clear()
@@ -321,6 +353,15 @@ func _spawn_enemies(count: int) -> void:
 		var dmg: int = int(enemy_data.get("damage", 8))
 		var ec := EnemyController.new(hp, 3.5, 1.2, dmg)
 		ec.enemy_display_name = str(enemy_data.get("id", "Enemy")).replace("_", " ").capitalize()
+		var profile := str(enemy_data.get("behavior_profile", Profiles.FRONTLINE_BASIC))
+		ec.apply_profile(profile)
+		# Use data poise as threshold if profile didn't set a higher one
+		var data_poise := int(enemy_data.get("poise", 20))
+		if data_poise > ec.poise_threshold:
+			ec.poise_threshold = data_poise
+		# glass_cannon_aggro: wire death explosion
+		if profile == Profiles.GLASS_CANNON_AGGRO:
+			ec.death_explosion.connect(_on_death_explosion.bind(i))
 		enemies.append(ec)
 		_hit_flash_timers.append(0.0)
 		_hit_flash_types.append("hit")
@@ -403,6 +444,17 @@ func _apply_damage_to_front_enemy(damage: int, force_poise_break: bool = false) 
 	for i in enemies.size():
 		var enemy := enemies[i]
 		if enemy.state != EnemyController.EnemyState.DEAD:
+			# guard_counter: if guarding, absorb hit and counter-attack
+			if enemy.guarding and enemy.on_hit_while_guarding():
+				var counter_dmg := enemy.damage
+				if player.guarding:
+					counter_dmg = max(1, counter_dmg / 2)
+				player_health = max(0, player_health - counter_dmg)
+				GameState.record_damage_taken(counter_dmg)
+				trigger_screen_shake(SHAKE_MAGNITUDE_SMALL, SHAKE_DURATION_DEFAULT)
+				if player_health <= 0:
+					_on_player_died()
+				return
 			var prev_state := enemy.state
 			enemy.apply_damage(damage, force_poise_break or true)
 			# M21 — Track damage dealt
