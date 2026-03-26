@@ -98,6 +98,15 @@ func get_permanent_unlock(unlock_id: String) -> Dictionary:
 			return unlock
 	return {}
 
+func get_challenge_runs() -> Array:
+	return modifiers.get("challenge_runs", [])
+
+func get_challenge_run(challenge_id: String) -> Dictionary:
+	for ch in get_challenge_runs():
+		if str(ch.get("id", "")) == challenge_id:
+			return ch
+	return {}
+
 func get_random_modifiers(count: int, rng_seed: int) -> Array:
 	var all_mods := get_all_modifiers()
 	if all_mods.is_empty():

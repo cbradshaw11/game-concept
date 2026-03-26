@@ -131,7 +131,11 @@ func set_context(next_ring_id: String, next_seed: int, enemy_count: int = 1, bos
 	encounter_enemy_count = max(1, enemy_count)
 	encounter_completed = false
 	is_boss_encounter = boss_fight
-	player_health = player_max_health
+	# M31 — iron_road: preserve HP between encounters (no healing)
+	if ChallengeManager and ChallengeManager.has_challenge("iron_road") and player_health > 0:
+		pass  # Keep current HP, no reset
+	else:
+		player_health = player_max_health
 	_load_background()
 	if boss_fight:
 		_spawn_boss()
@@ -172,6 +176,9 @@ func _process(delta: float) -> void:
 		var did_attack := enemy.tick(distance_to_player, delta)
 		if did_attack:
 			var dmg := enemy.damage
+			# M31 — cursed_ground: +25% enemy damage
+			if ChallengeManager and ChallengeManager.has_challenge("cursed_ground"):
+				dmg = int(ceil(float(dmg) * 1.25))
 			if player.guarding:
 				dmg = max(1, dmg / 2)
 			player_health = max(0, player_health - dmg)

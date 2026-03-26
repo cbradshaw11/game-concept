@@ -227,5 +227,81 @@
       "weight": 2,
       "effects": { "loot_pct": 0.5, "block_early_extraction": true }
     }
+  ],
+  "challenge_runs": [
+    {
+      "id": "iron_road",
+      "name": "Iron Road",
+      "description": "No healing of any kind during the run. Vendor cannot sell HP restores.",
+      "flavor": "Pain is information. Use it.",
+      "unlock_type": "total_runs",
+      "unlock_threshold": 3,
+      "shard_bonus": 30
+    },
+    {
+      "id": "time_pressure",
+      "name": "Time Pressure",
+      "description": "Each ring has a time limit. Fail to extract before time runs out and you die.",
+      "flavor": "The Compact measured efficiency above all.",
+      "unlock_type": "total_runs",
+      "unlock_threshold": 5,
+      "shard_bonus": 40,
+      "time_limits": { "inner": 240, "mid": 360, "outer": 480 }
+    },
+    {
+      "id": "one_life",
+      "name": "One Life",
+      "description": "Death is permanent for this run. No retry from sanctuary. Die and lose everything.",
+      "flavor": "No second chances. Not this time.",
+      "unlock_type": "total_runs",
+      "unlock_threshold": 5,
+      "shard_bonus": 60
+    },
+    {
+      "id": "naked_run",
+      "name": "Naked Run",
+      "description": "Cannot purchase upgrades from vendor this run. Silver accumulates but cannot be spent.",
+      "flavor": "What you have is what you get.",
+      "unlock_type": "total_runs",
+      "unlock_threshold": 8,
+      "shard_bonus": 50
+    },
+    {
+      "id": "escalation",
+      "name": "Escalation",
+      "description": "Each encounter adds +1 enemy to the pool. 2nd encounter +1, 3rd +2, etc. Cap at +4.",
+      "flavor": "They heard you coming.",
+      "unlock_type": "total_runs",
+      "unlock_threshold": 8,
+      "shard_bonus": 45,
+      "extra_enemy_cap": 4
+    },
+    {
+      "id": "warden_hunt",
+      "name": "Warden Hunt",
+      "description": "Must reach and defeat the Warden to complete the run. No early extraction.",
+      "flavor": "The only way out is through.",
+      "unlock_type": "artifact_retrievals",
+      "unlock_threshold": 1,
+      "shard_bonus": 80
+    },
+    {
+      "id": "cursed_ground",
+      "name": "Cursed Ground",
+      "description": "All enemies deal +25% damage. Permanent for entire run.",
+      "flavor": "The ground remembers what was done here.",
+      "unlock_type": "total_runs",
+      "unlock_threshold": 10,
+      "shard_bonus": 35
+    },
+    {
+      "id": "silent_run",
+      "name": "Silent Run",
+      "description": "Lore fragments disabled. Modifier cards disabled. Just you and the rings.",
+      "flavor": "Sometimes simplicity is the challenge.",
+      "unlock_type": "total_runs",
+      "unlock_threshold": 10,
+      "shard_bonus": 25
+    }
   ]
 }

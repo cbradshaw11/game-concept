@@ -515,8 +515,11 @@ func calculate_shards_earned(outcome: String) -> int:
 func award_run_shards(outcome: String) -> int:
 	## Award shards at end of run. Returns shards earned.
 	var earned := calculate_shards_earned(outcome)
-	resonance_shards += earned
-	last_run_shards_earned = earned
+	# M31 — Challenge run shard bonus on successful completion (not death)
+	if ChallengeManager and ChallengeManager.is_challenge_active():
+		if outcome != "death":
+			earned += ChallengeManager.get_shard_bonus()
+		ChallengeManager.end_run()
 	return earned
 
 func has_permanent_unlock(unlock_id: String) -> bool:

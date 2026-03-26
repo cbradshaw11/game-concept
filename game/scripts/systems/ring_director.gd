@@ -24,6 +24,10 @@ func generate_encounter(
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _combine_seed(seed, ring_id)
 	var count := clampi(rng.randi_range(1, 3), 1, candidates.size())
+	# M31 — escalation: add extra enemies based on encounters cleared this run
+	if ChallengeManager and ChallengeManager.has_challenge("escalation"):
+		var extra := mini(GameState.run_encounters_cleared, 4)
+		count += extra
 	var selected: Array = []
 	var type_counts: Dictionary = {}
 

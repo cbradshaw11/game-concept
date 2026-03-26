@@ -12,6 +12,7 @@ AudioManager="*res://autoload/audio_manager.gd"
 NarrativeManager="*res://autoload/narrative_manager.gd"
 ModifierManager="*res://autoload/modifier_manager.gd"
 SettingsManager="*res://autoload/settings_manager.gd"
+ChallengeManager="*res://autoload/challenge_manager.gd"
 
 [debug]
 

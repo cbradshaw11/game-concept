@@ -40,6 +40,12 @@ var shrine_unlock_buttons: Dictionary = {}  # unlock_id -> Button
 var shrine_unlock_labels: Dictionary = {}   # unlock_id -> Label
 var _shrine_first_visit: bool = true
 
+# M31 — Challenge Run panel
+var challenge_panel: PanelContainer = null
+var challenge_buttons: Dictionary = {}  # challenge_id -> Button
+var challenge_labels: Dictionary = {}   # challenge_id -> Label
+var challenge_status_label: Label = null
+
 var run_base_status: String = ""
 var objective_status: String = ""
 var _initial_show_done: bool = false
@@ -103,6 +109,7 @@ func _ready() -> void:
 	_setup_recovered_notes_button()
 	_setup_settings_button()
 	_setup_shrine_panel()
+	_setup_challenge_panel()
 	_setup_victory_panel()
 	_setup_death_panel()
 	_setup_modifier_panel()
@@ -163,6 +170,8 @@ func _show_prep() -> void:
 		modifier_panel.visible = false
 	if shrine_panel:
 		shrine_panel.visible = false
+	if challenge_panel:
+		challenge_panel.visible = false
 	_hide_run_summary()
 	# M23 — Show/hide Recovered Notes button based on collected fragments
 	var notes_btn := prep_screen.find_child("RecoveredNotesButton", true, false)
@@ -189,6 +198,8 @@ func _show_run() -> void:
 		modifier_panel.visible = false
 	if shrine_panel:
 		shrine_panel.visible = false
+	if challenge_panel:
+		challenge_panel.visible = false
 	_hide_run_summary()
 
 func _show_vendor() -> void:
@@ -205,6 +216,8 @@ func _show_vendor() -> void:
 		modifier_panel.visible = false
 	if shrine_panel:
 		shrine_panel.visible = false
+	if challenge_panel:
+		challenge_panel.visible = false
 
 func _show_victory(stats: Dictionary) -> void:
 	prep_screen.visible = false
@@ -217,6 +230,8 @@ func _show_victory(stats: Dictionary) -> void:
 		modifier_panel.visible = false
 	if shrine_panel:
 		shrine_panel.visible = false
+	if challenge_panel:
+		challenge_panel.visible = false
 	if victory_panel:
 		_populate_victory_panel(stats)
 		victory_panel.visible = true
@@ -232,6 +247,8 @@ func _show_death(ring_id: String, killer_enemy_id: String) -> void:
 		modifier_panel.visible = false
 	if shrine_panel:
 		shrine_panel.visible = false
+	if challenge_panel:
+		challenge_panel.visible = false
 	if death_panel:
 		_populate_death_panel(ring_id, killer_enemy_id)
 		death_panel.visible = true
@@ -245,6 +262,8 @@ func _show_modifier_selection(choices: Array) -> void:
 		victory_panel.visible = false
 	if death_panel:
 		death_panel.visible = false
+	if challenge_panel:
+		challenge_panel.visible = false
 	if modifier_panel:
 		_populate_modifier_panel(choices)
 		modifier_panel.visible = true
@@ -303,6 +322,10 @@ func on_objective_progress(contract: Dictionary) -> void:
 	var target := int(contract.get("target", 1))
 	var state := str(contract.get("state", "active"))
 	objective_status = "%s  %d/%d  (%s)" % [contract_id, progress, target, state]
+	_refresh_run_status()
+
+func on_extract_blocked_challenge(message: String) -> void:
+	run_base_status = "⚠ %s" % message
 	_refresh_run_status()
 
 func on_extract_blocked(contract: Dictionary) -> void:
@@ -838,6 +861,8 @@ func _show_run_summary(outcome: String) -> void:
 		modifier_panel.visible = false
 	if shrine_panel:
 		shrine_panel.visible = false
+	if challenge_panel:
+		challenge_panel.visible = false
 	_hide_run_summary()  # Clean up any previous
 	run_summary_panel = RunSummaryScene.instantiate()
 	add_child(run_summary_panel)
@@ -1138,6 +1163,8 @@ func _show_shrine() -> void:
 		death_panel.visible = false
 	if modifier_panel:
 		modifier_panel.visible = false
+	if challenge_panel:
+		challenge_panel.visible = false
 	if shrine_panel:
 		shrine_panel.visible = true
 		_refresh_shrine_ui()
@@ -1175,6 +1202,186 @@ func _refresh_shrine_ui() -> void:
 			var lbl: Label = shrine_unlock_labels[uid]
 			if owned:
 				lbl.add_theme_color_override("font_color", Color(0.4, 0.75, 0.4, 1.0))
+
+# ── M31 — Challenge Runs ─────────────────────────────────────────────────────
+
+func _setup_challenge_panel() -> void:
+	challenge_panel = PanelContainer.new()
+	challenge_panel.name = "ChallengePanel"
+	challenge_panel.visible = false
+	challenge_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(challenge_panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 40)
+	margin.add_theme_constant_override("margin_right", 40)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	challenge_panel.add_child(margin)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	margin.add_child(scroll)
+
+	var vbox := VBoxContainer.new()
+	vbox.name = "ChallengeVBox"
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "CHALLENGE RUNS"
+	title.add_theme_font_size_override("font_size", 20)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+
+	challenge_status_label = Label.new()
+	challenge_status_label.name = "ChallengeStatusLabel"
+	challenge_status_label.text = "No challenge selected"
+	challenge_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	challenge_status_label.add_theme_color_override("font_color", Color(0.6, 0.85, 0.9, 1.0))
+	vbox.add_child(challenge_status_label)
+
+	var flavor := Label.new()
+	flavor.text = "The Compact measured competence by what you survived, not what you avoided."
+	flavor.add_theme_font_size_override("font_size", 12)
+	flavor.add_theme_color_override("font_color", Color(0.7, 0.65, 0.85, 1.0))
+	flavor.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	flavor.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(flavor)
+
+	vbox.add_child(HSeparator.new())
+
+	# "No Challenge" option
+	var no_challenge_btn := Button.new()
+	no_challenge_btn.name = "NoChallengeBtn"
+	no_challenge_btn.text = "No Challenge"
+	no_challenge_btn.pressed.connect(func():
+		_play_click()
+		ChallengeManager.clear_challenge()
+		_refresh_challenge_ui()
+	)
+	vbox.add_child(no_challenge_btn)
+
+	vbox.add_child(HSeparator.new())
+
+	# Build challenge rows
+	var challenges := DataStore.get_challenge_runs()
+	for ch in challenges:
+		var cid := str(ch.get("id", ""))
+		var cname := str(ch.get("name", cid))
+		var cdesc := str(ch.get("description", ""))
+		var cbonus := int(ch.get("shard_bonus", 0))
+
+		var row := VBoxContainer.new()
+		vbox.add_child(row)
+
+		var lbl := Label.new()
+		lbl.name = "ChallengeLbl_" + cid
+		lbl.text = "%s — %s  [+%d Shards]" % [cname, cdesc, cbonus]
+		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		row.add_child(lbl)
+		challenge_labels[cid] = lbl
+
+		var btn := Button.new()
+		btn.name = "ChallengeBtn_" + cid
+		btn.text = "Select"
+		var cap_id := cid
+		btn.pressed.connect(func():
+			_play_click()
+			ChallengeManager.select_challenge(cap_id)
+			_refresh_challenge_ui()
+		)
+		row.add_child(btn)
+		challenge_buttons[cid] = btn
+
+		var spacer := Control.new()
+		spacer.custom_minimum_size.y = 4
+		vbox.add_child(spacer)
+
+	vbox.add_child(HSeparator.new())
+
+	var back_btn := Button.new()
+	back_btn.text = "<- Back to Sanctuary"
+	back_btn.pressed.connect(func():
+		_play_cancel()
+		_show_prep()
+	)
+	vbox.add_child(back_btn)
+
+	# Add navigation button to prep screen
+	var prep_vbox := prep_screen.get_node("PrepVBox")
+	if prep_vbox:
+		var challenge_nav_btn := Button.new()
+		challenge_nav_btn.name = "ChallengeButton"
+		challenge_nav_btn.text = "Challenge Runs"
+		challenge_nav_btn.pressed.connect(func():
+			_play_click()
+			_show_challenge()
+		)
+		prep_vbox.add_child(challenge_nav_btn)
+
+func _show_challenge() -> void:
+	prep_screen.visible = false
+	run_screen.visible = false
+	if vendor_panel:
+		vendor_panel.visible = false
+	if victory_panel:
+		victory_panel.visible = false
+	if death_panel:
+		death_panel.visible = false
+	if modifier_panel:
+		modifier_panel.visible = false
+	if shrine_panel:
+		shrine_panel.visible = false
+	if challenge_panel:
+		challenge_panel.visible = true
+		_refresh_challenge_ui()
+
+func _refresh_challenge_ui() -> void:
+	# Update status label
+	if challenge_status_label:
+		if ChallengeManager.is_challenge_active():
+			var ch := ChallengeManager.get_active_challenge_data()
+			challenge_status_label.text = "Active: %s  [+%d Shards]" % [
+				str(ch.get("name", "")), int(ch.get("shard_bonus", 0))]
+		else:
+			challenge_status_label.text = "No challenge selected"
+
+	for cid in challenge_buttons:
+		var btn: Button = challenge_buttons[cid]
+		var ch := DataStore.get_challenge_run(cid)
+		var unlock_type := str(ch.get("unlock_type", ""))
+		var threshold := int(ch.get("unlock_threshold", 0))
+		var unlocked := false
+		if unlock_type == "total_runs":
+			unlocked = GameState.total_runs >= threshold
+		elif unlock_type == "artifact_retrievals":
+			unlocked = GameState.artifact_retrievals >= threshold
+		var is_selected := ChallengeManager.has_challenge(cid)
+
+		if is_selected:
+			btn.text = "✓ Selected"
+			btn.disabled = true
+		elif not unlocked:
+			if unlock_type == "artifact_retrievals":
+				btn.text = "Locked (retrieve %d artifact)" % threshold
+			else:
+				btn.text = "Locked (%d runs)" % threshold
+			btn.disabled = true
+		else:
+			btn.text = "Select"
+			btn.disabled = false
+
+		if challenge_labels.has(cid):
+			var lbl: Label = challenge_labels[cid]
+			if is_selected:
+				lbl.add_theme_color_override("font_color", Color(0.4, 0.75, 0.4, 1.0))
+			elif not unlocked:
+				lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 0.6))
+			else:
+				lbl.remove_theme_color_override("font_color")
 
 func _setup_history_button() -> void:
 	var prep_vbox := prep_screen.get_node("PrepVBox")
@@ -1245,6 +1452,9 @@ func _refresh_vendor_ui() -> void:
 	if vendor_loot_label:
 		vendor_loot_label.text = "Silver available: %d" % GameState.banked_loot
 
+	# M31 — naked_run: disable all vendor buttons
+	var vendor_locked := ChallengeManager and ChallengeManager.has_challenge("naked_run")
+
 	for upg_id in vendor_upgrade_buttons:
 		var btn: Button = vendor_upgrade_buttons[upg_id]
 		var upg := DataStore.get_vendor_upgrade(upg_id)
@@ -1254,7 +1464,10 @@ func _refresh_vendor_ui() -> void:
 		var is_maxed := current_level >= max_level
 		var can_buy := not is_maxed and GameState.banked_loot >= cost
 
-		if is_maxed:
+		if vendor_locked:
+			btn.text = "Challenge Active"
+			btn.disabled = true
+		elif is_maxed:
 			btn.text = "Owned (MAX)"
 			btn.disabled = true
 		elif current_level > 0:

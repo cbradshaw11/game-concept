@@ -23,6 +23,7 @@ var pending_run_ring: String = ""
 var pending_run_seed: int = 0
 var _pending_boss_fight: bool = false
 var title_screen: Node = null
+var _challenge_timer: Timer = null  # M31 — time_pressure ring timer
 
 func _ready() -> void:
 	print("The Long Walk MVP Slice 1 booted")
@@ -97,6 +98,8 @@ func _begin_run(ring_id: String, seed: int) -> void:
 	var encounter_flavor := str(active_encounter.get("flavor_text", ""))
 	if encounter_flavor != "":
 		flow_ui.show_encounter_flavor(encounter_flavor)
+	# M31 — time_pressure: start ring timer
+	_start_challenge_timer(ring_id)
 	_ensure_combat_arena()
 	combat_arena.set_context(ring_id, seed, int(active_encounter.get("enemy_count", 1)))
 	combat_arena.set_arena_active(true)
@@ -124,6 +127,10 @@ const EXTRACTION_HOLD_DELAY := 0.5
 func _on_extract_pressed() -> void:
 	if GameState.current_ring == "sanctuary":
 		return
+	# M31 — warden_hunt: block extraction until artifact is retrieved
+	if ChallengeManager and ChallengeManager.has_challenge("warden_hunt") and not GameState.artifact_retrieved:
+		flow_ui.on_extract_blocked_challenge("The Warden still stands.")
+		return
 	# M26 — full_commitment modifier blocks early extraction
 	if ModifierManager and ModifierManager.has_flag("block_early_extraction"):
 		flow_ui.on_extract_blocked(contract_system.get_contract())
@@ -135,6 +142,8 @@ func _on_extract_pressed() -> void:
 	if current_run_ring == "outer" and not _pending_boss_fight:
 		_trigger_warden_gate()
 		return
+	# M31 — Stop challenge timer on extraction
+	_stop_challenge_timer()
 	# M19 T6 — Brief hold before routing to reward screen
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
@@ -151,6 +160,8 @@ func _on_extract_pressed() -> void:
 func _on_die_pressed() -> void:
 	if GameState.current_ring == "sanctuary":
 		return
+	# M31 — Stop challenge timer on death
+	_stop_challenge_timer()
 	GameState.die_in_run()
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
@@ -169,17 +180,37 @@ func _on_extracted_signal(total_xp: int, total_loot: int) -> void:
 # M19 T5 — Death screen delay constant
 const DEATH_SCREEN_DELAY := 0.8
 
+var _death_handling: bool = false
+
 func _on_player_died() -> void:
+	# Guard against re-entrancy (die_in_run emits player_died signal)
+	if _death_handling:
+		return
+	_death_handling = true
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
+	# M31 — one_life: no retry, no rewards, straight to run summary
+	if ChallengeManager and ChallengeManager.has_challenge("one_life"):
+		_stop_challenge_timer()
+		GameState.unbanked_xp = 0
+		GameState.unbanked_loot = 0
+		GameState.die_in_run()
+		contract_system.fail_active_contract()
+		_save_state()
+		_death_handling = false
+		return
 	# M19 T5 — Let the death moment breathe before showing the panel
 	var timer := get_tree().create_timer(DEATH_SCREEN_DELAY)
 	timer.timeout.connect(func():
 		flow_ui.on_died(GameState.unbanked_xp, GameState.unbanked_loot)
 		_save_state()
+		_death_handling = false
 	)
 
 func _on_vendor_purchase_pressed(upgrade_id: String) -> void:
+	# M31 — naked_run: cannot purchase upgrades this run
+	if ChallengeManager and ChallengeManager.has_challenge("naked_run"):
+		return
 	# M26 — cursed_silver blocks vendor purchases during a run
 	if ModifierManager and ModifierManager.has_flag("vendor_locked"):
 		return
@@ -217,19 +248,23 @@ func _on_guard_hook_changed(is_guarding: bool) -> void:
 func _on_encounter_cleared(enemy_count: int) -> void:
 	print("Combat hook: encounter cleared (%d enemies)" % enemy_count)
 	_on_resolve_encounter_pressed()
+	# M31 — silent_run: skip lore fragments and modifier cards
+	var is_silent := ChallengeManager and ChallengeManager.has_challenge("silent_run")
 	# M23 — Roll for lore fragment drop after encounter reward
-	var frag_seed := abs(GameState.active_seed + GameState.run_encounters_cleared)
-	var frag_id := GameState.roll_fragment_drop(frag_seed)
-	if frag_id != "":
-		GameState.collect_fragment(frag_id)
-		# M28 — Lore fragment SFX
-		if AudioManager:
-			AudioManager.play_sfx("lore_fragment")
-		var frag := NarrativeManager.get_lore_fragment(frag_id)
-		if not frag.is_empty():
-			flow_ui.show_fragment_pickup(frag)
+	if not is_silent:
+		var frag_seed := abs(GameState.active_seed + GameState.run_encounters_cleared)
+		var frag_id := GameState.roll_fragment_drop(frag_seed)
+		if frag_id != "":
+			GameState.collect_fragment(frag_id)
+			# M28 — Lore fragment SFX
+			if AudioManager:
+				AudioManager.play_sfx("lore_fragment")
+			var frag := NarrativeManager.get_lore_fragment(frag_id)
+			if not frag.is_empty():
+				flow_ui.show_fragment_pickup(frag)
 	# M26 — Offer a between-encounter run modifier card
-	_offer_run_modifier()
+	if not is_silent:
+		_offer_run_modifier()
 
 # ── M26 — Between-encounter modifier card offer ──────────────────────────────
 
@@ -255,6 +290,37 @@ func _load_save_state() -> void:
 
 func _save_state() -> void:
 	SaveSystem.save_state(GameState.to_save_state())
+
+# ── M31 — Challenge Timer (time_pressure) ────────────────────────────────────
+
+func _start_challenge_timer(ring_id: String) -> void:
+	_stop_challenge_timer()
+	if not ChallengeManager or not ChallengeManager.has_challenge("time_pressure"):
+		return
+	var ch := ChallengeManager.get_active_challenge_data()
+	var limits: Variant = ch.get("time_limits", {})
+	if typeof(limits) != TYPE_DICTIONARY:
+		return
+	var seconds := int(limits.get(ring_id, 0))
+	if seconds <= 0:
+		return
+	_challenge_timer = Timer.new()
+	_challenge_timer.one_shot = true
+	_challenge_timer.wait_time = float(seconds)
+	_challenge_timer.timeout.connect(_on_challenge_timer_expired)
+	add_child(_challenge_timer)
+	_challenge_timer.start()
+
+func _stop_challenge_timer() -> void:
+	if _challenge_timer != null and is_instance_valid(_challenge_timer):
+		_challenge_timer.stop()
+		_challenge_timer.queue_free()
+		_challenge_timer = null
+
+func _on_challenge_timer_expired() -> void:
+	_stop_challenge_timer()
+	# Time ran out — force death
+	_on_die_pressed()
 
 # ── M20 — Title Screen ────────────────────────────────────────────────────────
 
@@ -334,6 +400,7 @@ func _on_warden_gate_dismissed() -> void:
 
 func _on_boss_defeated() -> void:
 	_pending_boss_fight = false
+	_stop_challenge_timer()
 	if combat_arena != null:
 		combat_arena.set_arena_active(false)
 	# M28 — Artifact pickup SFX + victory music
