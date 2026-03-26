@@ -17,7 +17,7 @@
       "description": "Treated ankle bindings. Your lungs last 10 points longer when it matters.",
       "lore_note": "More stamina means more dodges. More dodges means more living.",
       "category": "mobility",
-      "cost": 65,
+      "cost": 30,
       "max_level": 3,
       "stat": "max_stamina",
       "bonus_per_level": 10
@@ -39,7 +39,7 @@
       "description": "Dampening weave for your boots. Holds you upright when they try to break your stance.",
       "lore_note": "Flinching gets people killed out there. This helps.",
       "category": "survival",
-      "cost": 65,
+      "cost": 30,
       "max_level": 3,
       "stat": "max_poise",
       "bonus_per_level": 20

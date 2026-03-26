@@ -188,7 +188,7 @@ func _process(delta: float) -> void:
 			var dmg := enemy.damage
 			# M31 — cursed_ground: +25% enemy damage
 			var _cm_cg := _cm()
-		if _cm_cg and _cm_cg.has_challenge("cursed_ground"):
+			if _cm_cg and _cm_cg.has_challenge("cursed_ground"):
 				dmg = int(ceil(float(dmg) * 1.25))
 			if player.guarding:
 				dmg = max(1, dmg / 2)
