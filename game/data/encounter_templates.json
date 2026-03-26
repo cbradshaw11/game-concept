@@ -3,67 +3,250 @@
     {
       "id": "inner_patrol_a",
       "ring": "inner",
-      "enemy_ids": ["scavenger_grunt", "shieldbearer"]
+      "name": "Patrol Sweep",
+      "enemy_ids": ["scavenger_grunt", "shieldbearer"],
+      "weight": 5,
+      "flavor_text": "A grunt and its minder, working the perimeter."
     },
     {
       "id": "inner_swarm_a",
       "ring": "inner",
-      "enemy_ids": ["scavenger_grunt", "scavenger_grunt"]
+      "name": "Scavenger Pair",
+      "enemy_ids": ["scavenger_grunt", "scavenger_grunt"],
+      "weight": 5,
+      "flavor_text": "Two scavengers picking through the rubble. They see you first."
     },
     {
       "id": "inner_ranged_mix",
       "ring": "inner",
-      "enemy_ids": ["scavenger_grunt", "ridge_archer"]
+      "name": "Crossfire",
+      "enemy_ids": ["scavenger_grunt", "ridge_archer"],
+      "weight": 5,
+      "flavor_text": "One closes, one stays back. Simple but effective."
     },
     {
       "id": "inner_defender_pair",
       "ring": "inner",
-      "enemy_ids": ["shieldbearer", "scavenger_grunt"]
+      "name": "Rearguard",
+      "enemy_ids": ["shieldbearer", "scavenger_grunt"],
+      "weight": 4,
+      "flavor_text": "The shieldbearer holds ground while the grunt circles."
+    },
+    {
+      "id": "inner_advance_party",
+      "ring": "inner",
+      "name": "Advance Party",
+      "enemy_ids": ["scavenger_grunt", "scavenger_grunt", "shieldbearer"],
+      "weight": 4,
+      "flavor_text": "Two grunts lead. The shieldbearer watches from behind."
+    },
+    {
+      "id": "inner_overwatch",
+      "ring": "inner",
+      "name": "Overwatch",
+      "enemy_ids": ["ridge_archer", "scavenger_grunt", "scavenger_grunt"],
+      "weight": 4,
+      "flavor_text": "Arrows from the ridge. Grunts in the gap. Standard formation."
+    },
+    {
+      "id": "inner_the_charge",
+      "ring": "inner",
+      "name": "The Charge",
+      "enemy_ids": ["scavenger_grunt", "scavenger_grunt", "scavenger_grunt"],
+      "weight": 5,
+      "flavor_text": "Three of them, running. No plan. Just teeth."
+    },
+    {
+      "id": "inner_wall_and_volley",
+      "ring": "inner",
+      "name": "Wall and Volley",
+      "enemy_ids": ["shieldbearer", "ridge_archer"],
+      "weight": 4,
+      "flavor_text": "Shield up front. Arrows from behind. Classic Cauldron drill."
+    },
+    {
+      "id": "inner_ambush",
+      "ring": "inner",
+      "name": "Ambush",
+      "enemy_ids": ["scavenger_grunt", "scavenger_grunt", "scavenger_grunt"],
+      "weight": 3,
+      "flavor_text": "They were already here. Waiting."
+    },
+    {
+      "id": "inner_solo_flanker",
+      "ring": "inner",
+      "name": "Solo Flanker",
+      "enemy_ids": ["ash_flanker"],
+      "weight": 2,
+      "flavor_text": "Something faster than a grunt. Wrong ring for this one."
     },
     {
       "id": "mid_patrol_a",
       "ring": "mid",
-      "enemy_ids": ["ash_flanker", "ridge_archer", "shieldbearer"]
+      "name": "Mid Patrol",
+      "enemy_ids": ["ash_flanker", "ridge_archer", "shieldbearer"],
+      "weight": 5,
+      "flavor_text": "A proper squad. Flanker, shooter, wall."
     },
     {
       "id": "mid_flanker_pair",
       "ring": "mid",
-      "enemy_ids": ["ash_flanker", "ash_flanker"]
+      "name": "Twin Flankers",
+      "enemy_ids": ["ash_flanker", "ash_flanker"],
+      "weight": 5,
+      "flavor_text": "Two ash flankers circling opposite sides. Pick one."
     },
     {
       "id": "mid_berserker_entry",
       "ring": "mid",
-      "enemy_ids": ["berserker", "scavenger_grunt"]
+      "name": "Berserker Debut",
+      "enemy_ids": ["berserker", "scavenger_grunt"],
+      "weight": 4,
+      "flavor_text": "The grunt is the distraction. The berserker is the point."
     },
     {
       "id": "mid_shield_wall_break",
       "ring": "mid",
-      "enemy_ids": ["shield_wall", "ridge_archer"]
+      "name": "Wall Breaker",
+      "enemy_ids": ["shield_wall", "ridge_archer"],
+      "weight": 4,
+      "flavor_text": "The wall holds your attention. The archer takes her time."
     },
     {
       "id": "mid_mixed_threat",
       "ring": "mid",
-      "enemy_ids": ["berserker", "shield_wall"]
+      "name": "Glass and Iron",
+      "enemy_ids": ["berserker", "shield_wall"],
+      "weight": 4,
+      "flavor_text": "One breaks fast. The other doesn't break at all."
+    },
+    {
+      "id": "mid_ash_pack",
+      "ring": "mid",
+      "name": "Ash Pack",
+      "enemy_ids": ["ash_flanker", "ash_flanker", "scavenger_grunt"],
+      "weight": 5,
+      "flavor_text": "Flankers on the edges, grunt in the middle. They hunt in threes."
+    },
+    {
+      "id": "mid_suppression_line",
+      "ring": "mid",
+      "name": "Suppression Line",
+      "enemy_ids": ["ridge_archer", "ridge_archer", "shieldbearer"],
+      "weight": 3,
+      "flavor_text": "Two archers behind a shield. You'll need to close the distance."
+    },
+    {
+      "id": "mid_berserker_escort",
+      "ring": "mid",
+      "name": "Berserker Escort",
+      "enemy_ids": ["berserker", "scavenger_grunt", "scavenger_grunt"],
+      "weight": 4,
+      "flavor_text": "The grunts keep you busy. The berserker keeps you honest."
+    },
+    {
+      "id": "mid_the_wall",
+      "ring": "mid",
+      "name": "The Wall",
+      "enemy_ids": ["shield_wall", "shield_wall"],
+      "weight": 3,
+      "flavor_text": "Two shield-walls, shoulder to shoulder. Patience or nothing."
+    },
+    {
+      "id": "mid_glass_volley",
+      "ring": "mid",
+      "name": "Glass Volley",
+      "enemy_ids": ["berserker", "ridge_archer"],
+      "weight": 4,
+      "flavor_text": "One wants to be close. One doesn't. Both want you dead."
+    },
+    {
+      "id": "mid_full_pack",
+      "ring": "mid",
+      "name": "Full Pack",
+      "enemy_ids": ["ash_flanker", "ridge_archer", "scavenger_grunt"],
+      "weight": 4,
+      "flavor_text": "Flanker, archer, grunt. The mid ring's answer to everything."
     },
     {
       "id": "outer_elite_a",
       "ring": "outer",
-      "enemy_ids": ["warden_hunter", "rift_caster"]
+      "name": "Elite Forward",
+      "enemy_ids": ["warden_hunter", "rift_caster"],
+      "weight": 5,
+      "flavor_text": "A hunter and a caster. The Warden's own."
     },
     {
       "id": "outer_berserker_pack",
       "ring": "outer",
-      "enemy_ids": ["berserker", "berserker"]
+      "name": "Berserker Pair",
+      "enemy_ids": ["berserker", "berserker"],
+      "weight": 4,
+      "flavor_text": "Two berserkers. No subtlety. No need."
     },
     {
       "id": "outer_wall_caster",
       "ring": "outer",
-      "enemy_ids": ["shield_wall", "rift_caster"]
+      "name": "Rift Guard",
+      "enemy_ids": ["shield_wall", "rift_caster"],
+      "weight": 4,
+      "flavor_text": "The caster works behind the wall. You can't reach one without the other."
     },
     {
       "id": "outer_full_squad",
       "ring": "outer",
-      "enemy_ids": ["warden_hunter", "berserker", "shield_wall"]
+      "name": "Kill Team",
+      "enemy_ids": ["warden_hunter", "berserker", "shield_wall"],
+      "weight": 4,
+      "flavor_text": "Hunter, berserker, wall. A formation built to end walks."
+    },
+    {
+      "id": "outer_caster_guard",
+      "ring": "outer",
+      "name": "Caster Guard",
+      "enemy_ids": ["rift_caster", "warden_hunter", "warden_hunter"],
+      "weight": 4,
+      "flavor_text": "Two hunters flanking a caster. The outer ring takes its casters seriously."
+    },
+    {
+      "id": "outer_hunter_pair",
+      "ring": "outer",
+      "name": "Hunter Pair",
+      "enemy_ids": ["warden_hunter", "warden_hunter"],
+      "weight": 5,
+      "flavor_text": "Two warden hunters. No tricks. Just pressure."
+    },
+    {
+      "id": "outer_flanked_approach",
+      "ring": "outer",
+      "name": "Flanked Approach",
+      "enemy_ids": ["ash_flanker", "ash_flanker", "rift_caster"],
+      "weight": 4,
+      "flavor_text": "Flankers from the sides, rift zones in the center. Nowhere clean to stand."
+    },
+    {
+      "id": "outer_the_siege",
+      "ring": "outer",
+      "name": "The Siege",
+      "enemy_ids": ["shield_wall", "rift_caster", "warden_hunter"],
+      "weight": 3,
+      "flavor_text": "Wall, caster, hunter. A siege in miniature."
+    },
+    {
+      "id": "outer_glass_cannon_run",
+      "ring": "outer",
+      "name": "Glass Cannon Run",
+      "enemy_ids": ["berserker", "berserker", "warden_hunter"],
+      "weight": 3,
+      "flavor_text": "Two berserkers and a hunter. Fast, fragile, and furious."
+    },
+    {
+      "id": "outer_final_approach",
+      "ring": "outer",
+      "name": "Final Approach",
+      "enemy_ids": ["warden_hunter", "rift_caster", "ash_flanker"],
+      "weight": 5,
+      "flavor_text": "Hunter, caster, flanker. The standard outer ring gauntlet."
     }
   ]
 }

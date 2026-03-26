@@ -83,6 +83,10 @@ func _begin_run(ring_id: String, seed: int) -> void:
 		DataStore.enemies,
 		DataStore.encounter_templates
 	)
+	# M25 — Show encounter flavor text banner before combat
+	var encounter_flavor := str(active_encounter.get("flavor_text", ""))
+	if encounter_flavor != "":
+		flow_ui.show_encounter_flavor(encounter_flavor)
 	_ensure_combat_arena()
 	combat_arena.set_context(ring_id, seed, int(active_encounter.get("enemy_count", 1)))
 	combat_arena.set_arena_active(true)

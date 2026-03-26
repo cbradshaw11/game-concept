@@ -422,6 +422,28 @@ func show_warden_gate(lines: Array) -> void:
 func show_artifact_victory(extraction_text: String, artifact_text: String) -> void:
 	_show_run_summary("artifact")
 
+## M25 — Display encounter flavor text as a brief banner before combat.
+## Shows for 2.5s then fades. Does nothing if text is empty.
+func show_encounter_flavor(text: String) -> void:
+	if text == "":
+		return
+	var banner := Label.new()
+	banner.text = text
+	banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	banner.add_theme_font_size_override("font_size", 18)
+	banner.add_theme_color_override("font_color", Color(0.85, 0.78, 0.6))
+	banner.anchors_preset = Control.PRESET_CENTER_BOTTOM
+	banner.position.y -= 80
+	banner.modulate.a = 0.0
+	add_child(banner)
+	# Fade in
+	var tween := create_tween()
+	tween.tween_property(banner, "modulate:a", 1.0, 0.3)
+	tween.tween_interval(2.2)
+	tween.tween_property(banner, "modulate:a", 0.0, 0.4)
+	tween.tween_callback(banner.queue_free)
+
 ## M17 T10 — Display a single narrative text in the run status area.
 ## Used for ring entry flavor text before a run begins.
 func show_narrative_text(text: String) -> void:

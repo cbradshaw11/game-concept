@@ -1,7 +1,7 @@
 extends RefCounted
 class_name RingDirector
 
-const MAX_SAME_ENEMY_TYPE := 2
+const MAX_SAME_ENEMY_TYPE := 3
 
 # Deterministic ring encounter selection based on seed and ring index.
 func generate_encounter(
@@ -70,7 +70,9 @@ func _generate_template_encounter(
 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _combine_seed(seed, ring_id)
-	var template: Dictionary = ring_templates[rng.randi_range(0, ring_templates.size() - 1)]
+
+	# M25 — Weighted template selection: build cumulative weight array
+	var template: Dictionary = _weighted_pick(ring_templates, rng)
 
 	# Enforce max 2 of same type when building from template
 	var type_counts: Dictionary = {}
@@ -86,10 +88,30 @@ func _generate_template_encounter(
 	if selected.is_empty():
 		return {}
 
-	return {
+	var result := {
 		"ring": ring_id,
 		"seed": seed,
 		"template_id": str(template.get("id", "")),
+		"template_name": str(template.get("name", "")),
 		"enemy_count": selected.size(),
 		"enemies": selected,
 	}
+	var flavor := str(template.get("flavor_text", ""))
+	if flavor != "":
+		result["flavor_text"] = flavor
+	return result
+
+## M25 — Pick a template using cumulative weights. Falls back to uniform if no weights.
+func _weighted_pick(templates: Array, rng: RandomNumberGenerator) -> Dictionary:
+	var total_weight := 0
+	for t in templates:
+		total_weight += int(t.get("weight", 5))
+	if total_weight <= 0:
+		return templates[rng.randi_range(0, templates.size() - 1)]
+	var roll := rng.randi_range(1, total_weight)
+	var cumulative := 0
+	for t in templates:
+		cumulative += int(t.get("weight", 5))
+		if roll <= cumulative:
+			return t
+	return templates[templates.size() - 1]
