@@ -50,6 +50,10 @@ if command -v godot4 >/dev/null 2>&1; then
   godot4 --headless --path game -s res://scripts/tests/m31/challenge_data_test.gd
   godot4 --headless --path game -s res://scripts/tests/m31/challenge_unlock_test.gd
   godot4 --headless --path game -s res://scripts/tests/m31/challenge_enforcement_test.gd
+  # M32 Achievements
+  godot4 --headless --path game -s res://scripts/tests/m32/achievement_data_test.gd
+  godot4 --headless --path game -s res://scripts/tests/m32/achievement_manager_test.gd
+  godot4 --headless --path game -s res://scripts/tests/m32/achievement_progress_test.gd
 else
   echo "godot4 not found in runner. Performing structural checks only."
   test -f game/scripts/tests/replay_test.gd
@@ -98,6 +102,10 @@ else
   test -f game/scripts/tests/m31/challenge_data_test.gd
   test -f game/scripts/tests/m31/challenge_unlock_test.gd
   test -f game/scripts/tests/m31/challenge_enforcement_test.gd
+  # M32 Achievements
+  test -f game/scripts/tests/m32/achievement_data_test.gd
+  test -f game/scripts/tests/m32/achievement_manager_test.gd
+  test -f game/scripts/tests/m32/achievement_progress_test.gd
 fi
 
 echo "[headless-tests] Complete"

@@ -532,6 +532,7 @@ func _apply_damage_to_front_enemy(damage: int, force_poise_break: bool = false) 
 			elif enemy.state == EnemyController.EnemyState.STAGGER and prev_state != EnemyController.EnemyState.STAGGER:
 				# Poise break: distinct sound
 				trigger_screen_shake(SHAKE_MAGNITUDE_SMALL, 0.12)
+				GameState.record_poise_break()
 				if AudioManager:
 					AudioManager.play_sfx("poise_break")
 			else:
@@ -578,6 +579,7 @@ func _apply_damage_to_all_enemies(damage: int) -> void:
 			if AudioManager:
 				AudioManager.play_sfx("enemy_death")
 		elif enemy.state == EnemyController.EnemyState.STAGGER and prev_state != EnemyController.EnemyState.STAGGER:
+			GameState.record_poise_break()
 			if AudioManager:
 				AudioManager.play_sfx("poise_break")
 		else:

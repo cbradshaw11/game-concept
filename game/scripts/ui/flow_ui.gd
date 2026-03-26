@@ -51,6 +51,10 @@ var objective_status: String = ""
 var _initial_show_done: bool = false
 var _return_toast: Label = null
 
+# M32 — Achievement gallery panel and toast
+var achievement_panel: PanelContainer = null
+var _achievement_toast: PanelContainer = null
+
 # Death flavor lines keyed by ring id and/or enemy type
 const DEATH_FLAVOR: Dictionary = {
 	"inner": [
@@ -107,12 +111,17 @@ func _ready() -> void:
 	_setup_history_button()
 	_setup_how_to_play_button()
 	_setup_recovered_notes_button()
+	_setup_achievements_button()
 	_setup_settings_button()
 	_setup_shrine_panel()
 	_setup_challenge_panel()
+	_setup_achievement_panel()
 	_setup_victory_panel()
 	_setup_death_panel()
 	_setup_modifier_panel()
+	# M32 — Connect achievement toast
+	if AchievementManager:
+		AchievementManager.achievement_unlocked.connect(_show_achievement_toast)
 	_show_prep()
 
 func _on_start_run_button_pressed() -> void:
@@ -172,6 +181,8 @@ func _show_prep() -> void:
 		shrine_panel.visible = false
 	if challenge_panel:
 		challenge_panel.visible = false
+	if achievement_panel:
+		achievement_panel.visible = false
 	_hide_run_summary()
 	# M23 — Show/hide Recovered Notes button based on collected fragments
 	var notes_btn := prep_screen.find_child("RecoveredNotesButton", true, false)
@@ -200,6 +211,8 @@ func _show_run() -> void:
 		shrine_panel.visible = false
 	if challenge_panel:
 		challenge_panel.visible = false
+	if achievement_panel:
+		achievement_panel.visible = false
 	_hide_run_summary()
 
 func _show_vendor() -> void:
@@ -218,6 +231,8 @@ func _show_vendor() -> void:
 		shrine_panel.visible = false
 	if challenge_panel:
 		challenge_panel.visible = false
+	if achievement_panel:
+		achievement_panel.visible = false
 
 func _show_victory(stats: Dictionary) -> void:
 	prep_screen.visible = false
@@ -1165,6 +1180,8 @@ func _show_shrine() -> void:
 		modifier_panel.visible = false
 	if challenge_panel:
 		challenge_panel.visible = false
+	if achievement_panel:
+		achievement_panel.visible = false
 	if shrine_panel:
 		shrine_panel.visible = true
 		_refresh_shrine_ui()
@@ -1175,6 +1192,9 @@ func _on_shrine_unlock_pressed(unlock_id: String, cost: int) -> void:
 		# M28 — Shard unlock SFX
 		if AudioManager:
 			AudioManager.play_sfx("shard_earn")
+		# M32 — Check shrine-related achievements
+		if AchievementManager:
+			AchievementManager.check_after_shrine_purchase()
 		_refresh_shrine_ui()
 
 func _refresh_shrine_ui() -> void:
@@ -1335,6 +1355,8 @@ func _show_challenge() -> void:
 		modifier_panel.visible = false
 	if shrine_panel:
 		shrine_panel.visible = false
+	if achievement_panel:
+		achievement_panel.visible = false
 	if challenge_panel:
 		challenge_panel.visible = true
 		_refresh_challenge_ui()
@@ -1687,3 +1709,249 @@ func _show_run_history() -> void:
 		var loot := int(entry.get("unbanked_loot", 0))
 		lines.append("Ring: %s | %s | XP: %d Loot: %d" % [ring, outcome, xp, loot])
 	prep_status.text = "\n".join(lines)
+
+# ── M32 — Achievement Toast ──────────────────────────────────────────────────
+
+func _show_achievement_toast(achievement_id: String) -> void:
+	if not AchievementManager:
+		return
+	var ach := AchievementManager.get_achievement(achievement_id)
+	if ach.is_empty():
+		return
+
+	# Clean up existing toast
+	if _achievement_toast != null and is_instance_valid(_achievement_toast):
+		_achievement_toast.queue_free()
+
+	_achievement_toast = PanelContainer.new()
+	_achievement_toast.name = "AchievementToast"
+	_achievement_toast.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_achievement_toast.offset_top = 20
+	_achievement_toast.offset_bottom = 100
+	_achievement_toast.offset_left = -200
+	_achievement_toast.offset_right = 200
+	_achievement_toast.z_index = 20
+	add_child(_achievement_toast)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 16)
+	margin.add_theme_constant_override("margin_right", 16)
+	margin.add_theme_constant_override("margin_top", 10)
+	margin.add_theme_constant_override("margin_bottom", 10)
+	_achievement_toast.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	margin.add_child(vbox)
+
+	var header := Label.new()
+	header.text = "★  Achievement Unlocked"
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	header.add_theme_font_size_override("font_size", 12)
+	header.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3, 1.0))
+	vbox.add_child(header)
+
+	var name_label := Label.new()
+	name_label.text = str(ach.get("name", ""))
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.add_theme_font_size_override("font_size", 16)
+	name_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.7, 1.0))
+	vbox.add_child(name_label)
+
+	var desc_label := Label.new()
+	desc_label.text = str(ach.get("description", ""))
+	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc_label.add_theme_font_size_override("font_size", 11)
+	desc_label.add_theme_color_override("font_color", Color(0.75, 0.72, 0.65, 0.9))
+	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vbox.add_child(desc_label)
+
+	# Auto-dismiss after 4 seconds
+	var timer := get_tree().create_timer(4.0)
+	var toast_ref := _achievement_toast
+	timer.timeout.connect(func():
+		if is_instance_valid(toast_ref):
+			toast_ref.queue_free()
+	)
+
+# ── M32 — Achievement Gallery ────────────────────────────────────────────────
+
+func _setup_achievements_button() -> void:
+	var prep_vbox := prep_screen.get_node("PrepVBox")
+	if prep_vbox == null:
+		return
+	var btn := Button.new()
+	btn.name = "AchievementsButton"
+	btn.text = "Achievements"
+	btn.pressed.connect(func():
+		_play_click()
+		_show_achievements()
+	)
+	prep_vbox.add_child(btn)
+
+func _setup_achievement_panel() -> void:
+	achievement_panel = PanelContainer.new()
+	achievement_panel.name = "AchievementPanel"
+	achievement_panel.visible = false
+	achievement_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(achievement_panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 40)
+	margin.add_theme_constant_override("margin_right", 40)
+	margin.add_theme_constant_override("margin_top", 30)
+	margin.add_theme_constant_override("margin_bottom", 30)
+	achievement_panel.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.name = "AchievementVBox"
+	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	margin.add_child(vbox)
+
+	# Header with count
+	var header := Label.new()
+	header.name = "AchievementHeader"
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	header.add_theme_font_size_override("font_size", 18)
+	header.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3, 1.0))
+	vbox.add_child(header)
+
+	vbox.add_child(HSeparator.new())
+
+	# Scrollable content area
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(scroll)
+
+	var content_vbox := VBoxContainer.new()
+	content_vbox.name = "AchievementContent"
+	content_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(content_vbox)
+
+	vbox.add_child(HSeparator.new())
+
+	var back_btn := Button.new()
+	back_btn.text = "<- Back to Sanctuary"
+	back_btn.pressed.connect(func():
+		_play_cancel()
+		_show_prep()
+	)
+	vbox.add_child(back_btn)
+
+func _show_achievements() -> void:
+	prep_screen.visible = false
+	run_screen.visible = false
+	if vendor_panel:
+		vendor_panel.visible = false
+	if victory_panel:
+		victory_panel.visible = false
+	if death_panel:
+		death_panel.visible = false
+	if modifier_panel:
+		modifier_panel.visible = false
+	if shrine_panel:
+		shrine_panel.visible = false
+	if challenge_panel:
+		challenge_panel.visible = false
+	if achievement_panel:
+		achievement_panel.visible = true
+		_refresh_achievement_ui()
+
+func _refresh_achievement_ui() -> void:
+	if not AchievementManager or not achievement_panel:
+		return
+
+	# Update header
+	var header: Label = achievement_panel.find_child("AchievementHeader", true, false)
+	if header:
+		header.text = "ACHIEVEMENTS  %d / %d" % [
+			AchievementManager.get_unlocked_count(),
+			AchievementManager.get_total_count()]
+
+	# Rebuild content
+	var content: VBoxContainer = achievement_panel.find_child("AchievementContent", true, false)
+	if not content:
+		return
+
+	# Clear existing children
+	for child in content.get_children():
+		child.queue_free()
+
+	var cat_data := AchievementManager.get_category_data()
+	var categories: Dictionary = cat_data.get("categories", {})
+	var order: Array = cat_data.get("category_order", [])
+	var all_achs := AchievementManager.get_all_achievements()
+
+	for cat_id in order:
+		var cat_name: String = str(categories.get(cat_id, cat_id.to_upper()))
+
+		# Category header
+		var cat_label := Label.new()
+		cat_label.text = "\n%s" % cat_name
+		cat_label.add_theme_font_size_override("font_size", 14)
+		cat_label.add_theme_color_override("font_color", Color(0.85, 0.8, 0.65, 1.0))
+		content.add_child(cat_label)
+
+		content.add_child(HSeparator.new())
+
+		# Achievement entries in this category
+		for ach in all_achs:
+			if str(ach.get("category", "")) != cat_id:
+				continue
+
+			var ach_id := str(ach.get("id", ""))
+			var unlocked := AchievementManager.is_unlocked(ach_id)
+			var is_hidden := bool(ach.get("hidden", false))
+
+			var entry := VBoxContainer.new()
+			entry.add_theme_constant_override("separation", 2)
+
+			var name_label := Label.new()
+			var desc_label := Label.new()
+
+			if unlocked:
+				# Unlocked: gold styling
+				name_label.text = "★  %s" % str(ach.get("name", ""))
+				name_label.add_theme_font_size_override("font_size", 13)
+				name_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3, 1.0))
+
+				var desc_text := str(ach.get("description", ""))
+				var flavor := str(ach.get("flavor_text", ""))
+				if flavor != "":
+					desc_text += "  —  \"%s\"" % flavor
+				desc_label.text = desc_text
+				desc_label.add_theme_font_size_override("font_size", 11)
+				desc_label.add_theme_color_override("font_color", Color(0.75, 0.72, 0.65, 0.9))
+				desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			elif is_hidden:
+				# Hidden locked: show ???
+				name_label.text = "?  ???"
+				name_label.add_theme_font_size_override("font_size", 13)
+				name_label.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4, 0.7))
+				desc_label.text = "???"
+				desc_label.add_theme_font_size_override("font_size", 11)
+				desc_label.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4, 0.5))
+			else:
+				# Locked visible: grey styling
+				name_label.text = "○  %s" % str(ach.get("name", ""))
+				name_label.add_theme_font_size_override("font_size", 13)
+				name_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 0.8))
+
+				var desc_text := str(ach.get("description", ""))
+				# Show progress for count-based achievements
+				var progress := AchievementManager.get_progress(ach_id)
+				if int(progress.get("target", 1)) > 1:
+					desc_text += "  (%d / %d)" % [int(progress.get("current", 0)), int(progress.get("target", 1))]
+				desc_label.text = desc_text
+				desc_label.add_theme_font_size_override("font_size", 11)
+				desc_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 0.6))
+				desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
+			entry.add_child(name_label)
+			entry.add_child(desc_label)
+			content.add_child(entry)
+
+			# Small spacer
+			var spacer := Control.new()
+			spacer.custom_minimum_size.y = 4
+			content.add_child(spacer)

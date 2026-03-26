@@ -1,0 +1,171 @@
+{
+  "achievements": [
+    {
+      "id": "first_blood",
+      "name": "First Blood",
+      "description": "Complete your first encounter.",
+      "flavor_text": "It begins.",
+      "category": "first_steps",
+      "hidden": false
+    },
+    {
+      "id": "first_extraction",
+      "name": "First Extraction",
+      "description": "Extract for the first time.",
+      "flavor_text": "Out alive.",
+      "category": "first_steps",
+      "hidden": false
+    },
+    {
+      "id": "first_death",
+      "name": "A Learning Experience",
+      "description": "Die for the first time.",
+      "flavor_text": "The record shows you tried.",
+      "category": "first_steps",
+      "hidden": false
+    },
+    {
+      "id": "first_mid",
+      "name": "Mid Reaches",
+      "description": "Reach the Mid Ring.",
+      "flavor_text": "Further than most make it the first time.",
+      "category": "first_steps",
+      "hidden": false
+    },
+    {
+      "id": "first_artifact",
+      "name": "The Long Walk",
+      "description": "Retrieve the Artifact.",
+      "flavor_text": "You were here. The Compact would have approved.",
+      "category": "first_steps",
+      "hidden": false
+    },
+    {
+      "id": "poise_master",
+      "name": "Poise Master",
+      "description": "Break enemy poise 50 times total.",
+      "flavor_text": "You know exactly where to hit.",
+      "category": "combat_mastery",
+      "hidden": false
+    },
+    {
+      "id": "no_damage_encounter",
+      "name": "Ghost",
+      "description": "Complete an encounter without taking damage.",
+      "flavor_text": "They never touched you.",
+      "category": "combat_mastery",
+      "hidden": true
+    },
+    {
+      "id": "warden_survivor",
+      "name": "Survived the Warden",
+      "description": "Defeat the Warden without dying.",
+      "flavor_text": "Three hundred years. Not today.",
+      "category": "combat_mastery",
+      "hidden": false
+    },
+    {
+      "id": "kill_count_100",
+      "name": "Veteran",
+      "description": "Kill 100 enemies total.",
+      "flavor_text": "The road asks a price.",
+      "category": "combat_mastery",
+      "hidden": false
+    },
+    {
+      "id": "kill_count_500",
+      "name": "Itinerant",
+      "description": "Kill 500 enemies total.",
+      "flavor_text": "You stopped counting a long time ago.",
+      "category": "combat_mastery",
+      "hidden": false
+    },
+    {
+      "id": "ten_runs",
+      "name": "Ten Runs",
+      "description": "Complete 10 runs.",
+      "flavor_text": "You keep coming back.",
+      "category": "progression",
+      "hidden": false
+    },
+    {
+      "id": "five_artifacts",
+      "name": "Collector",
+      "description": "Retrieve the Artifact 5 times.",
+      "flavor_text": "You know the way now.",
+      "category": "progression",
+      "hidden": false
+    },
+    {
+      "id": "unlock_all_shrines",
+      "name": "Resonance Sage",
+      "description": "Purchase all 12 permanent unlocks.",
+      "flavor_text": "The Shrine is empty. You took everything.",
+      "category": "progression",
+      "hidden": false
+    },
+    {
+      "id": "challenge_complete",
+      "name": "Harder Road",
+      "description": "Complete any challenge run.",
+      "flavor_text": "The Compact called this voluntary.",
+      "category": "progression",
+      "hidden": false
+    },
+    {
+      "id": "all_challenges",
+      "name": "No Mercy",
+      "description": "Complete all 8 challenge runs.",
+      "flavor_text": "What are you trying to prove?",
+      "category": "progression",
+      "hidden": false
+    },
+    {
+      "id": "read_all_lore",
+      "name": "Archivist",
+      "description": "Collect all 5 lore fragments in a single run.",
+      "flavor_text": "Genn would appreciate the thoroughness.",
+      "category": "secrets",
+      "hidden": false
+    },
+    {
+      "id": "modifier_stacker",
+      "name": "Loaded",
+      "description": "Have 5 active run modifiers at once.",
+      "flavor_text": "You are either very lucky or very committed.",
+      "category": "secrets",
+      "hidden": false
+    },
+    {
+      "id": "cursed_silver_artifact",
+      "name": "Spite Run",
+      "description": "Retrieve the Artifact while cursed_silver modifier is active.",
+      "flavor_text": "It spends fine.",
+      "category": "secrets",
+      "hidden": true
+    },
+    {
+      "id": "death_pact_win",
+      "name": "On the Edge",
+      "description": "Retrieve the Artifact while death_pact modifier is active.",
+      "flavor_text": "The math worked.",
+      "category": "secrets",
+      "hidden": true
+    },
+    {
+      "id": "itinerant_legacy",
+      "name": "Legacy",
+      "description": "Purchase the itinerant_legacy permanent unlock.",
+      "flavor_text": "The record shows your name.",
+      "category": "secrets",
+      "hidden": false
+    }
+  ],
+  "categories": {
+    "first_steps": "FIRST STEPS",
+    "combat_mastery": "COMBAT MASTERY",
+    "progression": "PROGRESSION",
+    "secrets": "SECRETS"
+  },
+  "category_order": ["first_steps", "combat_mastery", "progression", "secrets"]
+}

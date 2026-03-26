@@ -43,6 +43,12 @@ var fastest_extraction_seconds: float = 0.0  # 0 = no record yet
 var collected_fragments: Array = []  # Array of fragment id strings
 var current_run_fragments: Array = []  # Fragments found this run (reset on start_run)
 
+# ── M32 — Achievement lifetime stats ──────────────────────────────────────────
+var unlocked_achievements: Array = []  # Array of achievement id strings
+var lifetime_kills: int = 0
+var lifetime_poise_breaks: int = 0
+var completed_challenges: Array = []  # Array of challenge id strings completed
+
 # ── M27 — Resonance Shards meta-progression ───────────────────────────────
 var resonance_shards: int = 0         # Lifetime total accumulated
 var resonance_spent: int = 0          # Lifetime total spent
@@ -55,6 +61,7 @@ var run_total_xp: int = 0
 var run_total_loot: int = 0
 var run_active_modifiers: Array = []
 var run_last_enemy_killer: String = ""
+var encounter_damage_taken: int = 0  # M32 — Reset per encounter for no-damage achievement
 
 # M21 — Detailed per-run stats dictionary (reset on start_run)
 var current_run_stats: Dictionary = {}
@@ -84,6 +91,11 @@ func default_save_state() -> Dictionary:
 		"resonance_shards": 0,
 		"resonance_spent": 0,
 		"permanent_unlocks": [],
+		# v11 — M32 achievements
+		"unlocked_achievements": [],
+		"lifetime_kills": 0,
+		"lifetime_poise_breaks": 0,
+		"completed_challenges": [],
 	}
 
 func to_save_state() -> Dictionary:
@@ -110,6 +122,11 @@ func to_save_state() -> Dictionary:
 		"resonance_shards": resonance_shards,
 		"resonance_spent": resonance_spent,
 		"permanent_unlocks": permanent_unlocks.duplicate(),
+		# v11 — M32 achievements
+		"unlocked_achievements": unlocked_achievements.duplicate(),
+		"lifetime_kills": lifetime_kills,
+		"lifetime_poise_breaks": lifetime_poise_breaks,
+		"completed_challenges": completed_challenges.duplicate(),
 	}
 
 func apply_save_state(data: Dictionary) -> void:
@@ -141,6 +158,13 @@ func apply_save_state(data: Dictionary) -> void:
 	resonance_spent = int(data.get("resonance_spent", 0))
 	var pu: Variant = data.get("permanent_unlocks", [])
 	permanent_unlocks = pu if typeof(pu) == TYPE_ARRAY else []
+	# v11 migration guard — M32 achievements
+	var ua: Variant = data.get("unlocked_achievements", [])
+	unlocked_achievements = ua if typeof(ua) == TYPE_ARRAY else []
+	lifetime_kills = int(data.get("lifetime_kills", 0))
+	lifetime_poise_breaks = int(data.get("lifetime_poise_breaks", 0))
+	var cc: Variant = data.get("completed_challenges", [])
+	completed_challenges = cc if typeof(cc) == TYPE_ARRAY else []
 
 func start_run(seed: int, ring_id: String) -> void:
 	active_seed = seed
@@ -154,6 +178,7 @@ func start_run(seed: int, ring_id: String) -> void:
 	run_total_xp = 0
 	run_total_loot = 0
 	run_last_enemy_killer = ""
+	encounter_damage_taken = 0
 	# M23 — Reset per-run fragment tracking
 	current_run_fragments = []
 	# M21 — Reset per-run stats
@@ -189,6 +214,8 @@ func add_unbanked(xp_value: int, loot_value: int) -> void:
 		"loot_gain": loot_value,
 	})
 	encounter_completed.emit(xp_value, loot_value)
+	# M32 — Reset per-encounter damage tracking after signal (achievement check reads it)
+	encounter_damage_taken = 0
 
 func extract() -> void:
 	var event_ring := current_ring
@@ -374,12 +401,14 @@ func set_killer_enemy(enemy_id: String) -> void:
 
 func record_enemy_killed() -> void:
 	current_run_stats["enemies_killed"] = int(current_run_stats.get("enemies_killed", 0)) + 1
+	lifetime_kills += 1
 
 func record_damage_dealt(amount: int) -> void:
 	current_run_stats["damage_dealt"] = int(current_run_stats.get("damage_dealt", 0)) + amount
 
 func record_damage_taken(amount: int) -> void:
 	current_run_stats["damage_taken"] = int(current_run_stats.get("damage_taken", 0)) + amount
+	encounter_damage_taken += amount
 
 func record_silver_spent(amount: int) -> void:
 	current_run_stats["silver_spent"] = int(current_run_stats.get("silver_spent", 0)) + amount
@@ -519,6 +548,8 @@ func award_run_shards(outcome: String) -> int:
 	if ChallengeManager and ChallengeManager.is_challenge_active():
 		if outcome != "death":
 			earned += ChallengeManager.get_shard_bonus()
+			# M32 — Track completed challenge for achievements
+			record_challenge_completed(ChallengeManager.active_challenge)
 		ChallengeManager.end_run()
 	return earned
 
@@ -556,3 +587,12 @@ func _store_artifact_echo_modifier() -> void:
 	rng.seed = abs(active_seed + 7777)
 	var pick: Dictionary = rares[rng.randi_range(0, rares.size() - 1)]
 	current_run_stats["_artifact_echo_modifier"] = str(pick.get("id", ""))
+
+# ── M32 — Achievement stat helpers ──────────────────────────────────────────
+
+func record_poise_break() -> void:
+	lifetime_poise_breaks += 1
+
+func record_challenge_completed(challenge_id: String) -> void:
+	if not completed_challenges.has(challenge_id):
+		completed_challenges.append(challenge_id)
