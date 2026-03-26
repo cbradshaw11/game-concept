@@ -7,6 +7,7 @@ var weapons: Dictionary = {}
 var encounter_templates: Dictionary = {}
 var vendor_upgrades: Dictionary = {}
 var modifiers: Dictionary = {}
+var permanent_unlocks: Dictionary = {}
 
 func _ready() -> void:
 	load_data()
@@ -18,6 +19,7 @@ func load_data() -> void:
 	encounter_templates = _load_json("res://data/encounter_templates.json")
 	vendor_upgrades = _load_json("res://data/vendor_upgrades.json")
 	modifiers = _load_json("res://data/modifiers.json")
+	permanent_unlocks = _load_json("res://data/permanent_unlocks.json")
 
 func _load_json(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
@@ -85,6 +87,15 @@ func get_run_modifier(modifier_id: String) -> Dictionary:
 	for mod in get_run_modifiers():
 		if str(mod.get("id", "")) == modifier_id:
 			return mod
+	return {}
+
+func get_permanent_unlocks() -> Array:
+	return permanent_unlocks.get("permanent_unlocks", [])
+
+func get_permanent_unlock(unlock_id: String) -> Dictionary:
+	for unlock in get_permanent_unlocks():
+		if str(unlock.get("id", "")) == unlock_id:
+			return unlock
 	return {}
 
 func get_random_modifiers(count: int, rng_seed: int) -> Array:

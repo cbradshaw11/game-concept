@@ -29,11 +29,16 @@ var vendor_upgrade_buttons: Dictionary = {}  # upgrade_id -> Button
 var vendor_upgrade_labels: Dictionary = {}  # upgrade_id -> Label (row label)
 var _vendor_toast: Label = null
 
-# Victory / Death / Modifier / Run Summary panels (created dynamically)
+# Victory / Death / Modifier / Run Summary / Shrine panels (created dynamically)
 var victory_panel: PanelContainer = null
 var death_panel: PanelContainer = null
 var modifier_panel: PanelContainer = null
 var run_summary_panel: PanelContainer = null
+var shrine_panel: PanelContainer = null
+var shrine_shard_label: Label = null
+var shrine_unlock_buttons: Dictionary = {}  # unlock_id -> Button
+var shrine_unlock_labels: Dictionary = {}   # unlock_id -> Label
+var _shrine_first_visit: bool = true
 
 var run_base_status: String = ""
 var objective_status: String = ""
@@ -96,6 +101,7 @@ func _ready() -> void:
 	_setup_history_button()
 	_setup_how_to_play_button()
 	_setup_recovered_notes_button()
+	_setup_shrine_panel()
 	_setup_victory_panel()
 	_setup_death_panel()
 	_setup_modifier_panel()
@@ -150,6 +156,8 @@ func _show_prep() -> void:
 		death_panel.visible = false
 	if modifier_panel:
 		modifier_panel.visible = false
+	if shrine_panel:
+		shrine_panel.visible = false
 	_hide_run_summary()
 	# M23 — Show/hide Recovered Notes button based on collected fragments
 	var notes_btn := prep_screen.find_child("RecoveredNotesButton", true, false)
@@ -173,6 +181,8 @@ func _show_run() -> void:
 		death_panel.visible = false
 	if modifier_panel:
 		modifier_panel.visible = false
+	if shrine_panel:
+		shrine_panel.visible = false
 	_hide_run_summary()
 
 func _show_vendor() -> void:
@@ -187,6 +197,8 @@ func _show_vendor() -> void:
 		death_panel.visible = false
 	if modifier_panel:
 		modifier_panel.visible = false
+	if shrine_panel:
+		shrine_panel.visible = false
 
 func _show_victory(stats: Dictionary) -> void:
 	prep_screen.visible = false
@@ -197,6 +209,8 @@ func _show_victory(stats: Dictionary) -> void:
 		death_panel.visible = false
 	if modifier_panel:
 		modifier_panel.visible = false
+	if shrine_panel:
+		shrine_panel.visible = false
 	if victory_panel:
 		_populate_victory_panel(stats)
 		victory_panel.visible = true
@@ -210,6 +224,8 @@ func _show_death(ring_id: String, killer_enemy_id: String) -> void:
 		victory_panel.visible = false
 	if modifier_panel:
 		modifier_panel.visible = false
+	if shrine_panel:
+		shrine_panel.visible = false
 	if death_panel:
 		_populate_death_panel(ring_id, killer_enemy_id)
 		death_panel.visible = true
@@ -813,6 +829,8 @@ func _show_run_summary(outcome: String) -> void:
 		death_panel.visible = false
 	if modifier_panel:
 		modifier_panel.visible = false
+	if shrine_panel:
+		shrine_panel.visible = false
 	_hide_run_summary()  # Clean up any previous
 	run_summary_panel = RunSummaryScene.instantiate()
 	add_child(run_summary_panel)
@@ -980,6 +998,168 @@ func _setup_vendor_panel() -> void:
 		var prep_vbox := prep_screen.get_node("PrepVBox")
 		if prep_vbox:
 			prep_vbox.add_child(vendor_nav_btn)
+
+# ── M27 — Resonance Shrine ────────────────────────────────────────────────────
+
+func _setup_shrine_panel() -> void:
+	shrine_panel = PanelContainer.new()
+	shrine_panel.name = "ShrinePanel"
+	shrine_panel.visible = false
+	shrine_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(shrine_panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 40)
+	margin.add_theme_constant_override("margin_right", 40)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	shrine_panel.add_child(margin)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	margin.add_child(scroll)
+
+	var vbox := VBoxContainer.new()
+	vbox.name = "ShrineVBox"
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "RESONANCE SHRINE"
+	title.add_theme_font_size_override("font_size", 20)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+
+	shrine_shard_label = Label.new()
+	shrine_shard_label.name = "ShrineShardsLabel"
+	shrine_shard_label.text = "Resonance Shards: 0"
+	shrine_shard_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	shrine_shard_label.add_theme_color_override("font_color", Color(0.6, 0.85, 0.9, 1.0))
+	vbox.add_child(shrine_shard_label)
+
+	# Flavor text on first visit
+	var flavor := Label.new()
+	flavor.name = "ShrineFlavor"
+	flavor.text = "The Shrine remembers what you've done out there. Spend wisely — it doesn't forget."
+	flavor.add_theme_font_size_override("font_size", 12)
+	flavor.add_theme_color_override("font_color", Color(0.7, 0.65, 0.85, 1.0))
+	flavor.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	flavor.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(flavor)
+
+	vbox.add_child(HSeparator.new())
+
+	# Build unlocks grouped by tier
+	var unlocks := DataStore.get_permanent_unlocks()
+	var tier_names := {1: "TIER 1 — 50 Shards", 2: "TIER 2 — 120 Shards", 3: "TIER 3 — 250 Shards"}
+	var by_tier: Dictionary = {}
+	for unlock in unlocks:
+		var tier := int(unlock.get("tier", 1))
+		if not by_tier.has(tier):
+			by_tier[tier] = []
+		by_tier[tier].append(unlock)
+
+	for tier in [1, 2, 3]:
+		if not by_tier.has(tier):
+			continue
+		var header := Label.new()
+		header.text = "── %s ──" % str(tier_names.get(tier, "TIER %d" % tier))
+		header.add_theme_font_size_override("font_size", 13)
+		header.add_theme_color_override("font_color", Color(0.6, 0.85, 0.9, 1.0))
+		vbox.add_child(header)
+
+		for unlock in by_tier[tier]:
+			var uid := str(unlock.get("id", ""))
+			var uname := str(unlock.get("name", uid))
+			var udesc := str(unlock.get("description", ""))
+			var ucost := int(unlock.get("cost", 0))
+
+			var row := HBoxContainer.new()
+			vbox.add_child(row)
+
+			var lbl := Label.new()
+			lbl.name = "ShrineLbl_" + uid
+			lbl.text = "%s — %s" % [uname, udesc]
+			lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			row.add_child(lbl)
+
+			var btn := Button.new()
+			btn.name = "ShrineBtn_" + uid
+			btn.text = "%d Shards" % ucost
+			var cap_id := uid
+			var cap_cost := ucost
+			btn.pressed.connect(func(): _on_shrine_unlock_pressed(cap_id, cap_cost))
+			row.add_child(btn)
+			shrine_unlock_buttons[uid] = btn
+			shrine_unlock_labels[uid] = lbl
+
+	vbox.add_child(HSeparator.new())
+
+	var back_btn := Button.new()
+	back_btn.text = "<- Back to Sanctuary"
+	back_btn.pressed.connect(func(): _show_prep())
+	vbox.add_child(back_btn)
+
+	# Add shrine navigation button to prep screen
+	var prep_vbox := prep_screen.get_node("PrepVBox")
+	if prep_vbox:
+		var shrine_nav_btn := Button.new()
+		shrine_nav_btn.name = "ShrineButton"
+		shrine_nav_btn.text = "Resonance Shrine"
+		shrine_nav_btn.pressed.connect(func():
+			_play_click()
+			_show_shrine()
+		)
+		prep_vbox.add_child(shrine_nav_btn)
+
+func _show_shrine() -> void:
+	prep_screen.visible = false
+	run_screen.visible = false
+	if vendor_panel:
+		vendor_panel.visible = false
+	if victory_panel:
+		victory_panel.visible = false
+	if death_panel:
+		death_panel.visible = false
+	if modifier_panel:
+		modifier_panel.visible = false
+	if shrine_panel:
+		shrine_panel.visible = true
+		_refresh_shrine_ui()
+
+func _on_shrine_unlock_pressed(unlock_id: String, cost: int) -> void:
+	_play_click()
+	var success := GameState.purchase_permanent_unlock(unlock_id, cost)
+	if success:
+		_refresh_shrine_ui()
+
+func _refresh_shrine_ui() -> void:
+	if shrine_shard_label:
+		shrine_shard_label.text = "Resonance Shards: %d" % GameState.get_available_shards()
+
+	for uid in shrine_unlock_buttons:
+		var btn: Button = shrine_unlock_buttons[uid]
+		var unlock := DataStore.get_permanent_unlock(uid)
+		var ucost := int(unlock.get("cost", 0))
+		var owned := GameState.has_permanent_unlock(uid)
+		var available := GameState.get_available_shards()
+
+		if owned:
+			btn.text = "Unlocked"
+			btn.disabled = true
+		elif available < ucost:
+			btn.text = "%d Shards" % ucost
+			btn.disabled = true
+		else:
+			btn.text = "%d Shards" % ucost
+			btn.disabled = false
+
+		if shrine_unlock_labels.has(uid):
+			var lbl: Label = shrine_unlock_labels[uid]
+			if owned:
+				lbl.add_theme_color_override("font_color", Color(0.4, 0.75, 0.4, 1.0))
 
 func _setup_history_button() -> void:
 	var prep_vbox := prep_screen.get_node("PrepVBox")

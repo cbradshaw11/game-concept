@@ -74,6 +74,9 @@ func _begin_run(ring_id: String, seed: int) -> void:
 	# Get contract target from ring data
 	var ring_data := DataStore.get_ring(ring_id)
 	var contract_target := int(ring_data.get("contract_target", 3))
+	# M27 — inner_knowledge permanent unlock: reduce inner ring contract by 1
+	if ring_id == "inner" and GameState.has_permanent_unlock("inner_knowledge"):
+		contract_target = max(2, contract_target - 1)
 	var contract_id := "ring_%s_clearance" % ring_id
 	var contract := contract_system.start_contract(contract_id, ring_id, contract_target)
 	flow_ui.on_objective_started(contract)

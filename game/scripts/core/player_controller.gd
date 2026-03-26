@@ -31,12 +31,18 @@ func _on_modifier_changed(_mod: Variant = null) -> void:
 	recalculate_modifiers()
 
 func recalculate_modifiers() -> void:
-	## Recalculate effective stats based on active run modifiers.
+	## Recalculate effective stats based on active run modifiers + permanent unlocks.
 	var hp_flat := int(ModifierManager.get_stat_bonus("max_hp_flat")) if ModifierManager else 0
 	var hp_pct := ModifierManager.get_stat_bonus("max_hp_pct") if ModifierManager else 0.0
+	# M27 — tougher_start permanent unlock: +8 max HP
+	if GameState and GameState.has_permanent_unlock("tougher_start"):
+		hp_flat += 8
 	effective_max_hp = int(round((100 + hp_flat) * (1.0 + hp_pct)))
 
 	var stam_flat := int(ModifierManager.get_stat_bonus("max_stamina_flat")) if ModifierManager else 0
+	# M27 — extra_stamina permanent unlock: +10 max stamina
+	if GameState and GameState.has_permanent_unlock("extra_stamina"):
+		stam_flat += 10
 	effective_max_stamina = max_stamina + stam_flat
 	stamina = min(stamina, float(effective_max_stamina))
 

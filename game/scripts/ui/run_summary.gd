@@ -125,6 +125,9 @@ func populate(outcome: String) -> void:
 				header.text = "EXTRACTED"
 			_:
 				header.text = "RUN COMPLETE"
+		# M27 — Legacy title cosmetic
+		if GameState.has_permanent_unlock("itinerant_legacy"):
+			header.text += "\n[Legacy]"
 
 	# Stats
 	var stats_label := find_child("StatsLabel", true, false) as Label
@@ -148,6 +151,9 @@ func populate(outcome: String) -> void:
 		var seconds := int(duration) % 60
 		lines.append("Run duration:      %dm %02ds" % [minutes, seconds])
 		lines.append("XP banked:         %d" % GameState.run_total_xp)
+		# M27 — Show resonance shards earned this run
+		if GameState.last_run_shards_earned > 0:
+			lines.append("Shards earned:     +%d" % GameState.last_run_shards_earned)
 		stats_label.text = "\n".join(lines)
 
 	# All-time stats

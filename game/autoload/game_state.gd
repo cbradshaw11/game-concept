@@ -43,6 +43,12 @@ var fastest_extraction_seconds: float = 0.0  # 0 = no record yet
 var collected_fragments: Array = []  # Array of fragment id strings
 var current_run_fragments: Array = []  # Fragments found this run (reset on start_run)
 
+# ── M27 — Resonance Shards meta-progression ───────────────────────────────
+var resonance_shards: int = 0         # Lifetime total accumulated
+var resonance_spent: int = 0          # Lifetime total spent
+var permanent_unlocks: Array = []     # List of unlock id strings currently active
+var last_run_shards_earned: int = 0   # Shards earned in the most recent run (for display)
+
 # ── Per-run tracking (cleared on start_run) ───────────────────────────────────
 var run_encounters_cleared: int = 0
 var run_total_xp: int = 0
@@ -74,6 +80,10 @@ func default_save_state() -> Dictionary:
 		"fastest_extraction_seconds": 0.0,
 		# v9 — M23 collected lore fragments
 		"collected_fragments": [],
+		# v10 — M27 resonance shards
+		"resonance_shards": 0,
+		"resonance_spent": 0,
+		"permanent_unlocks": [],
 	}
 
 func to_save_state() -> Dictionary:
@@ -96,6 +106,10 @@ func to_save_state() -> Dictionary:
 		"fastest_extraction_seconds": fastest_extraction_seconds,
 		# v9 — M23 collected lore fragments
 		"collected_fragments": collected_fragments.duplicate(),
+		# v10 — M27 resonance shards
+		"resonance_shards": resonance_shards,
+		"resonance_spent": resonance_spent,
+		"permanent_unlocks": permanent_unlocks.duplicate(),
 	}
 
 func apply_save_state(data: Dictionary) -> void:
@@ -122,12 +136,20 @@ func apply_save_state(data: Dictionary) -> void:
 	# v9 migration guard — M23 collected lore fragments
 	var cf: Variant = data.get("collected_fragments", [])
 	collected_fragments = cf if typeof(cf) == TYPE_ARRAY else []
+	# v10 migration guard — M27 resonance shards
+	resonance_shards = int(data.get("resonance_shards", 0))
+	resonance_spent = int(data.get("resonance_spent", 0))
+	var pu: Variant = data.get("permanent_unlocks", [])
+	permanent_unlocks = pu if typeof(pu) == TYPE_ARRAY else []
 
 func start_run(seed: int, ring_id: String) -> void:
 	active_seed = seed
 	current_ring = ring_id
 	unbanked_xp = 0
 	unbanked_loot = 0
+	# M27 — silver_sense permanent unlock: start with 15 bonus silver
+	if has_permanent_unlock("silver_sense"):
+		unbanked_loot = 15
 	run_encounters_cleared = 0
 	run_total_xp = 0
 	run_total_loot = 0
@@ -189,6 +211,9 @@ func extract() -> void:
 	if duration > 0.0 and (fastest_extraction_seconds <= 0.0 or duration < fastest_extraction_seconds):
 		fastest_extraction_seconds = duration
 
+	# M27 — Award resonance shards before resetting run state
+	award_run_shards("extraction")
+
 	unbanked_xp = 0
 	unbanked_loot = 0
 	current_ring = "sanctuary"
@@ -220,6 +245,12 @@ func retrieve_artifact() -> void:
 	var duration := float(current_run_stats.get("run_duration_seconds", 0.0))
 	if duration > 0.0 and (fastest_extraction_seconds <= 0.0 or duration < fastest_extraction_seconds):
 		fastest_extraction_seconds = duration
+	# M27 — Award resonance shards before resetting run state
+	award_run_shards("artifact")
+	# M27 — artifact_echo: store a random rare modifier for next run
+	if has_permanent_unlock("artifact_echo"):
+		_store_artifact_echo_modifier()
+
 	unbanked_xp = 0
 	unbanked_loot = 0
 	current_ring = "sanctuary"
@@ -244,6 +275,9 @@ func die_in_run() -> void:
 	total_runs += 1
 	total_deaths += 1
 	_update_deepest_ring(event_ring)
+
+	# M27 — Award resonance shards before resetting run state
+	award_run_shards("death")
 
 	current_ring = "sanctuary"
 	telemetry.log_event("player_died", {
@@ -447,3 +481,75 @@ func roll_fragment_drop(encounter_seed: int) -> String:
 		return ""
 	# Pick a random available fragment
 	return str(available[rng.randi_range(0, available.size() - 1)])
+
+# ── M27 — Resonance Shard Helpers ─────────────────────────────────────────
+
+func calculate_shards_earned(outcome: String) -> int:
+	## Calculate shards earned for the current run based on outcome and stats.
+	var shards := 10  # Base: always 10
+
+	# Ring bonus: +5 per ring reached beyond sanctuary
+	var ring_id := str(current_run_stats.get("extraction_ring", ""))
+	if ring_id == "death":
+		# Use the ring from run history
+		if not run_history.is_empty():
+			ring_id = str(run_history[-1].get("ring", "inner"))
+		else:
+			ring_id = "inner"
+	var depth: int = int(RING_DEPTH.get(ring_id, 0))
+	shards += depth * 5  # inner=+5, mid=+10, outer=+15
+
+	# Artifact bonus
+	if outcome == "artifact":
+		shards += 20
+
+	# Enemy kill bonus
+	shards += int(current_run_stats.get("enemies_killed", 0))
+
+	# shard_investment permanent unlock: +25% shards
+	if has_permanent_unlock("shard_investment"):
+		shards = int(ceil(shards * 1.25))
+
+	return shards
+
+func award_run_shards(outcome: String) -> int:
+	## Award shards at end of run. Returns shards earned.
+	var earned := calculate_shards_earned(outcome)
+	resonance_shards += earned
+	last_run_shards_earned = earned
+	return earned
+
+func has_permanent_unlock(unlock_id: String) -> bool:
+	return permanent_unlocks.has(unlock_id)
+
+func purchase_permanent_unlock(unlock_id: String, cost: int) -> bool:
+	## Purchase a permanent unlock. Returns true on success.
+	if has_permanent_unlock(unlock_id):
+		return false
+	var available_shards := resonance_shards - resonance_spent
+	if available_shards < cost:
+		return false
+	resonance_spent += cost
+	permanent_unlocks.append(unlock_id)
+	telemetry.log_event("permanent_unlock_purchased", {
+		"unlock_id": unlock_id,
+		"cost": cost,
+		"shards_remaining": resonance_shards - resonance_spent,
+	})
+	return true
+
+func get_available_shards() -> int:
+	return resonance_shards - resonance_spent
+
+func _store_artifact_echo_modifier() -> void:
+	## Pick a random rare (tier 3) run modifier and store its id for next run.
+	var rares: Array = []
+	for mod in DataStore.get_run_modifiers():
+		if int(mod.get("tier", 0)) == 3:
+			rares.append(mod)
+	if rares.is_empty():
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = abs(active_seed + 7777)
+	var pick: Dictionary = rares[rng.randi_range(0, rares.size() - 1)]
+	current_run_stats["_artifact_echo_modifier"] = str(pick.get("id", ""))

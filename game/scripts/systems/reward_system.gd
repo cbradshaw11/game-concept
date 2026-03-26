@@ -15,6 +15,9 @@ func calculate_rewards(ring_id: String, ring_data: Dictionary, enemy_count: int)
 	var loot_bonus: float = 0.0
 	if ModifierManager:
 		loot_bonus = ModifierManager.get_stat_bonus("loot_pct")
+	# M27 — deep_pockets permanent unlock: +5% loot
+	if GameState and GameState.has_permanent_unlock("deep_pockets"):
+		loot_bonus += 0.05
 
 	var base_xp := 20 * enemy_count
 	var base_loot := 12 * enemy_count

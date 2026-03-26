@@ -1,0 +1,124 @@
+{
+  "permanent_unlocks": [
+    {
+      "id": "extra_stamina",
+      "name": "Endurance Training",
+      "description": "+10 max stamina in all runs",
+      "flavor": "Your body remembers what your mind forgets.",
+      "tier": 1,
+      "cost": 50,
+      "stat": "max_stamina_flat",
+      "value": 10
+    },
+    {
+      "id": "tougher_start",
+      "name": "Hardened Constitution",
+      "description": "Start every run with +8 max HP",
+      "flavor": "Scar tissue is stronger than skin.",
+      "tier": 1,
+      "cost": 50,
+      "stat": "max_hp_flat",
+      "value": 8
+    },
+    {
+      "id": "silver_sense",
+      "name": "Silver Sense",
+      "description": "Start every run with 15 bonus silver",
+      "flavor": "You always know where to look.",
+      "tier": 1,
+      "cost": 50,
+      "stat": "starting_silver",
+      "value": 15
+    },
+    {
+      "id": "quick_recovery",
+      "name": "Quick Recovery",
+      "description": "Stagger duration reduced by 0.1s",
+      "flavor": "Get up faster. Stay up longer.",
+      "tier": 1,
+      "cost": 50,
+      "stat": "stagger_reduction",
+      "value": 0.1
+    },
+    {
+      "id": "veteran_dodge",
+      "name": "Veteran Dodge",
+      "description": "Dodge i-frames extended by 30ms (250ms total)",
+      "flavor": "Instinct you can't unlearn.",
+      "tier": 2,
+      "cost": 120,
+      "stat": "dodge_iframe_ms",
+      "value": 30
+    },
+    {
+      "id": "resonance_memory",
+      "name": "Resonance Memory",
+      "description": "Carry one random common modifier into each new run",
+      "flavor": "The Shrine lets you hold onto something.",
+      "tier": 2,
+      "cost": 120,
+      "stat": "carry_common_modifier",
+      "value": 1
+    },
+    {
+      "id": "deep_pockets",
+      "name": "Deep Pockets",
+      "description": "Loot multiplier +5% on all runs",
+      "flavor": "More room for what matters.",
+      "tier": 2,
+      "cost": 120,
+      "stat": "loot_pct",
+      "value": 0.05
+    },
+    {
+      "id": "inner_knowledge",
+      "name": "Inner Knowledge",
+      "description": "Inner Ring contract target reduced by 1 (min 2)",
+      "flavor": "You've memorized the patrol routes.",
+      "tier": 2,
+      "cost": 120,
+      "stat": "inner_contract_reduction",
+      "value": 1
+    },
+    {
+      "id": "warden_lore",
+      "name": "Warden Lore",
+      "description": "Warden enters combat with phase thresholds visible",
+      "flavor": "You studied the reports. Now you know when it changes.",
+      "tier": 3,
+      "cost": 250,
+      "stat": "warden_phase_visible",
+      "value": 1
+    },
+    {
+      "id": "shard_investment",
+      "name": "Shard Investment",
+      "description": "Shards earned per run +25%",
+      "flavor": "The Shrine rewards devotion.",
+      "tier": 3,
+      "cost": 250,
+      "stat": "shard_bonus_pct",
+      "value": 0.25
+    },
+    {
+      "id": "artifact_echo",
+      "name": "Artifact Echo",
+      "description": "On artifact retrieval, carry one random rare modifier into next run",
+      "flavor": "The artifact left an echo in you.",
+      "tier": 3,
+      "cost": 250,
+      "stat": "artifact_carry_rare",
+      "value": 1
+    },
+    {
+      "id": "itinerant_legacy",
+      "name": "Itinerant Legacy",
+      "description": "Unlock the Legacy title shown on run summary",
+      "flavor": "You were here.",
+      "tier": 3,
+      "cost": 250,
+      "stat": "legacy_title",
+      "value": 1
+    }
+  ]
+}
