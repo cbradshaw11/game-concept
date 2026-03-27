@@ -1,0 +1,87 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/world/world_scene.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player.png" id="2"]
+
+[node name="WorldScene" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Background" type="ColorRect" parent="."]
+offset_left = -700
+offset_top = -400
+offset_right = 700
+offset_bottom = 400
+color = Color(0.102, 0.165, 0.227, 1)
+
+[node name="HomeMarker" type="Node2D" parent="."]
+
+[node name="Circle" type="ColorRect" parent="HomeMarker"]
+offset_left = -20
+offset_top = -20
+offset_right = 20
+offset_bottom = 20
+color = Color(0.3, 0.5, 0.9, 0.4)
+
+[node name="Label" type="Label" parent="HomeMarker"]
+offset_left = -20
+offset_top = -40
+offset_right = 20
+offset_bottom = -20
+text = "HOME"
+horizontal_alignment = 1
+
+[node name="ZoneMarkers" type="Node2D" parent="."]
+
+[node name="EnemyContainer" type="Node2D" parent="."]
+
+[node name="LootContainer" type="Node2D" parent="."]
+
+[node name="Player" type="Sprite2D" parent="."]
+texture = ExtResource("2")
+
+[node name="Camera2D" type="Camera2D" parent="Player"]
+zoom = Vector2(1.5, 1.5)
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="HealthBarBG" type="ColorRect" parent="HUD"]
+offset_left = 20
+offset_top = 20
+offset_right = 224
+offset_bottom = 40
+color = Color(0.2, 0.2, 0.2, 1)
+
+[node name="HealthBar" type="ColorRect" parent="HUD"]
+offset_left = 22
+offset_top = 22
+offset_right = 222
+offset_bottom = 38
+color = Color(0.2, 0.8, 0.2, 1)
+
+[node name="ZoneLabel" type="Label" parent="HUD"]
+offset_left = 20
+offset_top = 50
+offset_right = 200
+offset_bottom = 70
+text = "Zone: Sanctuary"
+
+[node name="GoldLabel" type="Label" parent="HUD"]
+offset_left = 20
+offset_top = 75
+offset_right = 200
+offset_bottom = 95
+text = "Carried: 0g"
+
+[node name="BankLabel" type="Label" parent="HUD"]
+offset_left = 20
+offset_top = 100
+offset_right = 200
+offset_bottom = 120
+text = "Bank: 0g"
+
+[node name="DistanceLabel" type="Label" parent="HUD"]
+offset_left = 20
+offset_top = 125
+offset_right = 200
+offset_bottom = 145
+text = "Distance: 0"

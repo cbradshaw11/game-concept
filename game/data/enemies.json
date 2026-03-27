@@ -7,6 +7,7 @@
       "health": 52,
       "poise": 20,
       "damage": 8,
+      "speed": 75,
       "behavior_profile": "frontline_basic"
     },
     {
@@ -16,6 +17,7 @@
       "health": 75,
       "poise": 40,
       "damage": 7,
+      "speed": 60,
       "behavior_profile": "guard_counter"
     },
     {
@@ -25,6 +27,7 @@
       "health": 72,
       "poise": 25,
       "damage": 12,
+      "speed": 110,
       "behavior_profile": "flank_aggressive"
     },
     {
@@ -34,6 +37,7 @@
       "health": 58,
       "poise": 15,
       "damage": 10,
+      "speed": 85,
       "behavior_profile": "kite_volley"
     },
     {
@@ -43,6 +47,7 @@
       "health": 65,
       "poise": 18,
       "damage": 14,
+      "speed": 70,
       "behavior_profile": "zone_control"
     },
     {
@@ -52,6 +57,7 @@
       "health": 130,
       "poise": 70,
       "damage": 16,
+      "speed": 95,
       "behavior_profile": "elite_pressure"
     },
     {
@@ -61,6 +67,7 @@
       "health": 45,
       "poise": 8,
       "damage": 22,
+      "speed": 130,
       "behavior_profile": "glass_cannon_aggro"
     },
     {
@@ -70,6 +77,7 @@
       "health": 80,
       "poise": 40,
       "damage": 8,
+      "speed": 50,
       "guard_efficiency": 0.8,
       "behavior_profile": "poise_gate_tank"
     },
@@ -80,6 +88,7 @@
       "health": 95,
       "poise": 10,
       "damage": 18,
+      "speed": 90,
       "behavior_profile": "phase_phantom",
       "phase_duration": 2.5,
       "vulnerable_duration": 1.8,
