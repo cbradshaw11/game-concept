@@ -6,6 +6,7 @@ var enemies: Dictionary = {}
 var weapons: Dictionary = {}
 var encounter_templates: Dictionary = {}
 var vendor_upgrades: Dictionary = {}
+var shop_items: Dictionary = {}
 var modifiers: Dictionary = {}
 var permanent_unlocks: Dictionary = {}
 
@@ -18,6 +19,7 @@ func load_data() -> void:
 	weapons = _load_json("res://data/weapons.json")
 	encounter_templates = _load_json("res://data/encounter_templates.json")
 	vendor_upgrades = _load_json("res://data/vendor_upgrades.json")
+	shop_items = _load_json("res://data/shop_items.json")
 	modifiers = _load_json("res://data/modifiers.json")
 	permanent_unlocks = _load_json("res://data/permanent_unlocks.json")
 
@@ -54,6 +56,15 @@ func get_vendor_upgrade(upgrade_id: String) -> Dictionary:
 	for upg in get_vendor_upgrades():
 		if str(upg.get("id", "")) == upgrade_id:
 			return upg
+	return {}
+
+func get_shop_items() -> Array:
+	return shop_items.get("shop_items", [])
+
+func get_shop_item(item_id: String) -> Dictionary:
+	for item in get_shop_items():
+		if str(item.get("id", "")) == item_id:
+			return item
 	return {}
 
 func get_weapon(weapon_id: String) -> Dictionary:

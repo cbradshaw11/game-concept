@@ -81,7 +81,7 @@ game/scripts/
 ├── core/          # PlayerController, EnemyController, behavior_profiles
 ├── systems/       # RingDirector, RewardSystem, ContractSystem, SaveSystem, Telemetry
 ├── ui/            # FlowUI and all screen controllers (run_summary, title_screen, how_to_play, etc.)
-├── tests/         # 70+ test files (milestone-scoped under m4/ through m32/)
+├── tests/         # 70+ test files (milestone-scoped under m4/ through m35/)
 │   ├── m4/-m13/   # Core gameplay tests
 │   ├── m18/-m24/  # Boss, death, onboarding, stats, economy, fragments, behavior tests
 │   └── combat/    # Combat-specific subtests
@@ -131,10 +131,10 @@ A summary file **must** be written and committed as the final step of every mile
 - Status: `DONE`
 - Commit it with the test suite: `feat: TASK-NNN MN test suite + milestone summary`
 
-Missing summaries break project continuity. M6-M13 had to be reconstructed from git history after the fact because this was skipped. Milestones M24–M33 cover the overnight batch (behavior profiles through integration pass).
+Missing summaries break project continuity. M6-M13 had to be reconstructed from git history after the fact because this was skipped. Milestones M24–M33 cover the overnight batch (behavior profiles through integration pass). M34 covers save v10 + controls. M35 adds 3 new weapons (Twin Fangs, War Hammer, Resonance Staff) with guard_penetration combat mechanic.
 
 ---
 
 ## Save Versioning
 
-GameState uses merge-with-defaults migration: `default_save_state()` defines all fields, and `SaveSystem._merge_with_defaults()` fills missing keys from old saves. Current field set covers v11 (M32 achievements, lifetime_kills, lifetime_poise_breaks, completed_challenges). When adding fields to GameState, add them to both `default_save_state()` and `to_save_state()`, with a migration guard comment in `apply_save_state()`.
+GameState uses merge-with-defaults migration: `default_save_state()` defines all fields, and `SaveSystem._merge_with_defaults()` fills missing keys from old saves. `SaveSystem.SAVE_VERSION` is currently **10** (M34), covering all fields through M32 (resonance shards, achievements, challenges). `save_state()` injects `_save_version` into the save file. When adding fields to GameState, add them to both `default_save_state()` and `to_save_state()`, with a migration guard comment in `apply_save_state()`, and bump `SAVE_VERSION`.

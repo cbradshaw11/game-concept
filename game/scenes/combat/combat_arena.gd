@@ -244,11 +244,7 @@ func _on_attack_triggered() -> void:
 
 func _execute_weapon_attack() -> void:
 	# Get weapon data to determine attack mechanic
-	var weapon_id: String = ""
-	if "selected_weapon_id" in get_parent():
-		weapon_id = str(get_parent().get("selected_weapon_id"))
-	var ds := get_node_or_null("/root/DataStore")
-	var weapon_data: Dictionary = ds.get_weapon(weapon_id) if ds and weapon_id != "" else {}
+	var weapon_data := _get_current_weapon_data()
 	var mechanic := str(weapon_data.get("light_mechanic", "single_target"))
 
 	match mechanic:
@@ -267,11 +263,7 @@ func _execute_weapon_attack() -> void:
 
 func execute_heavy_attack() -> void:
 	# Get weapon data to determine heavy mechanic
-	var weapon_id: String = ""
-	if "selected_weapon_id" in get_parent():
-		weapon_id = str(get_parent().get("selected_weapon_id"))
-	var ds := get_node_or_null("/root/DataStore")
-	var weapon_data: Dictionary = ds.get_weapon(weapon_id) if ds and weapon_id != "" else {}
+	var weapon_data := _get_current_weapon_data()
 	var mechanic := str(weapon_data.get("heavy_mechanic", "single_target"))
 
 	match mechanic:
@@ -491,12 +483,26 @@ func _player_zone() -> int:
 	return clampi(zone, 0, max(0, enemies.size() - 1))
 
 
+func _get_current_weapon_data() -> Dictionary:
+	var weapon_id: String = ""
+	if "selected_weapon_id" in get_parent():
+		weapon_id = str(get_parent().get("selected_weapon_id"))
+	var ds := get_node_or_null("/root/DataStore")
+	return ds.get_weapon(weapon_id) if ds and weapon_id != "" else {}
+
 func _apply_damage_to_front_enemy(damage: int, force_poise_break: bool = false) -> void:
 	for i in enemies.size():
 		var enemy := enemies[i]
 		if enemy.state != EnemyController.EnemyState.DEAD:
 			# guard_counter: if guarding, absorb hit and counter-attack
 			if enemy.guarding and enemy.on_hit_while_guarding():
+				# M35 — guard_penetration: weapon bypasses a fraction of guard absorption
+				var guard_pen := float(_get_current_weapon_data().get("guard_penetration", 0.0))
+				if guard_pen > 0.0:
+					var pen_dmg := int(round(float(damage) * guard_pen))
+					if pen_dmg > 0:
+						enemy.apply_damage(pen_dmg, false)
+						if _gs(): _gs().record_damage_dealt(pen_dmg)
 				var counter_dmg := enemy.damage
 				if player.guarding:
 					counter_dmg = max(1, counter_dmg / 2)

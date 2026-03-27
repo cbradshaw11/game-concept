@@ -1,0 +1,25 @@
+{
+  "shop_items": [
+    {
+      "id": "twin_fangs",
+      "type": "weapon",
+      "name": "Twin Fangs",
+      "cost": 80,
+      "description": "Two quick cuts are better than one slow one."
+    },
+    {
+      "id": "war_hammer",
+      "type": "weapon",
+      "name": "War Hammer",
+      "cost": 90,
+      "description": "It doesnt need to be fast. It just needs to land."
+    },
+    {
+      "id": "resonance_staff",
+      "type": "weapon",
+      "name": "Resonance Staff",
+      "cost": 100,
+      "description": "Attuned to the worlds grain. The wall does not know it has been opened."
+    }
+  ]
+}

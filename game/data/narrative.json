@@ -201,6 +201,12 @@
     }
   ],
 
+  "weapons": {
+    "twin_fangs": "Two quick cuts are better than one slow one.",
+    "war_hammer": "It doesnt need to be fast. It just needs to land.",
+    "resonance_staff": "Attuned to the worlds grain. The wall does not know it has been opened."
+  },
+
   "warden_intro": {
     "lines": [
       "...",
