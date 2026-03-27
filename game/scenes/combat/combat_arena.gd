@@ -278,7 +278,7 @@ func _process(delta: float) -> void:
 			# M39 — Enemy lunge animation on every attack attempt
 			_animate_enemy_attack(index)
 			# Only deal damage if sprites are physically overlapping (~64px contact distance)
-			var pixel_dist := absf(enemy_nodes[index].position.x - player.position.x) if index < enemy_nodes.size() else 9999.0
+			var pixel_dist: float = absf(enemy_nodes[index].position.x - player.position.x) if index < enemy_nodes.size() else 9999.0
 			if pixel_dist > 64.0:
 				continue
 			var dmg := enemy.damage
