@@ -547,7 +547,7 @@ func _spawn_enemies(count: int) -> void:
 	enemy_nodes.clear()
 	enemy_sprites.clear()
 
-	var archetypes := ["grunt", "ranged", "defender"]
+	var archetypes := ["grunt"]
 	var arena_width := 960.0
 	var spacing := arena_width / float(count + 1)
 
@@ -563,10 +563,8 @@ func _spawn_enemies(count: int) -> void:
 		var ec := EnemyController.new(hp, 3.5, 1.2, dmg)
 		ec.set_meta("speed", float(enemy_data.get("speed", 80)))
 		ec.enemy_display_name = str(enemy_data.get("id", "Enemy")).replace("_", " ").capitalize()
-		var profile := str(enemy_data.get("behavior_profile", Profiles.FRONTLINE_BASIC))
-		# Inner ring enemies are melee-only; override ranged/zone profiles if they appear
-		if ring_id == "inner" and (profile == Profiles.KITE_VOLLEY or profile == Profiles.ZONE_CONTROL):
-			profile = Profiles.FRONTLINE_BASIC
+		# Grunts only for now — all enemies use frontline_basic melee profile
+		var profile := Profiles.FRONTLINE_BASIC
 		ec.apply_profile(profile)
 		# Use data poise as threshold if profile didn't set a higher one
 		var data_poise := int(enemy_data.get("poise", 20))
