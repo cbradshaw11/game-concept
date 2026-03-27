@@ -25,6 +25,8 @@ const SFX_REGISTRY := {
 	"lore_fragment": "res://audio/sfx/lore_fragment.wav",
 	"shard_earn": "res://audio/sfx/shard_earn.wav",
 	"ring_enter": "res://audio/sfx/ring_enter.wav",
+	"swing": "res://audio/sfx/swing.wav",
+	"heavy_swing": "res://audio/sfx/heavy_swing.wav",
 }
 
 # ── Music Registry ───────────────────────────────────────────────────────────

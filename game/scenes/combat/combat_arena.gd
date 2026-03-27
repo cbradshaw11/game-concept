@@ -69,6 +69,9 @@ var _phase_flash_overlay: ColorRect = null
 # _bow_suppress_ticks[enemy_index] = remaining suppression ticks
 var _enemy_suppress_ticks: Array[int] = []
 
+# M36 — Player attack flash timer (negative = hold phase, positive = lerp phase)
+var _player_attack_flash_timer: float = 0.0
+
 # ─── M19 Juice Constants ─────────────────────────────────────────────────────
 const HIT_STOP_DURATION := 0.065  # seconds (~65ms, range 50-80ms)
 const HIT_STOP_TIME_SCALE := 0.05
@@ -92,6 +95,11 @@ const PHASE_IMMUNE_FLASH_COLOR := Color(0.3, 0.3, 2.0, 0.8)
 const PHASE_VULNERABLE_FLASH_COLOR := Color(1.8, 1.0, 0.2, 1.0)
 const PHASE_INVULNERABLE_FLASH_COLOR := Color(0.1, 0.1, 0.8, 1.0)
 const PHASE_PHANTOM_FLASH_DURATION := 0.25
+
+# M36 — Player attack flash
+const PLAYER_ATTACK_FLASH_COLOR := Color(1.2, 1.2, 0.8, 1.0)
+const PLAYER_ATTACK_FLASH_HOLD := 0.08   # 80ms hold
+const PLAYER_ATTACK_FLASH_LERP := 0.12   # 120ms lerp back
 
 const SPRITE_BASE := "res://assets/sprites/"
 const ENEMY_SPRITE_NAMES := {
@@ -162,6 +170,7 @@ func _process(delta: float) -> void:
 	_update_hit_stop(delta)
 	_update_camera_shake(delta)
 	_update_hit_flashes(delta)
+	_update_player_attack_flash(delta)
 
 	if enemies.is_empty() or encounter_completed:
 		return
@@ -238,6 +247,9 @@ func _process(delta: float) -> void:
 
 func _on_attack_triggered() -> void:
 	attack_count += 1
+	_player_attack_flash_timer = PLAYER_ATTACK_FLASH_HOLD + PLAYER_ATTACK_FLASH_LERP
+	if _am():
+		_am().play_sfx("swing")
 	_execute_weapon_attack()
 	attack_hook_triggered.emit()
 	_update_hud()
@@ -262,6 +274,9 @@ func _execute_weapon_attack() -> void:
 			_apply_damage_to_front_enemy(40)
 
 func execute_heavy_attack() -> void:
+	_player_attack_flash_timer = PLAYER_ATTACK_FLASH_HOLD + PLAYER_ATTACK_FLASH_LERP
+	if _am():
+		_am().play_sfx("heavy_swing")
 	# Get weapon data to determine heavy mechanic
 	var weapon_data := _get_current_weapon_data()
 	var mechanic := str(weapon_data.get("heavy_mechanic", "single_target"))
@@ -686,6 +701,25 @@ func _update_hit_flashes(delta: float) -> void:
 				# Lerp phase
 				var t := 1.0 - (remaining / HIT_FLASH_LERP_DURATION)
 				sprite.modulate = HIT_FLASH_COLOR.lerp(Color(1.0, 1.0, 1.0, 1.0), t)
+
+
+# ─── Player Attack Flash (M36) ───────────────────────────────────────────────
+
+func _update_player_attack_flash(delta: float) -> void:
+	if _player_attack_flash_timer <= 0.0:
+		return
+	_player_attack_flash_timer -= delta
+	if not is_instance_valid(player_sprite):
+		return
+	if _player_attack_flash_timer <= 0.0:
+		player_sprite.modulate = Color(1.0, 1.0, 1.0, 1.0)
+	elif _player_attack_flash_timer > PLAYER_ATTACK_FLASH_LERP:
+		# Hold phase
+		player_sprite.modulate = PLAYER_ATTACK_FLASH_COLOR
+	else:
+		# Lerp back to normal
+		var t := 1.0 - (_player_attack_flash_timer / PLAYER_ATTACK_FLASH_LERP)
+		player_sprite.modulate = PLAYER_ATTACK_FLASH_COLOR.lerp(Color(1.0, 1.0, 1.0, 1.0), t)
 
 
 # ─── Death Dissolve ───────────────────────────────────────────────────────────
