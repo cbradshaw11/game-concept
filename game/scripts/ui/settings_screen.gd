@@ -104,30 +104,38 @@ func _build_ui() -> void:
 	# ── CONTROLS Section ─────────────────────────────────────────────────
 	_add_section_label(vbox, "CONTROLS")
 
-	var controls := [
-		["Move", "Arrow Keys / WASD"],
-		["Attack", "Space or Z"],
-		["Dodge", "Shift"],
-		["Guard", "Hold X"],
-		["Extract", "E"],
-		["Interact", "F"],
-		["Open Shrine", "Tab"],
+	var controls_grid := GridContainer.new()
+	controls_grid.name = "ControlsGrid"
+	controls_grid.columns = 2
+	controls_grid.add_theme_constant_override("h_separation", 24)
+	controls_grid.add_theme_constant_override("v_separation", 6)
+	vbox.add_child(controls_grid)
+
+	# Action name → InputMap action(s) to read bindings from
+	var control_actions := [
+		["Move", ["ui_left", "ui_right", "ui_up", "ui_down"]],
+		["Attack", ["attack"]],
+		["Dodge", ["dodge"]],
+		["Guard", ["guard"]],
+		["Interact", ["interact"]],
+		["Pause", ["ui_cancel"]],
 	]
-	for entry in controls:
-		var row := HBoxContainer.new()
+
+	for entry in control_actions:
 		var action_label := Label.new()
 		action_label.text = entry[0]
 		action_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		action_label.custom_minimum_size.x = 120
-		row.add_child(action_label)
-		var key_label := Label.new()
-		key_label.text = entry[1]
-		key_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-		row.add_child(key_label)
-		vbox.add_child(row)
+		controls_grid.add_child(action_label)
+
+		var binding_label := Label.new()
+		binding_label.name = "Binding_" + entry[0]
+		binding_label.text = _get_bindings_text(entry[0], entry[1])
+		binding_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+		controls_grid.add_child(binding_label)
 
 	var remap_note := Label.new()
-	remap_note.text = "Control remapping coming in a future update."
+	remap_note.text = "Bindings read from project InputMap."
 	remap_note.add_theme_font_size_override("font_size", 11)
 	remap_note.add_theme_color_override("font_color", Color(0.45, 0.42, 0.55, 0.8))
 	vbox.add_child(remap_note)
@@ -203,6 +211,33 @@ func _add_volume_slider(parent: VBoxContainer, label_text: String, current_value
 
 	parent.add_child(row)
 	return slider
+
+func _get_bindings_text(display_name: String, actions: Array) -> String:
+	## Read key bindings from InputMap at runtime for the given action(s).
+	if display_name == "Move":
+		# Combine directional actions into a compact display
+		var keys: Array = []
+		for action_name in actions:
+			if not InputMap.has_action(action_name):
+				continue
+			for event in InputMap.action_get_events(action_name):
+				if event is InputEventKey:
+					var label := OS.get_keycode_string(event.physical_keycode) if event.physical_keycode != 0 else OS.get_keycode_string(event.keycode)
+					if label != "" and not keys.has(label):
+						keys.append(label)
+		return ", ".join(keys) if not keys.is_empty() else "Not bound"
+
+	# Single-action entries: list all key events
+	var keys: Array = []
+	for action_name in actions:
+		if not InputMap.has_action(action_name):
+			continue
+		for event in InputMap.action_get_events(action_name):
+			if event is InputEventKey:
+				var label := OS.get_keycode_string(event.physical_keycode) if event.physical_keycode != 0 else OS.get_keycode_string(event.keycode)
+				if label != "" and not keys.has(label):
+					keys.append(label)
+	return " / ".join(keys) if not keys.is_empty() else "Not bound"
 
 func _clear_and_rebuild() -> void:
 	for child in get_children():
