@@ -68,6 +68,9 @@ var zone_radius: float = 2.5
 var player_hp_percent: float = 1.0
 var _poise_immune: bool = false
 
+# M37 — drain_stamina (Void Lance heavy)
+var stamina_drained_ticks: int = 0
+
 # phase_phantom profile
 var phase_timer: float = 0.0
 var is_vulnerable: bool = false
@@ -164,6 +167,11 @@ func tick(distance_to_player: float, delta: float) -> bool:
 		stagger_timer -= delta
 		if stagger_timer <= 0.0:
 			state = EnemyState.CHASE
+		return false
+
+	# M37 — stamina drain: skip attack action while drained
+	if stamina_drained_ticks > 0:
+		stamina_drained_ticks -= 1
 		return false
 
 	# Update profile-specific timers

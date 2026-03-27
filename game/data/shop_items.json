@@ -20,6 +20,34 @@
       "name": "Resonance Staff",
       "cost": 100,
       "description": "Attuned to the worlds grain. The wall does not know it has been opened."
+    },
+    {
+      "id": "greatsword_iron",
+      "type": "weapon",
+      "name": "Iron Greatsword",
+      "cost": 120,
+      "description": "Wide arc. Slow. Hits everything in front of you."
+    },
+    {
+      "id": "crossbow_iron",
+      "type": "weapon",
+      "name": "Iron Crossbow",
+      "cost": 130,
+      "description": "Slow to load. Punishing when it lands."
+    },
+    {
+      "id": "resonance_orb",
+      "type": "weapon",
+      "name": "Resonance Orb",
+      "cost": 140,
+      "description": "Light attacks are precise. The heavy detonates everything in range."
+    },
+    {
+      "id": "void_lance",
+      "type": "weapon",
+      "name": "Void Lance",
+      "cost": 150,
+      "description": "The light attack pierces. The heavy drains their will to fight."
     }
   ]
 }

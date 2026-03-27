@@ -204,7 +204,11 @@
   "weapons": {
     "twin_fangs": "Two quick cuts are better than one slow one.",
     "war_hammer": "It doesnt need to be fast. It just needs to land.",
-    "resonance_staff": "Attuned to the worlds grain. The wall does not know it has been opened."
+    "resonance_staff": "Attuned to the worlds grain. The wall does not know it has been opened.",
+    "greatsword_iron": "Wide arc. Slow. Hits everything in front of you.",
+    "crossbow_iron": "Slow to load. Punishing when it lands.",
+    "resonance_orb": "Light attacks are precise. The heavy detonates everything in range.",
+    "void_lance": "The light attack pierces. The heavy drains their will to fight."
   },
 
   "warden_intro": {

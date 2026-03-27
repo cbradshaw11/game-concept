@@ -71,6 +71,8 @@ var _enemy_suppress_ticks: Array[int] = []
 
 # M36 — Player attack flash timer (negative = hold phase, positive = lerp phase)
 var _player_attack_flash_timer: float = 0.0
+# M37 — Per-family flash tracking
+var _player_attack_flash_family: String = ""
 
 # ─── M19 Juice Constants ─────────────────────────────────────────────────────
 const HIT_STOP_DURATION := 0.065  # seconds (~65ms, range 50-80ms)
@@ -96,8 +98,29 @@ const PHASE_VULNERABLE_FLASH_COLOR := Color(1.8, 1.0, 0.2, 1.0)
 const PHASE_INVULNERABLE_FLASH_COLOR := Color(0.1, 0.1, 0.8, 1.0)
 const PHASE_PHANTOM_FLASH_DURATION := 0.25
 
-# M36 — Player attack flash
+# M36/M37 — Player attack flash (per-family colors)
 const PLAYER_ATTACK_FLASH_COLOR := Color(1.2, 1.2, 0.8, 1.0)
+
+# M37 — Per-family flash colors
+const FAMILY_FLASH_COLORS := {
+	"blade": Color(1.0, 1.0, 0.7),
+	"dagger": Color(0.7, 1.0, 0.7),
+	"polearm": Color(0.7, 0.9, 1.0),
+	"hammer": Color(1.0, 0.6, 0.3),
+	"bow": Color(0.9, 1.0, 0.7),
+	"staff": Color(0.8, 0.6, 1.0),
+	"greatsword": Color(1.0, 0.8, 0.4),
+	"crossbow": Color(0.8, 0.9, 1.0),
+	"orb": Color(0.5, 0.8, 1.0),
+}
+
+# M37 — Per-family flash durations {family: [hold, lerp]}
+const FAMILY_FLASH_DURATIONS := {
+	"dagger": [0.05, 0.08],
+	"hammer": [0.12, 0.18],
+}
+const DEFAULT_FLASH_HOLD := 0.08
+const DEFAULT_FLASH_LERP := 0.12
 const PLAYER_ATTACK_FLASH_HOLD := 0.08   # 80ms hold
 const PLAYER_ATTACK_FLASH_LERP := 0.12   # 120ms lerp back
 
@@ -245,11 +268,33 @@ func _process(delta: float) -> void:
 			encounter_cleared.emit(encounter_enemy_count)
 	_update_hud()
 
+func _get_weapon_family() -> String:
+	var weapon_data := _get_current_weapon_data()
+	return str(weapon_data.get("family", ""))
+
+func _get_family_flash_color(family: String) -> Color:
+	return FAMILY_FLASH_COLORS.get(family, PLAYER_ATTACK_FLASH_COLOR)
+
+func _get_family_flash_durations(family: String) -> Array:
+	return FAMILY_FLASH_DURATIONS.get(family, [DEFAULT_FLASH_HOLD, DEFAULT_FLASH_LERP])
+
+func _get_family_sfx(family: String, heavy: bool) -> String:
+	var prefix := "heavy_swing_" if heavy else "swing_"
+	var family_key := prefix + family
+	var fallback := "heavy_swing" if heavy else "swing"
+	# Check if family-specific SFX exists in registry
+	if _am() and family_key in _am().SFX_REGISTRY:
+		return family_key
+	return fallback
+
 func _on_attack_triggered() -> void:
 	attack_count += 1
-	_player_attack_flash_timer = PLAYER_ATTACK_FLASH_HOLD + PLAYER_ATTACK_FLASH_LERP
+	var family := _get_weapon_family()
+	_player_attack_flash_family = family
+	var durations := _get_family_flash_durations(family)
+	_player_attack_flash_timer = durations[0] + durations[1]
 	if _am():
-		_am().play_sfx("swing")
+		_am().play_sfx(_get_family_sfx(family, false))
 	_execute_weapon_attack()
 	attack_hook_triggered.emit()
 	_update_hud()
@@ -274,9 +319,12 @@ func _execute_weapon_attack() -> void:
 			_apply_damage_to_front_enemy(40)
 
 func execute_heavy_attack() -> void:
-	_player_attack_flash_timer = PLAYER_ATTACK_FLASH_HOLD + PLAYER_ATTACK_FLASH_LERP
+	var family := _get_weapon_family()
+	_player_attack_flash_family = family
+	var durations := _get_family_flash_durations(family)
+	_player_attack_flash_timer = durations[0] + durations[1]
 	if _am():
-		_am().play_sfx("heavy_swing")
+		_am().play_sfx(_get_family_sfx(family, true))
 	# Get weapon data to determine heavy mechanic
 	var weapon_data := _get_current_weapon_data()
 	var mechanic := str(weapon_data.get("heavy_mechanic", "single_target"))
@@ -292,6 +340,21 @@ func execute_heavy_attack() -> void:
 			_suppress_front_enemy(suppress_ticks)
 			var base_dmg := int(weapon_data.get("heavy_damage", 32))
 			_apply_damage_to_front_enemy(base_dmg)
+		"ranged_pierce":
+			# Crossbow heavy: hits ALL enemies at full damage
+			var base_dmg := int(weapon_data.get("heavy_damage", 44))
+			var ratio := float(weapon_data.get("ranged_pierce_ratio", 1.0))
+			var pierce_dmg := int(round(float(base_dmg) * ratio))
+			_apply_damage_to_all_enemies(pierce_dmg)
+		"arcane_burst":
+			# Resonance Orb heavy: hits ALL enemies at full damage + bonus poise
+			var base_dmg := int(weapon_data.get("heavy_damage", 28))
+			_apply_damage_to_all_enemies_with_poise(base_dmg)
+		"drain_stamina":
+			# Void Lance heavy: reduced damage + applies stamina drain to front enemy
+			var base_dmg := int(weapon_data.get("heavy_damage", 18))
+			_apply_damage_to_front_enemy(base_dmg)
+			_apply_stamina_drain_to_front_enemy(2)
 		_:
 			var base_dmg := int(weapon_data.get("heavy_damage", 24))
 			_apply_damage_to_front_enemy(base_dmg)
@@ -318,8 +381,11 @@ func _update_hud() -> void:
 		state_parts.append("E%d:%s(%d)" % [index + 1, EnemyController.state_name(enemy.state), enemy.health])
 	var enemies_text := " | ".join(state_parts)
 	if OS.is_debug_build():
-		combat_status.text = "Ring %s | Atk %d Dodge %d Guard %s | %s" % [
+		var weapon_data := _get_current_weapon_data()
+		var weapon_name := str(weapon_data.get("name", "Unarmed"))
+		combat_status.text = "Ring %s | %s | Atk %d Dodge %d Guard %s | %s" % [
 			ring_id,
+			weapon_name,
 			attack_count,
 			dodge_count,
 			"On" if guard_active else "Off",
@@ -625,6 +691,62 @@ func _apply_damage_to_all_enemies(damage: int) -> void:
 		trigger_screen_shake(SHAKE_MAGNITUDE_SMALL, 0.18)
 
 
+func _apply_damage_to_all_enemies_with_poise(damage: int) -> void:
+	# Arcane burst: hits all non-dead enemies with poise break
+	var hit_any := false
+	for i in enemies.size():
+		var enemy := enemies[i]
+		if enemy.state == EnemyController.EnemyState.DEAD:
+			continue
+		var prev_health := enemy.health
+		var prev_state := enemy.state
+		enemy.apply_damage(damage, true)
+
+		# phase_phantom: if health unchanged and not dead, damage was absorbed
+		if enemy.behavior_profile == Profiles.PHASE_PHANTOM and enemy.health == prev_health and enemy.state != EnemyController.EnemyState.DEAD:
+			if i < _hit_flash_timers.size():
+				_hit_flash_timers[i] = PHASE_PHANTOM_FLASH_DURATION
+				_hit_flash_types[i] = "phase_immune"
+			continue
+
+		hit_any = true
+		if _gs(): _gs().record_damage_dealt(damage)
+
+		if i < _hit_flash_timers.size():
+			if enemy.state == EnemyController.EnemyState.STAGGER and prev_state != EnemyController.EnemyState.STAGGER:
+				_hit_flash_timers[i] = POISE_BREAK_FLASH_DURATION
+				_hit_flash_types[i] = "poise"
+			else:
+				_hit_flash_timers[i] = HIT_FLASH_HOLD + HIT_FLASH_LERP_DURATION
+				_hit_flash_types[i] = "hit"
+
+		if enemy.state == EnemyController.EnemyState.DEAD and prev_state != EnemyController.EnemyState.DEAD:
+			_start_death_dissolve(i)
+			if _gs(): _gs().record_enemy_killed()
+			if _am():
+				_am().play_sfx("enemy_death")
+		elif enemy.state == EnemyController.EnemyState.STAGGER and prev_state != EnemyController.EnemyState.STAGGER:
+			if _gs(): _gs().record_poise_break()
+			if _am():
+				_am().play_sfx("poise_break")
+		else:
+			if _am():
+				_am().play_sfx("hit_enemy")
+
+	if hit_any:
+		_trigger_hit_stop()
+		trigger_screen_shake(SHAKE_MAGNITUDE_SMALL, 0.18)
+
+
+func _apply_stamina_drain_to_front_enemy(ticks: int) -> void:
+	# Void Lance heavy: apply stamina drain (skip attacks) to front enemy
+	for i in enemies.size():
+		var enemy := enemies[i]
+		if enemy.state != EnemyController.EnemyState.DEAD:
+			enemy.stamina_drained_ticks = ticks
+			return
+
+
 func _suppress_front_enemy(ticks: int) -> void:
 	# Bow heavy: suppress the first living enemy for N ticks
 	for i in enemies.size():
@@ -711,15 +833,18 @@ func _update_player_attack_flash(delta: float) -> void:
 	_player_attack_flash_timer -= delta
 	if not is_instance_valid(player_sprite):
 		return
+	var flash_color := _get_family_flash_color(_player_attack_flash_family)
+	var durations := _get_family_flash_durations(_player_attack_flash_family)
+	var lerp_dur: float = durations[1]
 	if _player_attack_flash_timer <= 0.0:
 		player_sprite.modulate = Color(1.0, 1.0, 1.0, 1.0)
-	elif _player_attack_flash_timer > PLAYER_ATTACK_FLASH_LERP:
+	elif _player_attack_flash_timer > lerp_dur:
 		# Hold phase
-		player_sprite.modulate = PLAYER_ATTACK_FLASH_COLOR
+		player_sprite.modulate = flash_color
 	else:
 		# Lerp back to normal
-		var t := 1.0 - (_player_attack_flash_timer / PLAYER_ATTACK_FLASH_LERP)
-		player_sprite.modulate = PLAYER_ATTACK_FLASH_COLOR.lerp(Color(1.0, 1.0, 1.0, 1.0), t)
+		var t := 1.0 - (_player_attack_flash_timer / lerp_dur)
+		player_sprite.modulate = flash_color.lerp(Color(1.0, 1.0, 1.0, 1.0), t)
 
 
 # ─── Death Dissolve ───────────────────────────────────────────────────────────

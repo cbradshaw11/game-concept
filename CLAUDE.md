@@ -131,7 +131,7 @@ A summary file **must** be written and committed as the final step of every mile
 - Status: `DONE`
 - Commit it with the test suite: `feat: TASK-NNN MN test suite + milestone summary`
 
-Missing summaries break project continuity. M6-M13 had to be reconstructed from git history after the fact because this was skipped. Milestones M24–M33 cover the overnight batch (behavior profiles through integration pass). M34 covers save v10 + controls. M35 adds 3 new weapons (Twin Fangs, War Hammer, Resonance Staff) with guard_penetration combat mechanic.
+Missing summaries break project continuity. M6-M13 had to be reconstructed from git history after the fact because this was skipped. Milestones M24–M33 cover the overnight batch (behavior profiles through integration pass). M34 covers save v10 + controls. M35 adds 3 new weapons (Twin Fangs, War Hammer, Resonance Staff) with guard_penetration combat mechanic. M36 adds player attack flash + SFX hooks. M37 is the weapon system overhaul: per-family visual/audio attack distinction (9 families), 4 new weapons (Iron Greatsword, Iron Crossbow, Resonance Orb, Void Lance), and 3 new combat mechanics (ranged_pierce, arcane_burst, drain_stamina).
 
 ---
 
