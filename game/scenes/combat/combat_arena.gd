@@ -254,7 +254,7 @@ func _process(delta: float) -> void:
 		# elite_pressure: update player HP tracking each tick
 		if enemy.behavior_profile == Profiles.ELITE_PRESSURE:
 			enemy.set_player_hp_percent(hp_percent)
-		var distance_to_player := absf(float(index - player_zone)) + 0.5
+		var distance_to_player := absf(enemy_nodes[index].position.x - player.position.x) / 160.0 if index < enemy_nodes.size() else absf(float(index - player_zone)) + 0.5
 		# kite_volley: if retreating and at arena edge, enter melee fallback
 		if enemy.state == EnemyController.EnemyState.RETREAT:
 			if index >= enemies.size() - 1:
@@ -1068,10 +1068,12 @@ func _get_front_enemy_index() -> int:
 	return -1
 
 func _get_front_enemy_distance() -> float:
-	var player_zone := _player_zone()
 	var idx := _get_front_enemy_index()
 	if idx < 0:
 		return 999.0
+	if idx < enemy_nodes.size():
+		return absf(enemy_nodes[idx].position.x - player.position.x) / 160.0
+	var player_zone := _player_zone()
 	return absf(float(idx - player_zone)) + 0.5
 
 func _get_melee_range_for_slot(weapon_data: Dictionary) -> float:
