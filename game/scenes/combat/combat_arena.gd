@@ -262,16 +262,14 @@ func _process(delta: float) -> void:
 		# Move enemy node toward/away from player based on AI state
 		if index < enemy_nodes.size():
 			var enode := enemy_nodes[index]
-			var px := player.position.x
-			var ex := enode.position.x
+			var px: float = player.position.x
+			var ex: float = enode.position.x
 			var espeed: float = float(enemy.get_meta("speed", 80.0))
 			if enemy.state == EnemyController.EnemyState.CHASE:
 				enode.position.x = move_toward(ex, px, espeed * delta)
 			elif enemy.state == EnemyController.EnemyState.RETREAT:
 				# kite enemies back away from player
-				var retreat_dir := sign(ex - px)
-				if retreat_dir == 0:
-					retreat_dir = 1.0
+				var retreat_dir: float = 1.0 if ex >= px else -1.0
 				enode.position.x = clampf(ex + retreat_dir * espeed * delta, 0.0, 960.0)
 		var did_attack := enemy.tick(distance_to_player, delta)
 		if did_attack:
