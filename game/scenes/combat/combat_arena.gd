@@ -38,6 +38,15 @@ var guard_active: bool = false
 var player_health: int = 100
 var player_max_health: int = 100
 
+# M38 — Three-slot weapon system
+var _equipped_melee: String = "blade_iron"
+var _equipped_ranged: String = "bow_iron"
+var _equipped_magic: String = "resonance_staff"
+var _melee_cooldown: float = 0.0
+var _ranged_cooldown: float = 0.0
+var _magic_cooldown: float = 0.0
+var _last_attack_slot: String = "melee"
+
 signal player_died
 var enemies: Array[EnemyController] = []
 var enemy_sprites: Array[Sprite2D] = []
@@ -133,7 +142,6 @@ const ENEMY_SPRITE_NAMES := {
 }
 
 func _ready() -> void:
-	player.attack_triggered.connect(_on_attack_triggered)
 	player.dodge_triggered.connect(_on_dodge_triggered)
 	player.guard_changed.connect(_on_guard_changed)
 	_camera_origin = camera.offset
@@ -141,8 +149,14 @@ func _ready() -> void:
 	_load_player_sprite()
 	_setup_phase_flash_overlay()
 	_update_hud()
-	# Start combat music when arena becomes active
-	# M28 — Music is now driven by FlowUI/main based on ring; no-op here
+
+func set_equipped_weapons(melee_id: String, ranged_id: String, magic_id: String) -> void:
+	_equipped_melee = melee_id
+	_equipped_ranged = ranged_id
+	_equipped_magic = magic_id
+	_melee_cooldown = 0.0
+	_ranged_cooldown = 0.0
+	_magic_cooldown = 0.0
 
 func _load_background() -> void:
 	# Check ring data for a named background, fallback to default
@@ -194,6 +208,18 @@ func _process(delta: float) -> void:
 	_update_camera_shake(delta)
 	_update_hit_flashes(delta)
 	_update_player_attack_flash(delta)
+	# M38 — Tick independent cooldowns
+	_melee_cooldown = maxf(0.0, _melee_cooldown - delta)
+	_ranged_cooldown = maxf(0.0, _ranged_cooldown - delta)
+	_magic_cooldown = maxf(0.0, _magic_cooldown - delta)
+	# M38 — Three independent attack inputs
+	if not encounter_completed and not enemies.is_empty():
+		if Input.is_action_just_pressed("attack_melee"):
+			_try_slot_attack("melee")
+		if Input.is_action_just_pressed("attack_ranged"):
+			_try_slot_attack("ranged")
+		if Input.is_action_just_pressed("attack_magic"):
+			_try_slot_attack("magic")
 
 	if enemies.is_empty() or encounter_completed:
 		return
@@ -268,10 +294,6 @@ func _process(delta: float) -> void:
 			encounter_cleared.emit(encounter_enemy_count)
 	_update_hud()
 
-func _get_weapon_family() -> String:
-	var weapon_data := _get_current_weapon_data()
-	return str(weapon_data.get("family", ""))
-
 func _get_family_flash_color(family: String) -> Color:
 	return FAMILY_FLASH_COLORS.get(family, PLAYER_ATTACK_FLASH_COLOR)
 
@@ -287,77 +309,84 @@ func _get_family_sfx(family: String, heavy: bool) -> String:
 		return family_key
 	return fallback
 
-func _on_attack_triggered() -> void:
+func _try_slot_attack(slot: String) -> void:
+	# Check cooldown
+	match slot:
+		"melee":
+			if _melee_cooldown > 0.0:
+				return
+		"ranged":
+			if _ranged_cooldown > 0.0:
+				return
+		"magic":
+			if _magic_cooldown > 0.0:
+				return
+	# Check stamina
+	var weapon_data := _get_weapon_data_for_slot(slot)
+	if weapon_data.is_empty():
+		return
+	var stamina_cost := int(weapon_data.get("heavy_stamina_cost", int(weapon_data.get("light_stamina_cost", 12))))
+	if player.stamina < stamina_cost:
+		return
+	player.stamina -= stamina_cost
+	# Set cooldown
+	var cooldown_defaults := {"melee": 1.0, "ranged": 1.5, "magic": 1.1}
+	var cooldown_val := float(weapon_data.get("attack_cooldown", cooldown_defaults.get(slot, 1.0)))
+	match slot:
+		"melee":
+			_melee_cooldown = cooldown_val
+		"ranged":
+			_ranged_cooldown = cooldown_val
+		"magic":
+			_magic_cooldown = cooldown_val
+	_execute_attack(slot, weapon_data)
+
+func _execute_attack(slot: String, weapon_data: Dictionary) -> void:
+	_last_attack_slot = slot
 	attack_count += 1
-	var family := _get_weapon_family()
+	var family := str(weapon_data.get("family", ""))
 	_player_attack_flash_family = family
 	var durations := _get_family_flash_durations(family)
 	_player_attack_flash_timer = durations[0] + durations[1]
+	# Use heavy mechanic as the primary attack (simplified: no light/heavy distinction per slot)
+	var mechanic := str(weapon_data.get("heavy_mechanic", "single_target"))
+	var is_heavy := true
 	if _am():
-		_am().play_sfx(_get_family_sfx(family, false))
-	_execute_weapon_attack()
-	attack_hook_triggered.emit()
-	_update_hud()
-
-func _execute_weapon_attack() -> void:
-	# Get weapon data to determine attack mechanic
-	var weapon_data := _get_current_weapon_data()
-	var mechanic := str(weapon_data.get("light_mechanic", "single_target"))
-
+		_am().play_sfx(_get_family_sfx(family, is_heavy))
 	match mechanic:
 		"sweep_all":
-			# Polearm: hits ALL enemies at 60% damage
-			var sweep_ratio := float(weapon_data.get("light_sweep_ratio", 0.6))
-			var base_dmg := int(weapon_data.get("light_damage", 12))
+			var sweep_ratio := float(weapon_data.get("light_sweep_ratio", 0.8))
+			var base_dmg := int(weapon_data.get("heavy_damage", 28))
 			var sweep_dmg := int(round(float(base_dmg) * sweep_ratio))
 			_apply_damage_to_all_enemies(sweep_dmg)
-		"ranged_single":
-			# Bow light: single target, same as default
-			_apply_damage_to_front_enemy(40)
-		_:
-			# Default single target
-			_apply_damage_to_front_enemy(40)
-
-func execute_heavy_attack() -> void:
-	var family := _get_weapon_family()
-	_player_attack_flash_family = family
-	var durations := _get_family_flash_durations(family)
-	_player_attack_flash_timer = durations[0] + durations[1]
-	if _am():
-		_am().play_sfx(_get_family_sfx(family, true))
-	# Get weapon data to determine heavy mechanic
-	var weapon_data := _get_current_weapon_data()
-	var mechanic := str(weapon_data.get("heavy_mechanic", "single_target"))
-
-	match mechanic:
 		"lunge_poise":
-			# Polearm heavy: single target, bonus poise damage
 			var base_dmg := int(weapon_data.get("heavy_damage", 28))
 			_apply_damage_to_front_enemy(base_dmg, true)
+		"ranged_single":
+			var base_dmg := int(weapon_data.get("heavy_damage", int(weapon_data.get("light_damage", 18))))
+			_apply_damage_to_front_enemy(base_dmg)
 		"charged_suppress":
-			# Bow heavy: suppress front enemy action for N ticks during wind-up
 			var suppress_ticks := int(weapon_data.get("heavy_suppress_ticks", 1))
 			_suppress_front_enemy(suppress_ticks)
 			var base_dmg := int(weapon_data.get("heavy_damage", 32))
 			_apply_damage_to_front_enemy(base_dmg)
 		"ranged_pierce":
-			# Crossbow heavy: hits ALL enemies at full damage
 			var base_dmg := int(weapon_data.get("heavy_damage", 44))
 			var ratio := float(weapon_data.get("ranged_pierce_ratio", 1.0))
 			var pierce_dmg := int(round(float(base_dmg) * ratio))
 			_apply_damage_to_all_enemies(pierce_dmg)
 		"arcane_burst":
-			# Resonance Orb heavy: hits ALL enemies at full damage + bonus poise
 			var base_dmg := int(weapon_data.get("heavy_damage", 28))
 			_apply_damage_to_all_enemies_with_poise(base_dmg)
 		"drain_stamina":
-			# Void Lance heavy: reduced damage + applies stamina drain to front enemy
 			var base_dmg := int(weapon_data.get("heavy_damage", 18))
 			_apply_damage_to_front_enemy(base_dmg)
 			_apply_stamina_drain_to_front_enemy(2)
 		_:
-			var base_dmg := int(weapon_data.get("heavy_damage", 24))
+			var base_dmg := int(weapon_data.get("heavy_damage", int(weapon_data.get("light_damage", 14))))
 			_apply_damage_to_front_enemy(base_dmg)
+	attack_hook_triggered.emit()
+	_update_hud()
 
 func _on_dodge_triggered() -> void:
 	dodge_count += 1
@@ -381,14 +410,17 @@ func _update_hud() -> void:
 		state_parts.append("E%d:%s(%d)" % [index + 1, EnemyController.state_name(enemy.state), enemy.health])
 	var enemies_text := " | ".join(state_parts)
 	if OS.is_debug_build():
-		var weapon_data := _get_current_weapon_data()
-		var weapon_name := str(weapon_data.get("name", "Unarmed"))
-		combat_status.text = "Ring %s | %s | Atk %d Dodge %d Guard %s | %s" % [
+		var m_data := _get_weapon_data_for_slot("melee")
+		var r_data := _get_weapon_data_for_slot("ranged")
+		var mg_data := _get_weapon_data_for_slot("magic")
+		var m_name := str(m_data.get("name", "None"))
+		var r_name := str(r_data.get("name", "None"))
+		var mg_name := str(mg_data.get("name", "None"))
+		combat_status.text = "M: %s | R: %s | Mg: %s | Ring %s | Atk %d Dodge %d | %s" % [
+			m_name, r_name, mg_name,
 			ring_id,
-			weapon_name,
 			attack_count,
 			dodge_count,
-			"On" if guard_active else "Off",
 			enemies_text,
 		]
 	else:
@@ -564,10 +596,15 @@ func _player_zone() -> int:
 	return clampi(zone, 0, max(0, enemies.size() - 1))
 
 
-func _get_current_weapon_data() -> Dictionary:
+func _get_weapon_data_for_slot(slot: String) -> Dictionary:
 	var weapon_id: String = ""
-	if "selected_weapon_id" in get_parent():
-		weapon_id = str(get_parent().get("selected_weapon_id"))
+	match slot:
+		"melee":
+			weapon_id = _equipped_melee
+		"ranged":
+			weapon_id = _equipped_ranged
+		"magic":
+			weapon_id = _equipped_magic
 	var ds := get_node_or_null("/root/DataStore")
 	return ds.get_weapon(weapon_id) if ds and weapon_id != "" else {}
 
@@ -578,7 +615,7 @@ func _apply_damage_to_front_enemy(damage: int, force_poise_break: bool = false) 
 			# guard_counter: if guarding, absorb hit and counter-attack
 			if enemy.guarding and enemy.on_hit_while_guarding():
 				# M35 — guard_penetration: weapon bypasses a fraction of guard absorption
-				var guard_pen := float(_get_current_weapon_data().get("guard_penetration", 0.0))
+				var guard_pen := float(_get_weapon_data_for_slot(_last_attack_slot).get("guard_penetration", 0.0))
 				if guard_pen > 0.0:
 					var pen_dmg := int(round(float(damage) * guard_pen))
 					if pen_dmg > 0:

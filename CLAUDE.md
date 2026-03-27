@@ -106,7 +106,7 @@ Two test modes used in the harness:
 - `run_test` - 60s timeout, hard fail on non-zero exit
 - `run_scene_test` - 10s timeout (tolerates Godot physics shutdown hang), parses PASS/FAIL markers
 
-Milestone-scoped tests live under `game/scripts/tests/m4/` through `game/scripts/tests/m32/`. When adding features for a milestone, add tests in the matching subdirectory.
+Milestone-scoped tests live under `game/scripts/tests/m4/` through `game/scripts/tests/m38/`. When adding features for a milestone, add tests in the matching subdirectory.
 
 ---
 
@@ -131,10 +131,10 @@ A summary file **must** be written and committed as the final step of every mile
 - Status: `DONE`
 - Commit it with the test suite: `feat: TASK-NNN MN test suite + milestone summary`
 
-Missing summaries break project continuity. M6-M13 had to be reconstructed from git history after the fact because this was skipped. Milestones M24–M33 cover the overnight batch (behavior profiles through integration pass). M34 covers save v10 + controls. M35 adds 3 new weapons (Twin Fangs, War Hammer, Resonance Staff) with guard_penetration combat mechanic. M36 adds player attack flash + SFX hooks. M37 is the weapon system overhaul: per-family visual/audio attack distinction (9 families), 4 new weapons (Iron Greatsword, Iron Crossbow, Resonance Orb, Void Lance), and 3 new combat mechanics (ranged_pierce, arcane_burst, drain_stamina).
+Missing summaries break project continuity. M6-M13 had to be reconstructed from git history after the fact because this was skipped. Milestones M24–M33 cover the overnight batch (behavior profiles through integration pass). M34 covers save v10 + controls. M35 adds 3 new weapons (Twin Fangs, War Hammer, Resonance Staff) with guard_penetration combat mechanic. M36 adds player attack flash + SFX hooks. M37 is the weapon system overhaul: per-family visual/audio attack distinction (9 families), 4 new weapons (Iron Greatsword, Iron Crossbow, Resonance Orb, Void Lance), and 3 new combat mechanics (ranged_pierce, arcane_burst, drain_stamina). M38 is the three-slot weapon system: melee/ranged/magic slots with independent cooldowns, three input bindings (attack_melee LMB/Z, attack_ranged Q, attack_magic R), category-filtered vendor UI, and save v11.
 
 ---
 
 ## Save Versioning
 
-GameState uses merge-with-defaults migration: `default_save_state()` defines all fields, and `SaveSystem._merge_with_defaults()` fills missing keys from old saves. `SaveSystem.SAVE_VERSION` is currently **10** (M34), covering all fields through M32 (resonance shards, achievements, challenges). `save_state()` injects `_save_version` into the save file. When adding fields to GameState, add them to both `default_save_state()` and `to_save_state()`, with a migration guard comment in `apply_save_state()`, and bump `SAVE_VERSION`.
+GameState uses merge-with-defaults migration: `default_save_state()` defines all fields, and `SaveSystem._merge_with_defaults()` fills missing keys from old saves. `SaveSystem.SAVE_VERSION` is currently **11** (M38), covering all fields through M38 (three-slot weapon loadout: equipped_melee, equipped_ranged, equipped_magic). `save_state()` injects `_save_version` into the save file. When adding fields to GameState, add them to both `default_save_state()` and `to_save_state()`, with a migration guard comment in `apply_save_state()`, and bump `SAVE_VERSION`.

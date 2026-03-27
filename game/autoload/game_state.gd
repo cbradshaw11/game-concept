@@ -49,6 +49,11 @@ var lifetime_kills: int = 0
 var lifetime_poise_breaks: int = 0
 var completed_challenges: Array = []  # Array of challenge id strings completed
 
+# ── M38 — Three-slot weapon loadout ──────────────────────────────────────────
+var equipped_melee: String = "blade_iron"
+var equipped_ranged: String = "bow_iron"
+var equipped_magic: String = "resonance_staff"
+
 # ── M27 — Resonance Shards meta-progression ───────────────────────────────
 var resonance_shards: int = 0         # Lifetime total accumulated
 var resonance_spent: int = 0          # Lifetime total spent
@@ -96,6 +101,10 @@ func default_save_state() -> Dictionary:
 		"lifetime_kills": 0,
 		"lifetime_poise_breaks": 0,
 		"completed_challenges": [],
+		# v12 — M38 three-slot weapon loadout
+		"equipped_melee": "blade_iron",
+		"equipped_ranged": "bow_iron",
+		"equipped_magic": "resonance_staff",
 	}
 
 func to_save_state() -> Dictionary:
@@ -127,6 +136,10 @@ func to_save_state() -> Dictionary:
 		"lifetime_kills": lifetime_kills,
 		"lifetime_poise_breaks": lifetime_poise_breaks,
 		"completed_challenges": completed_challenges.duplicate(),
+		# v12 — M38 three-slot weapon loadout
+		"equipped_melee": equipped_melee,
+		"equipped_ranged": equipped_ranged,
+		"equipped_magic": equipped_magic,
 	}
 
 func apply_save_state(data: Dictionary) -> void:
@@ -165,6 +178,10 @@ func apply_save_state(data: Dictionary) -> void:
 	lifetime_poise_breaks = int(data.get("lifetime_poise_breaks", 0))
 	var cc: Variant = data.get("completed_challenges", [])
 	completed_challenges = cc if typeof(cc) == TYPE_ARRAY else []
+	# v12 migration guard — M38 three-slot weapon loadout
+	equipped_melee = str(data.get("equipped_melee", "blade_iron"))
+	equipped_ranged = str(data.get("equipped_ranged", "bow_iron"))
+	equipped_magic = str(data.get("equipped_magic", "resonance_staff"))
 
 func start_run(seed: int, ring_id: String) -> void:
 	active_seed = seed

@@ -3,6 +3,7 @@
     {
       "id": "blade_iron",
       "family": "blade",
+      "category": "melee",
       "name": "Iron Blade",
       "light_damage": 14,
       "heavy_damage": 24,
@@ -19,6 +20,7 @@
     {
       "id": "polearm_iron",
       "family": "polearm",
+      "category": "melee",
       "name": "Iron Polearm",
       "light_damage": 12,
       "heavy_damage": 28,
@@ -36,6 +38,7 @@
     {
       "id": "bow_iron",
       "family": "bow",
+      "category": "ranged",
       "name": "Iron Bow",
       "light_damage": 18,
       "heavy_damage": 32,
@@ -53,6 +56,7 @@
     {
       "id": "twin_fangs",
       "family": "dagger",
+      "category": "melee",
       "name": "Twin Fangs",
       "light_damage": 8,
       "heavy_damage": 14,
@@ -70,6 +74,7 @@
     {
       "id": "war_hammer",
       "family": "hammer",
+      "category": "melee",
       "name": "War Hammer",
       "light_damage": 28,
       "heavy_damage": 42,
@@ -87,6 +92,7 @@
     {
       "id": "resonance_staff",
       "family": "staff",
+      "category": "magic",
       "name": "Resonance Staff",
       "light_damage": 15,
       "heavy_damage": 22,
@@ -104,6 +110,7 @@
     {
       "id": "greatsword_iron",
       "family": "greatsword",
+      "category": "melee",
       "name": "Iron Greatsword",
       "light_damage": 20,
       "heavy_damage": 36,
@@ -122,6 +129,7 @@
     {
       "id": "crossbow_iron",
       "family": "crossbow",
+      "category": "ranged",
       "name": "Iron Crossbow",
       "light_damage": 14,
       "heavy_damage": 44,
@@ -140,6 +148,7 @@
     {
       "id": "resonance_orb",
       "family": "orb",
+      "category": "magic",
       "name": "Resonance Orb",
       "light_damage": 10,
       "heavy_damage": 28,
@@ -157,6 +166,7 @@
     {
       "id": "void_lance",
       "family": "staff",
+      "category": "magic",
       "name": "Void Lance",
       "light_damage": 22,
       "heavy_damage": 18,

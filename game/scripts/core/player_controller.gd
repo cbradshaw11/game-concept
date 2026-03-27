@@ -81,8 +81,7 @@ func _physics_process(delta: float) -> void:
 	velocity = direction * move_speed
 	move_and_slide()
 
-	if Input.is_action_just_pressed("ui_accept"):
-		try_attack()
+	# M38 — Attack inputs now handled by combat_arena (three-slot system)
 	if Input.is_action_just_pressed("ui_select"):
 		try_dodge()
 

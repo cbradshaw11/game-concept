@@ -11,7 +11,9 @@ const SAVE_PATH := "user://savegame.json"
 # v10 — M27-M32 batch: resonance shards (resonance_shards, resonance_spent,
 #        permanent_unlocks), M32 achievements (unlocked_achievements,
 #        lifetime_kills, lifetime_poise_breaks, completed_challenges)
-const SAVE_VERSION := 10
+# v11 — M38 three-slot weapon loadout (equipped_melee, equipped_ranged,
+#        equipped_magic)
+const SAVE_VERSION := 11
 
 static func save_state(data: Dictionary) -> bool:
 	data["_save_version"] = SAVE_VERSION

@@ -16,7 +16,9 @@ var reward_system := RewardSystem.new()
 var contract_system := ContractSystem.new()
 var vendor_system := VendorSystem.new()
 var active_encounter: Dictionary = {}
-var selected_weapon_id: String = "blade_iron"
+var equipped_melee: String = "blade_iron"
+var equipped_ranged: String = "bow_iron"
+var equipped_magic: String = "resonance_staff"
 var combat_arena: CombatArena = null
 var current_run_ring: String = "inner"
 var pending_run_ring: String = ""
@@ -39,7 +41,7 @@ func _connect_ui() -> void:
 	flow_ui.resolve_encounter_pressed.connect(_on_resolve_encounter_pressed)
 	flow_ui.extract_pressed.connect(_on_extract_pressed)
 	flow_ui.die_pressed.connect(_on_die_pressed)
-	flow_ui.loadout_selected.connect(_on_loadout_selected)
+	flow_ui.loadout_updated.connect(_on_loadout_updated)
 	flow_ui.vendor_purchase_pressed.connect(_on_vendor_purchase_pressed)
 	flow_ui.modifier_selected.connect(_on_modifier_selected)
 	flow_ui.warden_gate_dismissed.connect(_on_warden_gate_dismissed)
@@ -102,8 +104,9 @@ func _begin_run(ring_id: String, seed: int) -> void:
 	_start_challenge_timer(ring_id)
 	_ensure_combat_arena()
 	combat_arena.set_context(ring_id, seed, int(active_encounter.get("enemy_count", 1)))
+	combat_arena.set_equipped_weapons(equipped_melee, equipped_ranged, equipped_magic)
 	combat_arena.set_arena_active(true)
-	flow_ui.set_current_loadout(selected_weapon_id)
+	flow_ui.set_current_loadout(equipped_melee, equipped_ranged, equipped_magic)
 
 func _on_resolve_encounter_pressed() -> void:
 	if GameState.current_ring == "sanctuary":
@@ -275,14 +278,21 @@ func _offer_run_modifier() -> void:
 
 func _initialize_loadouts() -> void:
 	var weapons: Array = DataStore.weapons.get("weapons", [])
-	if weapons.size() > 0:
-		selected_weapon_id = str(weapons[0].get("id", selected_weapon_id))
+	# Restore equipped slots from GameState (save migration fills defaults)
+	equipped_melee = GameState.equipped_melee
+	equipped_ranged = GameState.equipped_ranged
+	equipped_magic = GameState.equipped_magic
 	flow_ui.set_available_loadouts(weapons)
-	flow_ui.set_current_loadout(selected_weapon_id)
+	flow_ui.set_current_loadout(equipped_melee, equipped_ranged, equipped_magic)
 
-func _on_loadout_selected(weapon_id: String) -> void:
-	selected_weapon_id = weapon_id
-	flow_ui.set_current_loadout(selected_weapon_id)
+func _on_loadout_updated(melee_id: String, ranged_id: String, magic_id: String) -> void:
+	equipped_melee = melee_id
+	equipped_ranged = ranged_id
+	equipped_magic = magic_id
+	GameState.equipped_melee = melee_id
+	GameState.equipped_ranged = ranged_id
+	GameState.equipped_magic = magic_id
+	flow_ui.set_current_loadout(equipped_melee, equipped_ranged, equipped_magic)
 
 func _load_save_state() -> void:
 	var state := SaveSystem.load_state(GameState.default_save_state())

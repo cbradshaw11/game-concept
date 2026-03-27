@@ -5,7 +5,7 @@ signal start_run_pressed(ring_id: String)
 signal resolve_encounter_pressed
 signal extract_pressed
 signal die_pressed
-signal loadout_selected(weapon_id: String)
+signal loadout_updated(melee_id: String, ranged_id: String, magic_id: String)
 signal vendor_purchase_pressed(upgrade_id: String)
 signal modifier_selected(modifier_id: String)
 signal warden_gate_dismissed
@@ -19,6 +19,12 @@ const RunSummaryScene = preload("res://scenes/ui/run_summary.tscn")
 @onready var prep_status: Label = $PrepScreen/PrepVBox/PrepStatus
 @onready var loadout_select: OptionButton = $PrepScreen/PrepVBox/LoadoutSelect
 @onready var loadout_summary: Label = $PrepScreen/PrepVBox/LoadoutSummary
+
+# M38 — Three-slot weapon selectors (built dynamically from loadout_select's parent)
+var _melee_select: OptionButton = null
+var _ranged_select: OptionButton = null
+var _magic_select: OptionButton = null
+var _all_weapons: Array = []
 @onready var run_status: Label = $RunScreen/RunVBox/RunStatus
 @onready var run_loadout: Label = $RunScreen/RunVBox/RunLoadout
 
@@ -148,9 +154,21 @@ func _on_die_button_pressed() -> void:
 	_play_click()
 	die_pressed.emit()
 
-func _on_loadout_select_item_selected(index: int) -> void:
-	var weapon_id: Variant = loadout_select.get_item_metadata(index)
-	loadout_selected.emit(str(weapon_id))
+func _on_loadout_select_item_selected(_index: int) -> void:
+	# Legacy — replaced by M38 three-slot selectors
+	_emit_loadout_updated()
+
+func _emit_loadout_updated() -> void:
+	var melee_id := ""
+	var ranged_id := ""
+	var magic_id := ""
+	if _melee_select and _melee_select.get_item_count() > 0:
+		melee_id = str(_melee_select.get_item_metadata(_melee_select.selected))
+	if _ranged_select and _ranged_select.get_item_count() > 0:
+		ranged_id = str(_ranged_select.get_item_metadata(_ranged_select.selected))
+	if _magic_select and _magic_select.get_item_count() > 0:
+		magic_id = str(_magic_select.get_item_metadata(_magic_select.selected))
+	loadout_updated.emit(melee_id, ranged_id, magic_id)
 
 func _on_vendor_button_pressed(upgrade_id: String) -> void:
 	_play_click()
@@ -291,18 +309,90 @@ func on_run_started(seed: int) -> void:
 	_refresh_run_status()
 
 func set_available_loadouts(weapons: Array) -> void:
-	loadout_select.clear()
-	for weapon in weapons:
-		var weapon_id := str(weapon.get("id", ""))
-		loadout_select.add_item(weapon_id)
-		loadout_select.set_item_metadata(loadout_select.get_item_count() - 1, weapon_id)
-	if loadout_select.get_item_count() > 0:
-		loadout_select.select(0)
-		_on_loadout_select_item_selected(0)
+	_all_weapons = weapons
+	# Hide legacy single selector
+	loadout_select.visible = false
+	# Build three category selectors if not already created
+	if _melee_select == null:
+		_build_slot_selectors()
+	_populate_slot_selector(_melee_select, "melee")
+	_populate_slot_selector(_ranged_select, "ranged")
+	_populate_slot_selector(_magic_select, "magic")
 
-func set_current_loadout(weapon_id: String) -> void:
-	loadout_summary.text = "Selected loadout: %s" % weapon_id
-	run_loadout.text = "Loadout: %s" % weapon_id
+func _build_slot_selectors() -> void:
+	var parent_vbox: VBoxContainer = loadout_select.get_parent() as VBoxContainer
+	if parent_vbox == null:
+		return
+	var insert_idx := loadout_select.get_index() + 1
+	# Melee
+	var melee_label := Label.new()
+	melee_label.text = "Melee (LMB / Z):"
+	parent_vbox.add_child(melee_label)
+	parent_vbox.move_child(melee_label, insert_idx)
+	_melee_select = OptionButton.new()
+	_melee_select.name = "MeleeSelect"
+	_melee_select.item_selected.connect(_on_slot_select_changed)
+	parent_vbox.add_child(_melee_select)
+	parent_vbox.move_child(_melee_select, insert_idx + 1)
+	# Ranged
+	var ranged_label := Label.new()
+	ranged_label.text = "Ranged (Q):"
+	parent_vbox.add_child(ranged_label)
+	parent_vbox.move_child(ranged_label, insert_idx + 2)
+	_ranged_select = OptionButton.new()
+	_ranged_select.name = "RangedSelect"
+	_ranged_select.item_selected.connect(_on_slot_select_changed)
+	parent_vbox.add_child(_ranged_select)
+	parent_vbox.move_child(_ranged_select, insert_idx + 3)
+	# Magic
+	var magic_label := Label.new()
+	magic_label.text = "Magic (R):"
+	parent_vbox.add_child(magic_label)
+	parent_vbox.move_child(magic_label, insert_idx + 4)
+	_magic_select = OptionButton.new()
+	_magic_select.name = "MagicSelect"
+	_magic_select.item_selected.connect(_on_slot_select_changed)
+	parent_vbox.add_child(_magic_select)
+	parent_vbox.move_child(_magic_select, insert_idx + 5)
+
+func _populate_slot_selector(selector: OptionButton, category: String) -> void:
+	selector.clear()
+	for weapon in _all_weapons:
+		if str(weapon.get("category", "")) == category:
+			var wid := str(weapon.get("id", ""))
+			var wname := str(weapon.get("name", wid))
+			selector.add_item(wname)
+			selector.set_item_metadata(selector.get_item_count() - 1, wid)
+	if selector.get_item_count() > 0:
+		selector.select(0)
+
+func _on_slot_select_changed(_index: int) -> void:
+	_emit_loadout_updated()
+
+func set_current_loadout(melee_id: String, ranged_id: String, magic_id: String) -> void:
+	var m_name := _weapon_name(melee_id)
+	var r_name := _weapon_name(ranged_id)
+	var mg_name := _weapon_name(magic_id)
+	loadout_summary.text = "M: %s | R: %s | Mg: %s" % [m_name, r_name, mg_name]
+	run_loadout.text = "M: %s | R: %s | Mg: %s" % [m_name, r_name, mg_name]
+	# Sync selectors
+	_select_weapon_in_slot(_melee_select, melee_id)
+	_select_weapon_in_slot(_ranged_select, ranged_id)
+	_select_weapon_in_slot(_magic_select, magic_id)
+
+func _weapon_name(weapon_id: String) -> String:
+	for w in _all_weapons:
+		if str(w.get("id", "")) == weapon_id:
+			return str(w.get("name", weapon_id))
+	return weapon_id
+
+func _select_weapon_in_slot(selector: OptionButton, weapon_id: String) -> void:
+	if selector == null:
+		return
+	for i in selector.get_item_count():
+		if str(selector.get_item_metadata(i)) == weapon_id:
+			selector.select(i)
+			return
 
 func on_encounter_resolved(xp_gain: int, loot_gain: int) -> void:
 	run_base_status = "Encounter won: +%d XP, +%d Loot" % [xp_gain, loot_gain]
