@@ -266,9 +266,9 @@ func _process(delta: float) -> void:
 			var ex: float = enode.position.x
 			var espeed: float = float(enemy.get_meta("speed", 80.0))
 			if enemy.state == EnemyController.EnemyState.CHASE:
-				enode.position.x = move_toward(ex, px, espeed * delta)
+				var dir: Vector2 = (player.position - enode.position).normalized()
+				enode.position += dir * espeed * delta
 			elif enemy.state == EnemyController.EnemyState.RETREAT:
-				# kite enemies back away from player
 				var retreat_dir: float = 1.0 if ex >= px else -1.0
 				enode.position.x = clampf(ex + retreat_dir * espeed * delta, 0.0, 960.0)
 		var did_attack := enemy.tick(distance_to_player, delta)
@@ -276,7 +276,7 @@ func _process(delta: float) -> void:
 			# M39 — Enemy lunge animation on every attack attempt
 			_animate_enemy_attack(index)
 			# Only deal damage if sprites are physically overlapping (~64px contact distance)
-			var pixel_dist: float = absf(enemy_nodes[index].position.x - player.position.x) if index < enemy_nodes.size() else 9999.0
+			var pixel_dist: float = enemy_nodes[index].position.distance_to(player.position) if index < enemy_nodes.size() else 9999.0
 			if pixel_dist > 64.0:
 				continue
 			var dmg := enemy.damage
