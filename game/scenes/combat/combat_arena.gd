@@ -264,7 +264,9 @@ func _process(delta: float) -> void:
 			# M39 — Enemy lunge animation on every attack attempt
 			_animate_enemy_attack(index)
 			# Only deal damage if within attack range
+			print("ATTACK: enemy[", index, "] dist=", distance_to_player, " range=", enemy.attack_range, " enemy_x=", enemy_nodes[index].position.x if index < enemy_nodes.size() else -1, " player_x=", player.position.x)
 			if distance_to_player > enemy.attack_range:
+				print("  -> OUT OF RANGE, skipping damage")
 				continue
 			var dmg := enemy.damage
 			# M31 — cursed_ground: +25% enemy damage
