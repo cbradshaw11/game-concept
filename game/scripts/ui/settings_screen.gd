@@ -9,6 +9,13 @@ func _ready() -> void:
 	layer = 20
 	_build_ui()
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		get_viewport().set_input_as_handled()
+		SettingsManager.save_settings()
+		closed.emit()
+		queue_free()
+
 func _build_ui() -> void:
 	# Semi-transparent background
 	var bg := ColorRect.new()
@@ -32,10 +39,14 @@ func _build_ui() -> void:
 	margin.add_theme_constant_override("margin_bottom", 20)
 	panel.add_child(margin)
 
+	var outer_vbox := VBoxContainer.new()
+	outer_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	margin.add_child(outer_vbox)
+
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(0, 500)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	margin.add_child(scroll)
+	outer_vbox.add_child(scroll)
 
 	var vbox := VBoxContainer.new()
 	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -140,9 +151,9 @@ func _build_ui() -> void:
 	remap_note.add_theme_color_override("font_color", Color(0.45, 0.42, 0.55, 0.8))
 	vbox.add_child(remap_note)
 
-	vbox.add_child(HSeparator.new())
+	# ── Bottom Buttons (outside scroll, always visible) ─────────────────
+	outer_vbox.add_child(HSeparator.new())
 
-	# ── Bottom Buttons ───────────────────────────────────────────────────
 	var btn_row := HBoxContainer.new()
 	btn_row.add_theme_constant_override("separation", 12)
 
@@ -172,7 +183,7 @@ func _build_ui() -> void:
 	)
 	btn_row.add_child(save_btn)
 
-	vbox.add_child(btn_row)
+	outer_vbox.add_child(btn_row)
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 

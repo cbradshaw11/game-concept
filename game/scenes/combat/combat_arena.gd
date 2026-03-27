@@ -82,6 +82,8 @@ var _enemy_suppress_ticks: Array[int] = []
 var _player_attack_flash_timer: float = 0.0
 # M37 — Per-family flash tracking
 var _player_attack_flash_family: String = ""
+# Player damage flash (zone_control / death explosion)
+var _player_damage_flash_timer: float = 0.0
 
 # ─── M19 Juice Constants ─────────────────────────────────────────────────────
 const HIT_STOP_DURATION := 0.065  # seconds (~65ms, range 50-80ms)
@@ -208,6 +210,7 @@ func _process(delta: float) -> void:
 	_update_camera_shake(delta)
 	_update_hit_flashes(delta)
 	_update_player_attack_flash(delta)
+	_update_player_damage_flash(delta)
 	# M38 — Tick independent cooldowns
 	_melee_cooldown = maxf(0.0, _melee_cooldown - delta)
 	_ranged_cooldown = maxf(0.0, _ranged_cooldown - delta)
@@ -266,6 +269,9 @@ func _process(delta: float) -> void:
 			var zone_int := int(ceil(zone_dmg))
 			player_health = max(0, player_health - zone_int)
 			if _gs(): _gs().record_damage_taken(zone_int)
+			_trigger_hit_stop()
+			trigger_screen_shake(SHAKE_MAGNITUDE_SMALL, SHAKE_DURATION_DEFAULT)
+			_flash_player_damage()
 			if player_health <= 0:
 				_on_player_died()
 				return
@@ -450,7 +456,9 @@ func _on_death_explosion(enemy_index: int) -> void:
 			dmg = max(1, dmg / 2)
 		player_health = max(0, player_health - dmg)
 		if _gs(): _gs().record_damage_taken(dmg)
+		_trigger_hit_stop()
 		trigger_screen_shake(SHAKE_MAGNITUDE_MEDIUM, SHAKE_DURATION_DEFAULT)
+		_flash_player_damage()
 		if player_health <= 0:
 			_on_player_died()
 
@@ -882,6 +890,29 @@ func _update_player_attack_flash(delta: float) -> void:
 		# Lerp back to normal
 		var t := 1.0 - (_player_attack_flash_timer / lerp_dur)
 		player_sprite.modulate = flash_color.lerp(Color(1.0, 1.0, 1.0, 1.0), t)
+
+
+# ─── Player Damage Flash (zone_control / death explosion) ────────────────────
+
+const PLAYER_DAMAGE_FLASH_COLOR := Color(1.5, 0.3, 0.3, 1.0)
+const PLAYER_DAMAGE_FLASH_TOTAL := 0.2  # hold + lerp
+
+func _flash_player_damage() -> void:
+	_player_damage_flash_timer = PLAYER_DAMAGE_FLASH_TOTAL
+
+func _update_player_damage_flash(delta: float) -> void:
+	if _player_damage_flash_timer <= 0.0:
+		return
+	_player_damage_flash_timer -= delta
+	if not is_instance_valid(player_sprite):
+		return
+	if _player_damage_flash_timer <= 0.0:
+		player_sprite.modulate = Color(1.0, 1.0, 1.0, 1.0)
+	elif _player_damage_flash_timer > HIT_FLASH_LERP_DURATION:
+		player_sprite.modulate = PLAYER_DAMAGE_FLASH_COLOR
+	else:
+		var t := 1.0 - (_player_damage_flash_timer / HIT_FLASH_LERP_DURATION)
+		player_sprite.modulate = PLAYER_DAMAGE_FLASH_COLOR.lerp(Color(1.0, 1.0, 1.0, 1.0), t)
 
 
 # ─── Death Dissolve ───────────────────────────────────────────────────────────
