@@ -277,10 +277,9 @@ func _process(delta: float) -> void:
 		if did_attack:
 			# M39 — Enemy lunge animation on every attack attempt
 			_animate_enemy_attack(index)
-			# Only deal damage if within attack range
-			print("ATTACK: enemy[", index, "] dist=", distance_to_player, " range=", enemy.attack_range, " enemy_x=", enemy_nodes[index].position.x if index < enemy_nodes.size() else -1, " player_x=", player.position.x)
-			if distance_to_player > enemy.attack_range:
-				print("  -> OUT OF RANGE, skipping damage")
+			# Only deal damage if sprites are physically overlapping (~64px contact distance)
+			var pixel_dist := absf(enemy_nodes[index].position.x - player.position.x) if index < enemy_nodes.size() else 9999.0
+			if pixel_dist > 64.0:
 				continue
 			var dmg := enemy.damage
 			# M31 — cursed_ground: +25% enemy damage
@@ -300,18 +299,7 @@ func _process(delta: float) -> void:
 				_on_player_died()
 				return
 		# zone_control: apply proximity damage
-		var zone_dmg := enemy.get_zone_damage(distance_to_player, delta)
-		if zone_dmg > 0.0:
-			print("ZONE DMG: enemy[", index, "] profile=", enemy.behavior_profile, " zone_active=", enemy.zone_active, " dist=", distance_to_player, " zone_radius=", enemy.zone_radius)
-			var zone_int := int(ceil(zone_dmg))
-			player_health = max(0, player_health - zone_int)
-			if _gs(): _gs().record_damage_taken(zone_int)
-			_trigger_hit_stop()
-			trigger_screen_shake(SHAKE_MAGNITUDE_SMALL, SHAKE_DURATION_DEFAULT)
-			_flash_player_damage()
-			if player_health <= 0:
-				_on_player_died()
-				return
+		# Zone proximity damage disabled — damage only on contact (pixel_dist <= 64)
 	# Check boss phase transitions for visual signals
 	if is_boss_encounter and not enemies.is_empty():
 		var boss := enemies[0]
