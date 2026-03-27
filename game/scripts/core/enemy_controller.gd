@@ -78,7 +78,7 @@ var phase_duration: float = 2.5
 var vulnerable_duration: float = 1.8
 
 
-func _init(max_health: int = 100, chase_distance: float = 6.0, attack_distance: float = 1.8, base_dmg: int = 8) -> void:
+func _init(max_health: int = 100, chase_distance: float = 6.0, attack_distance: float = 0.6, base_dmg: int = 8) -> void:
 	health = max_health
 	initial_health = max_health
 	chase_range = chase_distance
@@ -93,17 +93,17 @@ func apply_profile(profile: String) -> void:
 	match profile:
 		Profiles.FRONTLINE_BASIC:
 			chase_range = 5.0
-			attack_range = 1.5
+			attack_range = 0.6
 			attack_cooldown = 1.5
 			base_attack_cooldown = 1.5
 		Profiles.GUARD_COUNTER:
 			chase_range = 4.0
-			attack_range = 1.8
+			attack_range = 0.6
 			attack_cooldown = 2.0
 			base_attack_cooldown = 2.0
 		Profiles.FLANK_AGGRESSIVE:
 			chase_range = 7.0
-			attack_range = 1.6
+			attack_range = 0.6
 			attack_cooldown = 1.2
 			base_attack_cooldown = 1.2
 			prefers_flank = true
@@ -122,24 +122,24 @@ func apply_profile(profile: String) -> void:
 			base_attack_cooldown = 3.5
 		Profiles.GLASS_CANNON_AGGRO:
 			chase_range = 9.0
-			attack_range = 1.4
+			attack_range = 0.6
 			attack_cooldown = 0.8
 			base_attack_cooldown = 0.8
 		Profiles.POISE_GATE_TANK:
 			chase_range = 3.5
-			attack_range = 1.6
+			attack_range = 0.6
 			attack_cooldown = 2.2
 			base_attack_cooldown = 2.2
 			poise_threshold = 60
 		Profiles.ELITE_PRESSURE:
 			chase_range = 8.0
-			attack_range = 2.0
+			attack_range = 0.7
 			attack_cooldown = 1.0
 			base_attack_cooldown = 1.0
 			_poise_immune = true
 		Profiles.PHASE_PHANTOM:
 			chase_range = 7.0
-			attack_range = 1.8
+			attack_range = 0.6
 			attack_cooldown = 1.2
 			base_attack_cooldown = 1.2
 			is_vulnerable = false
