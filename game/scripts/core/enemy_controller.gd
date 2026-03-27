@@ -373,6 +373,12 @@ func _apply_phase_scaling() -> void:
 			damage = base_damage
 			attack_cooldown = base_attack_cooldown
 
+## Returns attack readiness as 0..1 (1.0 = about to attack). Used for telegraph visuals.
+func get_attack_readiness() -> float:
+	if state == EnemyState.DEAD or attack_cooldown <= 0.0:
+		return 0.0
+	return clampf(1.0 - (_attack_timer / attack_cooldown), 0.0, 1.0)
+
 static func state_name(value: EnemyState) -> String:
 	match value:
 		EnemyState.IDLE:

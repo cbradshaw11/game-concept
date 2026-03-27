@@ -135,6 +135,20 @@ const DEFAULT_FLASH_LERP := 0.12
 const PLAYER_ATTACK_FLASH_HOLD := 0.08   # 80ms hold
 const PLAYER_ATTACK_FLASH_LERP := 0.12   # 120ms lerp back
 
+# M39 — Attack animation constants
+const MELEE_LUNGE_PX := 30.0
+const MELEE_LUNGE_DURATION := 0.1
+const MELEE_SNAP_BACK_DURATION := 0.08
+const SLASH_ARC_FADE_DURATION := 0.15
+const ENEMY_LUNGE_PX := 30.0
+const ENEMY_LUNGE_DURATION := 0.1
+const ENEMY_SNAP_BACK_DURATION := 0.1
+const PROJECTILE_TRAVEL_DURATION := 0.2
+const MISS_LABEL_DURATION := 0.6
+const TELEGRAPH_READINESS_THRESHOLD := 0.85
+const TELEGRAPH_COLOR := Color(1.0, 0.6, 0.1, 1.0)  # orange
+const DEFAULT_MELEE_RANGE := 1.5  # zones
+
 const SPRITE_BASE := "res://assets/sprites/"
 const ENEMY_SPRITE_NAMES := {
 	"grunt": "enemy_grunt.png",
@@ -211,6 +225,7 @@ func _process(delta: float) -> void:
 	_update_hit_flashes(delta)
 	_update_player_attack_flash(delta)
 	_update_player_damage_flash(delta)
+	_update_enemy_telegraph(delta)
 	# M38 — Tick independent cooldowns
 	_melee_cooldown = maxf(0.0, _melee_cooldown - delta)
 	_ranged_cooldown = maxf(0.0, _ranged_cooldown - delta)
@@ -246,6 +261,11 @@ func _process(delta: float) -> void:
 				enemy.enter_melee_fallback()
 		var did_attack := enemy.tick(distance_to_player, delta)
 		if did_attack:
+			# M39 — Enemy lunge animation on every attack attempt
+			_animate_enemy_attack(index)
+			# Only deal damage if within attack range
+			if distance_to_player > enemy.attack_range:
+				continue
 			var dmg := enemy.damage
 			# M31 — cursed_ground: +25% enemy damage
 			var _cm_cg := _cm()
@@ -359,6 +379,27 @@ func _execute_attack(slot: String, weapon_data: Dictionary) -> void:
 	var is_heavy := true
 	if _am():
 		_am().play_sfx(_get_family_sfx(family, is_heavy))
+	var category := str(weapon_data.get("category", "melee"))
+	# M39 — Route through animation wrappers based on weapon category
+	if category == "ranged":
+		_execute_ranged_attack(weapon_data, mechanic)
+	elif category == "magic":
+		_execute_magic_attack(weapon_data, mechanic)
+	else:
+		_execute_melee_attack(weapon_data, mechanic)
+	attack_hook_triggered.emit()
+	_update_hud()
+
+func _execute_melee_attack(weapon_data: Dictionary, mechanic: String) -> void:
+	# M39 — Melee swing animation always plays
+	_animate_player_melee_swing()
+	# Range check: only deal damage if front enemy is within melee range
+	var melee_range := _get_melee_range_for_slot(weapon_data)
+	var dist := _get_front_enemy_distance()
+	if dist > melee_range and mechanic != "sweep_all":
+		# Out of range — show miss, deal no damage
+		_spawn_miss_label(player.position)
+		return
 	match mechanic:
 		"sweep_all":
 			var sweep_ratio := float(weapon_data.get("light_sweep_ratio", 0.8))
@@ -368,22 +409,6 @@ func _execute_attack(slot: String, weapon_data: Dictionary) -> void:
 		"lunge_poise":
 			var base_dmg := int(weapon_data.get("heavy_damage", 28))
 			_apply_damage_to_front_enemy(base_dmg, true)
-		"ranged_single":
-			var base_dmg := int(weapon_data.get("heavy_damage", int(weapon_data.get("light_damage", 18))))
-			_apply_damage_to_front_enemy(base_dmg)
-		"charged_suppress":
-			var suppress_ticks := int(weapon_data.get("heavy_suppress_ticks", 1))
-			_suppress_front_enemy(suppress_ticks)
-			var base_dmg := int(weapon_data.get("heavy_damage", 32))
-			_apply_damage_to_front_enemy(base_dmg)
-		"ranged_pierce":
-			var base_dmg := int(weapon_data.get("heavy_damage", 44))
-			var ratio := float(weapon_data.get("ranged_pierce_ratio", 1.0))
-			var pierce_dmg := int(round(float(base_dmg) * ratio))
-			_apply_damage_to_all_enemies(pierce_dmg)
-		"arcane_burst":
-			var base_dmg := int(weapon_data.get("heavy_damage", 28))
-			_apply_damage_to_all_enemies_with_poise(base_dmg)
 		"drain_stamina":
 			var base_dmg := int(weapon_data.get("heavy_damage", 18))
 			_apply_damage_to_front_enemy(base_dmg)
@@ -391,8 +416,52 @@ func _execute_attack(slot: String, weapon_data: Dictionary) -> void:
 		_:
 			var base_dmg := int(weapon_data.get("heavy_damage", int(weapon_data.get("light_damage", 14))))
 			_apply_damage_to_front_enemy(base_dmg)
-	attack_hook_triggered.emit()
-	_update_hud()
+
+func _execute_ranged_attack(weapon_data: Dictionary, mechanic: String) -> void:
+	# M39 — Ranged projectile: white 8x8 rect
+	var target_idx := _get_front_enemy_index()
+	if target_idx < 0:
+		return
+	var from_pos := player.position + Vector2(20, 0)
+	var to_pos := enemy_nodes[target_idx].position if target_idx < enemy_nodes.size() else from_pos + Vector2(200, 0)
+	var dmg := int(weapon_data.get("heavy_damage", int(weapon_data.get("light_damage", 18))))
+	var w_data := weapon_data
+	var mech := mechanic
+	_spawn_projectile(from_pos, to_pos, Color(1.0, 1.0, 1.0, 1.0), 8.0, func():
+		match mech:
+			"ranged_single":
+				_apply_damage_to_front_enemy(dmg)
+			"charged_suppress":
+				var suppress_ticks := int(w_data.get("heavy_suppress_ticks", 1))
+				_suppress_front_enemy(suppress_ticks)
+				_apply_damage_to_front_enemy(dmg)
+			"ranged_pierce":
+				var ratio := float(w_data.get("ranged_pierce_ratio", 1.0))
+				var pierce_dmg := int(round(float(dmg) * ratio))
+				_apply_damage_to_all_enemies(pierce_dmg)
+			_:
+				_apply_damage_to_front_enemy(dmg)
+	)
+
+func _execute_magic_attack(weapon_data: Dictionary, mechanic: String) -> void:
+	# M39 — Magic projectile: purple 12x12 rect
+	var target_idx := _get_front_enemy_index()
+	if target_idx < 0:
+		return
+	var from_pos := player.position + Vector2(20, 0)
+	var to_pos := enemy_nodes[target_idx].position if target_idx < enemy_nodes.size() else from_pos + Vector2(200, 0)
+	var dmg := int(weapon_data.get("heavy_damage", int(weapon_data.get("light_damage", 14))))
+	var mech := mechanic
+	_spawn_projectile(from_pos, to_pos, Color(0.6, 0.2, 1.0, 1.0), 12.0, func():
+		match mech:
+			"arcane_burst":
+				_apply_damage_to_all_enemies_with_poise(dmg)
+			"drain_stamina":
+				_apply_damage_to_front_enemy(dmg)
+				_apply_stamina_drain_to_front_enemy(2)
+			_:
+				_apply_damage_to_front_enemy(dmg)
+	)
 
 func _on_dodge_triggered() -> void:
 	dodge_count += 1
@@ -491,6 +560,9 @@ func _spawn_enemies(count: int) -> void:
 		var ec := EnemyController.new(hp, 3.5, 1.2, dmg)
 		ec.enemy_display_name = str(enemy_data.get("id", "Enemy")).replace("_", " ").capitalize()
 		var profile := str(enemy_data.get("behavior_profile", Profiles.FRONTLINE_BASIC))
+		# Inner ring enemies are melee-only; override ranged/zone profiles if they appear
+		if ring_id == "inner" and (profile == Profiles.KITE_VOLLEY or profile == Profiles.ZONE_CONTROL):
+			profile = Profiles.FRONTLINE_BASIC
 		ec.apply_profile(profile)
 		# Use data poise as threshold if profile didn't set a higher one
 		var data_poise := int(enemy_data.get("poise", 20))
@@ -925,6 +997,103 @@ func _start_death_dissolve(enemy_index: int) -> void:
 		return
 	var tween := create_tween()
 	tween.tween_property(sprite, "modulate", Color(1.0, 0.2, 0.2, 0.0), 0.4)
+
+
+# ─── M39 Attack Animations ──────────────────────────────────────────────────
+
+func _animate_player_melee_swing() -> void:
+	if not is_instance_valid(player_sprite):
+		return
+	var origin := player_sprite.position
+	var tween := create_tween()
+	tween.tween_property(player_sprite, "position", origin + Vector2(MELEE_LUNGE_PX, 0), MELEE_LUNGE_DURATION)
+	tween.tween_property(player_sprite, "position", origin, MELEE_SNAP_BACK_DURATION)
+	# Slash arc: short-lived Line2D near the player
+	_spawn_slash_arc()
+
+func _spawn_slash_arc() -> void:
+	var arc := Line2D.new()
+	arc.width = 3.0
+	arc.default_color = Color(1.0, 1.0, 0.6, 1.0)
+	# Draw a small arc in front of the player
+	var base_pos := player.position + Vector2(40.0, 0.0)
+	var points: PackedVector2Array = []
+	for i in 7:
+		var angle := deg_to_rad(-60.0 + (i * 20.0))
+		points.append(base_pos + Vector2(cos(angle), sin(angle)) * 28.0)
+	arc.points = points
+	add_child(arc)
+	var tween := create_tween()
+	tween.tween_property(arc, "modulate", Color(1.0, 1.0, 0.6, 0.0), SLASH_ARC_FADE_DURATION)
+	tween.tween_callback(arc.queue_free)
+
+func _animate_enemy_attack(index: int) -> void:
+	if index >= enemy_nodes.size():
+		return
+	var node := enemy_nodes[index]
+	if not is_instance_valid(node):
+		return
+	var origin := node.position
+	var tween := create_tween()
+	tween.tween_property(node, "position", origin + Vector2(-ENEMY_LUNGE_PX, 0), ENEMY_LUNGE_DURATION)
+	tween.tween_property(node, "position", origin, ENEMY_SNAP_BACK_DURATION)
+
+func _spawn_projectile(from_pos: Vector2, to_pos: Vector2, color: Color, size: float, on_hit: Callable) -> void:
+	var proj := ColorRect.new()
+	proj.size = Vector2(size, size)
+	proj.color = color
+	proj.position = from_pos - Vector2(size / 2.0, size / 2.0)
+	add_child(proj)
+	var tween := create_tween()
+	tween.tween_property(proj, "position", to_pos - Vector2(size / 2.0, size / 2.0), PROJECTILE_TRAVEL_DURATION)
+	tween.tween_callback(on_hit)
+	tween.tween_callback(proj.queue_free)
+
+func _spawn_miss_label(pos: Vector2) -> void:
+	var label := Label.new()
+	label.text = "Miss"
+	label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8, 1.0))
+	label.add_theme_font_size_override("font_size", 14)
+	label.position = pos + Vector2(-15, -40)
+	add_child(label)
+	var tween := create_tween()
+	tween.tween_property(label, "position", label.position + Vector2(0, -20), MISS_LABEL_DURATION)
+	tween.parallel().tween_property(label, "modulate", Color(1, 1, 1, 0), MISS_LABEL_DURATION)
+	tween.tween_callback(label.queue_free)
+
+func _get_front_enemy_index() -> int:
+	for i in enemies.size():
+		if enemies[i].state != EnemyController.EnemyState.DEAD:
+			return i
+	return -1
+
+func _get_front_enemy_distance() -> float:
+	var player_zone := _player_zone()
+	var idx := _get_front_enemy_index()
+	if idx < 0:
+		return 999.0
+	return absf(float(idx - player_zone)) + 0.5
+
+func _get_melee_range_for_slot(weapon_data: Dictionary) -> float:
+	return float(weapon_data.get("melee_range", DEFAULT_MELEE_RANGE))
+
+func _update_enemy_telegraph(delta: float) -> void:
+	for i in enemies.size():
+		var enemy := enemies[i]
+		if enemy.state == EnemyController.EnemyState.DEAD:
+			continue
+		if i >= enemy_sprites.size() or not is_instance_valid(enemy_sprites[i]):
+			continue
+		# Skip if a hit flash is active (don't override it)
+		if i < _hit_flash_timers.size() and _hit_flash_timers[i] > 0.0:
+			continue
+		var readiness := enemy.get_attack_readiness()
+		var sprite := enemy_sprites[i]
+		if readiness > TELEGRAPH_READINESS_THRESHOLD and (enemy.state == EnemyController.EnemyState.CHASE or enemy.state == EnemyController.EnemyState.ATTACK):
+			var t := (readiness - TELEGRAPH_READINESS_THRESHOLD) / (1.0 - TELEGRAPH_READINESS_THRESHOLD)
+			sprite.modulate = Color(1.0, 1.0, 1.0, 1.0).lerp(TELEGRAPH_COLOR, t)
+		else:
+			sprite.modulate = Color(1.0, 1.0, 1.0, 1.0)
 
 
 # ─── Screen Shake (M19 T2) ──────────────────────────────────────────────────
