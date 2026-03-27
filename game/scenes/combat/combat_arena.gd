@@ -288,6 +288,7 @@ func _process(delta: float) -> void:
 		# zone_control: apply proximity damage
 		var zone_dmg := enemy.get_zone_damage(distance_to_player, delta)
 		if zone_dmg > 0.0:
+			print("ZONE DMG: enemy[", index, "] profile=", enemy.behavior_profile, " zone_active=", enemy.zone_active, " dist=", distance_to_player, " zone_radius=", enemy.zone_radius)
 			var zone_int := int(ceil(zone_dmg))
 			player_health = max(0, player_health - zone_int)
 			if _gs(): _gs().record_damage_taken(zone_int)
