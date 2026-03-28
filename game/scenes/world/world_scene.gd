@@ -105,7 +105,7 @@ func _update_enemies(delta: float) -> void:
 		var boundary: float = WorldManager.get_zone_boundary(zone) + 10.0
 
 		# Move toward player
-		var dir := sign(player.position.x - enemy.position.x)
+		var dir: float = 1.0 if player.position.x > enemy.position.x else -1.0
 		enemy.position.x += dir * spd * delta
 
 		# Enforce zone inner boundary
