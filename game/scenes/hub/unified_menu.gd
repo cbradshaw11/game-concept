@@ -782,16 +782,16 @@ func _build_inv_tab() -> void:
 	withdraw_row.visible = false
 	bank_controls.add_child(withdraw_row)
 
-	withdraw_input_label = Label.new()
-	withdraw_input_label.text = "Amount: _"
-	withdraw_input_label.add_theme_font_size_override("font_size", 16)
-	withdraw_row.add_child(withdraw_input_label)
-
 	var all_btn := Button.new()
 	all_btn.text = "Withdraw All"
 	all_btn.custom_minimum_size = Vector2(100, 30)
 	all_btn.pressed.connect(_on_withdraw_all)
 	withdraw_row.add_child(all_btn)
+
+	withdraw_input_label = Label.new()
+	withdraw_input_label.text = "Amount: _"
+	withdraw_input_label.add_theme_font_size_override("font_size", 16)
+	withdraw_row.add_child(withdraw_input_label)
 
 	var confirm_btn := Button.new()
 	confirm_btn.text = "Confirm"
