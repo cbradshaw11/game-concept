@@ -4,8 +4,8 @@ signal zone_changed(old_zone: String, new_zone: String)
 signal player_distance_changed(distance: float)
 
 const INNER_START := 200.0
-const MID_START := 500.0
-const OUTER_START := 900.0
+const MID_START := 700.0
+const OUTER_START := 1200.0
 
 var player_distance: float = 0.0:
 	set(value):

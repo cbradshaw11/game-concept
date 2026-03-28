@@ -15,21 +15,6 @@ color = Color(0.102, 0.165, 0.227, 1)
 
 [node name="HomeMarker" type="Node2D" parent="."]
 
-[node name="Circle" type="ColorRect" parent="HomeMarker"]
-offset_left = -20
-offset_top = -20
-offset_right = 20
-offset_bottom = 20
-color = Color(0.3, 0.5, 0.9, 0.4)
-
-[node name="Label" type="Label" parent="HomeMarker"]
-offset_left = -20
-offset_top = -40
-offset_right = 20
-offset_bottom = -20
-text = "HOME"
-horizontal_alignment = 1
-
 [node name="ZoneMarkers" type="Node2D" parent="."]
 
 [node name="EnemyContainer" type="Node2D" parent="."]
@@ -59,29 +44,34 @@ offset_bottom = 38
 color = Color(0.2, 0.8, 0.2, 1)
 
 [node name="ZoneLabel" type="Label" parent="HUD"]
-offset_left = 20
-offset_top = 50
+anchors_preset = 2
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_left = 10
+offset_top = -50
 offset_right = 200
-offset_bottom = 70
+offset_bottom = -35
 text = "Zone: Sanctuary"
 
 [node name="GoldLabel" type="Label" parent="HUD"]
 offset_left = 20
-offset_top = 75
+offset_top = 50
 offset_right = 200
-offset_bottom = 95
+offset_bottom = 70
 text = "Carried: 0g"
 
 [node name="BankLabel" type="Label" parent="HUD"]
 offset_left = 20
-offset_top = 100
+offset_top = 75
 offset_right = 200
-offset_bottom = 120
+offset_bottom = 95
 text = "Bank: 0g"
 
 [node name="DistanceLabel" type="Label" parent="HUD"]
 offset_left = 20
-offset_top = 125
+offset_top = 100
 offset_right = 200
-offset_bottom = 145
+offset_bottom = 120
 text = "Distance: 0"

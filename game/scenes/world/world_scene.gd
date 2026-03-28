@@ -15,6 +15,15 @@ var player_health := 100.0
 var player_max_health := 100.0
 var unified_menu: Node = null
 
+# Mini-map state
+var explored_positions := PackedVector2Array()
+var explore_timer: float = 0.0
+const EXPLORE_INTERVAL := 0.5
+const EXPLORE_MAX := 5000
+var minimap_expanded: bool = false
+var minimap_control: Control = null
+var minimap_expanded_control: Control = null
+
 # Potion speed buff
 var potion_speed_bonus: float = 0.0
 var speed_buff_timer: float = 0.0
@@ -60,12 +69,17 @@ func _inv() -> Node:
 
 func _ready() -> void:
 	_setup_zone_markers()
+	_setup_home_icon()
+	_setup_minimap()
 	_wm().zone_changed.connect(_on_zone_changed)
 	_inv().inventory_dropped.connect(_on_inventory_dropped)
 	_inv().inventory_changed.connect(_update_hud)
 	_inv().bank_changed.connect(_update_hud)
 	_inv().potion_used.connect(_on_potion_used)
 	_setup_potion_hud()
+	# Make zone label subtle — small font at bottom of screen
+	zone_label.add_theme_font_size_override("font_size", 10)
+	zone_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 0.5))
 	_update_hud()
 	target_bg_color = zone_colors["sanctuary"]
 	# DEV: start with gold for testing the shop/menu
@@ -95,6 +109,18 @@ func _process(delta: float) -> void:
 	var dist: float = player.position.distance_to(HOME_POS)
 	_wm().player_distance = dist
 	_update_hud()
+	# Mini-map: track explored positions
+	explore_timer -= delta
+	if explore_timer <= 0.0:
+		explore_timer = EXPLORE_INTERVAL
+		if explored_positions.size() >= EXPLORE_MAX:
+			explored_positions.remove_at(0)
+		explored_positions.append(player.position)
+	# Redraw minimaps
+	if minimap_control != null:
+		minimap_control.queue_redraw()
+	if minimap_expanded_control != null and minimap_expanded:
+		minimap_expanded_control.queue_redraw()
 
 func _handle_attack(delta: float) -> void:
 	attack_cooldown -= delta
@@ -530,25 +556,171 @@ func _on_unified_menu_closed() -> void:
 
 
 func _setup_zone_markers() -> void:
-	# Draw concentric circle markers for each zone boundary
-	_add_circle_marker(200.0, "INNER", Color(0.4, 0.8, 0.4, 0.4))
-	_add_circle_marker(500.0, "MID", Color(0.8, 0.6, 0.2, 0.4))
-	_add_circle_marker(900.0, "OUTER", Color(0.8, 0.2, 0.2, 0.4))
+	# Sanctuary ground overlay — faint filled circle
+	var sanctuary_fill := Polygon2D.new()
+	var fill_points := PackedVector2Array()
+	var fill_count := 120
+	for i in range(fill_count):
+		var angle: float = TAU * float(i) / float(fill_count)
+		fill_points.append(Vector2(cos(angle), sin(angle)) * 200.0)
+	sanctuary_fill.polygon = fill_points
+	sanctuary_fill.color = Color(0.2, 0.4, 0.8, 0.08)
+	zone_markers.add_child(sanctuary_fill)
+	# Draw colored ring outlines
+	_add_ring_outline(200.0, Color(0.4, 0.9, 0.4, 0.25))
+	_add_ring_outline(700.0, Color(0.9, 0.7, 0.2, 0.25))
+	_add_ring_outline(1200.0, Color(0.9, 0.2, 0.2, 0.25))
 
-func _add_circle_marker(radius: float, text: String, color: Color) -> void:
-	# Use a label at the right edge of the radius
-	var lbl := Label.new()
-	lbl.text = text
-	lbl.position = Vector2(radius + 5.0, -10.0)
-	lbl.add_theme_color_override("font_color", color)
-	zone_markers.add_child(lbl)
-	# Add a home label
-	if text == "INNER":
-		var home_lbl := Label.new()
-		home_lbl.text = "HOME"
-		home_lbl.position = Vector2(-20.0, -40.0)
-		home_lbl.add_theme_color_override("font_color", Color(0.4, 0.6, 1.0, 0.9))
-		zone_markers.add_child(home_lbl)
+func _add_ring_outline(radius: float, color: Color) -> void:
+	var line := Line2D.new()
+	line.width = 2.0
+	line.default_color = color
+	var point_count := 120
+	for i in range(point_count + 1):
+		var angle: float = TAU * float(i) / float(point_count)
+		line.add_point(Vector2(cos(angle), sin(angle)) * radius)
+	zone_markers.add_child(line)
+
+func _setup_home_icon() -> void:
+	# House base — filled square
+	var base := Polygon2D.new()
+	base.polygon = PackedVector2Array([
+		Vector2(-10, -4), Vector2(10, -4), Vector2(10, 16), Vector2(-10, 16)
+	])
+	base.color = Color(0.85, 0.75, 0.5, 0.9)
+	home_marker.add_child(base)
+	# Roof — filled triangle
+	var roof := Polygon2D.new()
+	roof.polygon = PackedVector2Array([
+		Vector2(-13, -4), Vector2(0, -16), Vector2(13, -4)
+	])
+	roof.color = Color(0.6, 0.35, 0.2, 0.9)
+	home_marker.add_child(roof)
+	# Door — small dark rectangle
+	var door := Polygon2D.new()
+	door.polygon = PackedVector2Array([
+		Vector2(-3, 8), Vector2(3, 8), Vector2(3, 16), Vector2(-3, 16)
+	])
+	door.color = Color(0.2, 0.15, 0.1, 0.9)
+	home_marker.add_child(door)
+
+# ── Mini-map ──────────────────────────────────────────
+
+func _setup_minimap() -> void:
+	# Mini-map container
+	var panel := Panel.new()
+	panel.name = "MinimapPanel"
+	panel.anchor_left = 1.0
+	panel.anchor_top = 0.0
+	panel.anchor_right = 1.0
+	panel.anchor_bottom = 0.0
+	panel.offset_left = -170.0
+	panel.offset_top = 10.0
+	panel.offset_right = -10.0
+	panel.offset_bottom = 170.0
+	# Dark background
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.05, 0.05, 0.08, 0.85)
+	style.border_color = Color(0.6, 0.6, 0.6, 0.6)
+	style.set_border_width_all(1)
+	panel.add_theme_stylebox_override("panel", style)
+	hud_layer.add_child(panel)
+
+	minimap_control = Control.new()
+	minimap_control.name = "MinimapDraw"
+	minimap_control.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	minimap_control.draw.connect(_draw_minimap.bind(minimap_control, 160.0))
+	minimap_control.gui_input.connect(_on_minimap_click)
+	minimap_control.mouse_filter = Control.MOUSE_FILTER_STOP
+	panel.add_child(minimap_control)
+
+	# "M" hint label
+	var hint := Label.new()
+	hint.text = "M"
+	hint.add_theme_font_size_override("font_size", 10)
+	hint.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 0.6))
+	hint.position = Vector2(2, 0)
+	minimap_control.add_child(hint)
+
+	# Expanded map (hidden by default)
+	var exp_panel := Panel.new()
+	exp_panel.name = "ExpandedMapPanel"
+	exp_panel.anchor_left = 0.5
+	exp_panel.anchor_top = 0.5
+	exp_panel.anchor_right = 0.5
+	exp_panel.anchor_bottom = 0.5
+	exp_panel.offset_left = -170.0
+	exp_panel.offset_top = -185.0
+	exp_panel.offset_right = 170.0
+	exp_panel.offset_bottom = 170.0
+	var exp_style := StyleBoxFlat.new()
+	exp_style.bg_color = Color(0.04, 0.04, 0.06, 0.92)
+	exp_style.border_color = Color(0.7, 0.7, 0.7, 0.7)
+	exp_style.set_border_width_all(2)
+	exp_panel.add_theme_stylebox_override("panel", exp_style)
+	exp_panel.visible = false
+	hud_layer.add_child(exp_panel)
+
+	# Title
+	var title := Label.new()
+	title.text = "Map"
+	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.position = Vector2(0, 2)
+	title.size = Vector2(340, 25)
+	exp_panel.add_child(title)
+
+	minimap_expanded_control = Control.new()
+	minimap_expanded_control.name = "ExpandedMapDraw"
+	minimap_expanded_control.position = Vector2(10, 30)
+	minimap_expanded_control.size = Vector2(320, 320)
+	minimap_expanded_control.draw.connect(_draw_minimap.bind(minimap_expanded_control, 320.0))
+	minimap_expanded_control.gui_input.connect(_on_expanded_map_click)
+	minimap_expanded_control.mouse_filter = Control.MOUSE_FILTER_STOP
+	exp_panel.add_child(minimap_expanded_control)
+
+func _draw_minimap(control: Control, map_size: float) -> void:
+	var outer_r: float = 1200.0
+	var scale_factor: float = map_size / (outer_r * 2.5)
+	var center := Vector2(map_size / 2.0, map_size / 2.0)
+
+	# Explored areas (fog of war reveal)
+	for pos in explored_positions:
+		var map_pos: Vector2 = (pos - HOME_POS) * scale_factor + center
+		if map_pos.x >= -10.0 and map_pos.x <= map_size + 10.0 and map_pos.y >= -10.0 and map_pos.y <= map_size + 10.0:
+			control.draw_circle(map_pos, 8.0 * (map_size / 160.0), Color(0.3, 0.5, 0.3, 0.5))
+
+	# Zone ring outlines
+	var rings := [
+		[200.0, Color(0.4, 0.9, 0.4, 0.3)],
+		[700.0, Color(0.9, 0.7, 0.2, 0.3)],
+		[1200.0, Color(0.9, 0.2, 0.2, 0.3)],
+	]
+	for ring_data in rings:
+		var r: float = ring_data[0] * scale_factor
+		control.draw_arc(center, r, 0.0, TAU, 64, ring_data[1], 1.0)
+
+	# Home icon — small white square at center
+	control.draw_rect(Rect2(center - Vector2(3, 3), Vector2(6, 6)), Color(0.85, 0.75, 0.5, 0.9))
+
+	# Player dot
+	var player_map_pos: Vector2 = (player.position - HOME_POS) * scale_factor + center
+	control.draw_circle(player_map_pos, 3.0 * (map_size / 160.0), Color(1.0, 1.0, 0.3, 1.0))
+
+func _on_minimap_click(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		minimap_expanded = true
+		var exp_panel: Node = hud_layer.get_node_or_null("ExpandedMapPanel")
+		if exp_panel:
+			exp_panel.visible = true
+
+func _on_expanded_map_click(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		minimap_expanded = false
+		var exp_panel: Node = hud_layer.get_node_or_null("ExpandedMapPanel")
+		if exp_panel:
+			exp_panel.visible = false
 
 # ── Potion system ──────────────────────────────────────
 
