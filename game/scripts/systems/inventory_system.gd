@@ -153,6 +153,26 @@ func get_all_potions() -> Array:
 		result.append({ "id": pid, "item": stack["item"], "count": stack["count"] })
 	return result
 
+func withdraw_potion(item: Dictionary) -> void:
+	var idx := bank_items.find(item)
+	if idx < 0:
+		return
+	bank_items.remove_at(idx)
+	add_potion(item)
+	bank_changed.emit()
+
+func deposit_potion(potion_id: String) -> void:
+	if not carried_potions.has(potion_id):
+		return
+	var stack: Dictionary = carried_potions[potion_id]
+	var item: Dictionary = stack["item"].duplicate()
+	stack["count"] -= 1
+	if stack["count"] <= 0:
+		carried_potions.erase(potion_id)
+	bank_items.append(item)
+	inventory_changed.emit()
+	bank_changed.emit()
+
 func on_player_death(death_position: Vector2) -> void:
 	# Equipped items are NOT dropped — only carried_items and carried_gold
 	var dropped_gold := carried_gold

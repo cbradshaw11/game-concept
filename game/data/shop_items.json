@@ -13,7 +13,7 @@
     { "id": "void_lance", "category": "weapon", "slot": "weapon_magic", "name": "Void Lance", "cost": 180, "damage_bonus": 28, "description": "Pierces and drains." },
     { "id": "potion_heal_small", "category": "potion", "slot": "potion", "name": "Small Health Potion", "cost": 15, "heal_amount": 25, "description": "Restores 25 HP instantly.", "consumable": true },
     { "id": "potion_heal_large", "category": "potion", "slot": "potion", "name": "Large Health Potion", "cost": 40, "heal_amount": 60, "description": "Restores 60 HP instantly.", "consumable": true },
-    { "id": "potion_speed", "category": "potion", "slot": "potion", "name": "Speed Potion", "cost": 35, "speed_bonus": 80, "duration": 8.0, "description": "Move faster for 8 seconds.", "consumable": true },
+
     { "id": "helmet_iron", "category": "armor", "slot": "helmet", "name": "Iron Helmet", "cost": 60, "defense": 3, "description": "Basic head protection." },
     { "id": "helmet_steel", "category": "armor", "slot": "helmet", "name": "Steel Helmet", "cost": 150, "defense": 7, "description": "Sturdy steel." },
     { "id": "chest_iron", "category": "armor", "slot": "breastplate", "name": "Iron Breastplate", "cost": 80, "defense": 5, "description": "Protects the torso." },

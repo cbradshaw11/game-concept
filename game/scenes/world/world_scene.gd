@@ -1,8 +1,7 @@
 extends Node2D
 
 const EnemySpawner = preload("res://scripts/systems/enemy_spawner.gd")
-const CombinedMenuScene = preload("res://scenes/hub/combined_menu.tscn")
-const ItemShopScene = preload("res://scenes/hub/item_shop.tscn")
+const UnifiedMenuScene = preload("res://scenes/hub/unified_menu.tscn")
 
 var player_speed := 200.0
 var spawner := EnemySpawner.new()
@@ -14,8 +13,7 @@ var loot_drops: Array[Node2D] = []
 var damage_timers: Dictionary = {}
 var player_health := 100.0
 var player_max_health := 100.0
-var combined_menu: Node = null
-var item_shop: Node = null
+var unified_menu: Node = null
 
 # Potion speed buff
 var potion_speed_bonus: float = 0.0
@@ -70,12 +68,14 @@ func _ready() -> void:
 	_setup_potion_hud()
 	_update_hud()
 	target_bg_color = zone_colors["sanctuary"]
+	# DEV: start with gold for testing the shop/menu
+	_inv().add_carried_gold(500)
+	_inv().bank_gold = 500
 	current_bg_color = target_bg_color
 	player.position = HOME_POS
 
 var attack_cooldown: float = 0.0
 var _e_was_pressed: bool = false
-var _t_was_pressed: bool = false
 var _i_was_pressed: bool = false
 var _last_move_dir: Vector2 = Vector2.RIGHT
 
@@ -192,7 +192,7 @@ func _do_ranged_attack() -> void:
 	)
 
 func _is_menu_open() -> bool:
-	return combined_menu != null or item_shop != null
+	return unified_menu != null
 
 func _get_nearest_enemy(max_dist: float) -> Node2D:
 	var nearest: Node2D = null
@@ -487,76 +487,46 @@ func _on_inventory_dropped(gold: int, _items: Array, drop_position: Vector2) -> 
 func _handle_hub_interaction() -> void:
 	var in_sanctuary: bool = str(_wm().current_zone) == "sanctuary"
 
-	# Show/hide prompts near player when at home
-	var bank_prompt: Node = get_node_or_null("BankPrompt")
-	var shop_prompt: Node = get_node_or_null("ShopPrompt")
+	# Show/hide prompt near player when at home
+	var menu_prompt: Node = get_node_or_null("MenuPrompt")
 
-	if bank_prompt == null and in_sanctuary:
+	if menu_prompt == null and in_sanctuary:
 		var lbl := Label.new()
-		lbl.name = "BankPrompt"
-		lbl.text = "E — Bank & Inventory"
+		lbl.name = "MenuPrompt"
+		lbl.text = "E — Menu"
 		lbl.add_theme_font_size_override("font_size", 13)
 		lbl.add_theme_color_override("font_color", Color(0.5, 0.9, 1.0))
 		lbl.z_index = 10
 		add_child(lbl)
-		bank_prompt = lbl
-	if bank_prompt != null:
-		bank_prompt.visible = in_sanctuary
+		menu_prompt = lbl
+	if menu_prompt != null:
+		menu_prompt.visible = in_sanctuary
 		if in_sanctuary:
-			(bank_prompt as Label).position = player.position + Vector2(-50, -75)
+			(menu_prompt as Label).position = player.position + Vector2(-50, -75)
 
-	if shop_prompt == null and in_sanctuary:
-		var lbl := Label.new()
-		lbl.name = "ShopPrompt"
-		lbl.text = "T — Shop"
-		lbl.add_theme_font_size_override("font_size", 13)
-		lbl.add_theme_color_override("font_color", Color(0.9, 0.8, 0.4))
-		lbl.z_index = 10
-		add_child(lbl)
-		shop_prompt = lbl
-	if shop_prompt != null:
-		shop_prompt.visible = in_sanctuary
-		if in_sanctuary:
-			(shop_prompt as Label).position = player.position + Vector2(-50, -55)
-
-	# Open combined menu on E press (sanctuary) or I press (anywhere)
+	# E at home → unified menu, default Shop tab
 	var e_now: bool = Input.is_key_pressed(KEY_E)
 	if in_sanctuary and e_now and not _e_was_pressed and not _is_menu_open():
-		_open_combined_menu(true)
+		_open_unified_menu(true, 0)
 	_e_was_pressed = e_now
 
-	# Open shop on T press
-	var t_now: bool = Input.is_key_pressed(KEY_T)
-	if in_sanctuary and t_now and not _t_was_pressed and not _is_menu_open():
-		_open_item_shop()
-	_t_was_pressed = t_now
-
-	# Open combined menu on I press (anywhere, bank locked if not at home)
+	# I anywhere → unified menu, default Inventory tab
 	var i_now: bool = Input.is_key_pressed(KEY_I)
 	if i_now and not _i_was_pressed and not _is_menu_open():
-		_open_combined_menu(in_sanctuary)
+		_open_unified_menu(in_sanctuary, 1)
 	_i_was_pressed = i_now
 
-func _open_combined_menu(at_home: bool) -> void:
-	combined_menu = CombinedMenuScene.instantiate()
-	combined_menu.at_home = at_home
-	add_child(combined_menu)
-	combined_menu.menu_closed.connect(_on_combined_menu_closed)
+func _open_unified_menu(at_home: bool, default_tab: int) -> void:
+	unified_menu = UnifiedMenuScene.instantiate()
+	unified_menu.at_home = at_home
+	unified_menu.default_tab = default_tab
+	add_child(unified_menu)
+	unified_menu.menu_closed.connect(_on_unified_menu_closed)
 
-func _on_combined_menu_closed() -> void:
-	if combined_menu != null:
-		combined_menu.queue_free()
-		combined_menu = null
-
-func _open_item_shop() -> void:
-	item_shop = ItemShopScene.instantiate()
-	add_child(item_shop)
-	item_shop.shop_closed.connect(_on_shop_closed)
-
-func _on_shop_closed() -> void:
-	if item_shop != null:
-		item_shop.queue_free()
-		item_shop = null
+func _on_unified_menu_closed() -> void:
+	if unified_menu != null:
+		unified_menu.queue_free()
+		unified_menu = null
 
 
 func _setup_zone_markers() -> void:
