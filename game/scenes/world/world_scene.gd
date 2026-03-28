@@ -102,9 +102,10 @@ func _do_melee_attack() -> void:
 		swing_dir = (nearest.position - player.position).normalized()
 	# Sword sweep — pivot Node2D that rotates, with blade as child Line2D
 	var pivot := Node2D.new()
-	pivot.position = player.position + swing_dir * 10.0
+	# Position relative to player so it moves with them
+	pivot.position = swing_dir * 10.0
 	pivot.rotation = atan2(swing_dir.y, swing_dir.x) - deg_to_rad(30.0)
-	add_child(pivot)
+	player.add_child(pivot)
 
 	# Blade
 	var blade := Line2D.new()
@@ -132,12 +133,13 @@ func _do_melee_attack() -> void:
 	var trail := Line2D.new()
 	trail.width = 18.0
 	trail.default_color = Color(1.0, 1.0, 0.85, 0.35)
-	var trail_origin: Vector2 = player.position + swing_dir * 30.0
+	# Position relative to player
 	var perp := Vector2(-swing_dir.y, swing_dir.x)
+	var trail_origin: Vector2 = swing_dir * 30.0
 	trail.add_point(trail_origin + perp * 28.0 - swing_dir * 10.0)
 	trail.add_point(trail_origin + swing_dir * 36.0)
 	trail.add_point(trail_origin - perp * 28.0 - swing_dir * 10.0)
-	add_child(trail)
+	player.add_child(trail)
 	var trail_tw := create_tween()
 	trail_tw.tween_property(trail, "modulate:a", 0.0, 0.18)
 	trail_tw.tween_callback(trail.queue_free)
