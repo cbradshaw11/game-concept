@@ -271,7 +271,7 @@ func _handle_sanctuary_regen(delta: float) -> void:
 		player_health = minf(player_health + player_max_health * 0.05 * delta, player_max_health)
 
 func _handle_spawning(delta: float) -> void:
-	var zone := _wm().current_zone
+	var zone: String = str(_wm().current_zone)
 	if zone == "sanctuary":
 		return
 	spawn_timer -= delta
