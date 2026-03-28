@@ -568,7 +568,7 @@ func _setup_zone_markers() -> void:
 	zone_markers.add_child(sanctuary_fill)
 	# Draw colored ring outlines
 	_add_ring_outline(400.0, Color(0.4, 0.9, 0.4, 0.25))
-	_add_ring_outline(1400.0, Color(0.9, 0.7, 0.2, 0.25))
+	_add_ring_outline(2000.0, Color(0.9, 0.7, 0.2, 0.25))
 	_add_ring_outline(2400.0, Color(0.9, 0.2, 0.2, 0.25))
 
 func _add_ring_outline(radius: float, color: Color) -> void:
@@ -694,7 +694,7 @@ func _draw_minimap(control: Control, map_size: float) -> void:
 	# Zone ring outlines
 	var rings := [
 		[400.0, Color(0.4, 0.9, 0.4, 0.3)],
-		[1400.0, Color(0.9, 0.7, 0.2, 0.3)],
+		[2000.0, Color(0.9, 0.7, 0.2, 0.3)],
 		[2400.0, Color(0.9, 0.2, 0.2, 0.3)],
 	]
 	for ring_data in rings:
@@ -705,8 +705,11 @@ func _draw_minimap(control: Control, map_size: float) -> void:
 	control.draw_rect(Rect2(center - Vector2(3, 3), Vector2(6, 6)), Color(0.85, 0.75, 0.5, 0.9))
 
 	# Player dot
+	var dot_r: float = 3.0 * (map_size / 160.0)
 	var player_map_pos: Vector2 = (player.position - HOME_POS) * scale_factor + center
-	control.draw_circle(player_map_pos, 3.0 * (map_size / 160.0), Color(1.0, 1.0, 0.3, 1.0))
+	player_map_pos.x = clampf(player_map_pos.x, dot_r, map_size - dot_r)
+	player_map_pos.y = clampf(player_map_pos.y, dot_r, map_size - dot_r)
+	control.draw_circle(player_map_pos, dot_r, Color(1.0, 1.0, 0.3, 1.0))
 
 func _on_minimap_click(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
