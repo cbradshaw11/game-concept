@@ -477,7 +477,11 @@ func _rebuild_sell_panel() -> void:
 		{"label": "⚔ Melee",   "color": Color(1.0, 0.5, 0.3), "slots": ["weapon_melee"]},
 		{"label": "🏹 Ranged",  "color": Color(0.4, 0.9, 0.5), "slots": ["weapon_ranged"]},
 		{"label": "✦ Magic",   "color": Color(0.6, 0.4, 1.0), "slots": ["weapon_magic"]},
-		{"label": "🛡 Armor",   "color": Color(0.5, 0.7, 1.0), "slots": ["helmet", "breastplate", "pants", "shoes", "gauntlets"]},
+		{"label": "Helmet",    "color": Color(0.75, 0.75, 1.0), "slots": ["helmet"]},
+		{"label": "Chest",     "color": Color(0.75, 0.75, 1.0), "slots": ["breastplate"]},
+		{"label": "Pants",     "color": Color(0.75, 0.75, 1.0), "slots": ["pants"]},
+		{"label": "Shoes",     "color": Color(0.75, 0.75, 1.0), "slots": ["shoes"]},
+		{"label": "Gauntlets", "color": Color(0.75, 0.75, 1.0), "slots": ["gauntlets"]},
 	]
 	var has_equipped := false
 	for grp in sell_groups:
@@ -500,28 +504,31 @@ func _rebuild_sell_panel() -> void:
 		empty.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 		sell_equipped_vbox.add_child(empty)
 
-	# Bank items — grouped by weapon type then armor then other
+	# Bank items — grouped by weapon type then individual armor slots then other
 	var bank_items_arr: Array = inv.get("bank_items")
 	var bank_groups := {
 		"weapon_melee": [], "weapon_ranged": [], "weapon_magic": [],
-		"armor": [], "other": []
+		"helmet": [], "breastplate": [], "pants": [], "shoes": [], "gauntlets": [],
+		"other": []
 	}
 	for item in bank_items_arr:
 		if item.get("category", "") == "potion":
 			continue
 		var s: String = item.get("slot", "")
-		if s == "weapon_melee" or s == "weapon_ranged" or s == "weapon_magic":
+		if bank_groups.has(s):
 			bank_groups[s].append(item)
-		elif item.get("category", "") == "armor":
-			bank_groups["armor"].append(item)
 		else:
 			bank_groups["other"].append(item)
 
 	var bank_group_cfg := [
-		{"key": "weapon_melee",   "label": "⚔ Melee",  "color": Color(1.0, 0.5, 0.3)},
-		{"key": "weapon_ranged",  "label": "🏹 Ranged", "color": Color(0.4, 0.9, 0.5)},
-		{"key": "weapon_magic",   "label": "✦ Magic",  "color": Color(0.6, 0.4, 1.0)},
-		{"key": "armor",          "label": "🛡 Armor",  "color": Color(0.5, 0.7, 1.0)},
+		{"key": "weapon_melee",   "label": "⚔ Melee",   "color": Color(1.0, 0.5, 0.3)},
+		{"key": "weapon_ranged",  "label": "🏹 Ranged",  "color": Color(0.4, 0.9, 0.5)},
+		{"key": "weapon_magic",   "label": "✦ Magic",   "color": Color(0.6, 0.4, 1.0)},
+		{"key": "helmet",         "label": "Helmet",    "color": Color(0.75, 0.75, 1.0)},
+		{"key": "breastplate",    "label": "Chest",     "color": Color(0.75, 0.75, 1.0)},
+		{"key": "pants",          "label": "Pants",     "color": Color(0.75, 0.75, 1.0)},
+		{"key": "shoes",          "label": "Shoes",     "color": Color(0.75, 0.75, 1.0)},
+		{"key": "gauntlets",      "label": "Gauntlets", "color": Color(0.75, 0.75, 1.0)},
 		{"key": "other",          "label": "Other",     "color": Color(0.8, 0.8, 0.8)},
 	]
 	var has_bank := false
@@ -932,18 +939,27 @@ func _rebuild_items_list() -> void:
 			cat = "other"
 		categories[cat].append(item)
 
-	# Split weapons into melee/ranged/magic sub-groups
+	# Split weapons and armor into individual sub-groups
 	var weapon_melee: Array = categories["weapon"].filter(func(i): return i.get("slot") == "weapon_melee")
 	var weapon_ranged: Array = categories["weapon"].filter(func(i): return i.get("slot") == "weapon_ranged")
 	var weapon_magic: Array = categories["weapon"].filter(func(i): return i.get("slot") == "weapon_magic")
+	var armor_helmet: Array    = categories["armor"].filter(func(i): return i.get("slot") == "helmet")
+	var armor_chest: Array     = categories["armor"].filter(func(i): return i.get("slot") == "breastplate")
+	var armor_pants: Array     = categories["armor"].filter(func(i): return i.get("slot") == "pants")
+	var armor_shoes: Array     = categories["armor"].filter(func(i): return i.get("slot") == "shoes")
+	var armor_gauntlets: Array = categories["armor"].filter(func(i): return i.get("slot") == "gauntlets")
 
 	var cat_config := [
-		{"items": weapon_melee,          "label": "⚔ Melee",   "color": Color(1.0, 0.5, 0.3)},
-		{"items": weapon_ranged,         "label": "🏹 Ranged",  "color": Color(0.4, 0.9, 0.5)},
-		{"items": weapon_magic,          "label": "✦ Magic",   "color": Color(0.6, 0.4, 1.0)},
-		{"items": categories["armor"],   "label": "🛡 Armor",   "color": Color(0.5, 0.8, 1.0)},
-		{"items": categories["potion"],  "label": "Potions",   "color": Color(0.5, 1.0, 0.6)},
-		{"items": categories["other"],   "label": "Other",     "color": Color(0.8, 0.8, 0.8)},
+		{"items": weapon_melee,      "label": "⚔ Melee",   "color": Color(1.0, 0.5, 0.3)},
+		{"items": weapon_ranged,     "label": "🏹 Ranged",  "color": Color(0.4, 0.9, 0.5)},
+		{"items": weapon_magic,      "label": "✦ Magic",   "color": Color(0.6, 0.4, 1.0)},
+		{"items": armor_helmet,      "label": "Helmet",    "color": Color(0.75, 0.75, 1.0)},
+		{"items": armor_chest,       "label": "Chest",     "color": Color(0.75, 0.75, 1.0)},
+		{"items": armor_pants,       "label": "Pants",     "color": Color(0.75, 0.75, 1.0)},
+		{"items": armor_shoes,       "label": "Shoes",     "color": Color(0.75, 0.75, 1.0)},
+		{"items": armor_gauntlets,   "label": "Gauntlets", "color": Color(0.75, 0.75, 1.0)},
+		{"items": categories["potion"], "label": "Potions","color": Color(0.5, 1.0, 0.6)},
+		{"items": categories["other"],  "label": "Other",  "color": Color(0.8, 0.8, 0.8)},
 	]
 
 	for cfg in cat_config:
@@ -1183,16 +1199,20 @@ func _rebuild_slots() -> void:
 		_add_section_header("✦ Magic", Color(0.6, 0.4, 1.0))
 		_add_slot_row("weapon_magic", slot_labels["weapon_magic"], equipped.get("weapon_magic", {}), inv)
 
-	# Armor
-	var armor_slots := ["helmet", "breastplate", "pants", "shoes", "gauntlets"]
-	var show_armor: bool = equip_filter == "all" or equip_filter in armor_slots
-	if show_armor:
-		_add_section_header("🛡 Armor", Color(0.5, 0.7, 1.0))
-		if equip_filter == "all":
-			for slot in armor_slots:
-				_add_slot_row(slot, slot_labels[slot], equipped.get(slot, {}), inv)
-		else:
-			_add_slot_row(equip_filter, slot_labels[equip_filter], equipped.get(equip_filter, {}), inv)
+	# Armor — each piece as its own sub-section
+	var armor_config := [
+		{"slot": "helmet",      "label": "Helmet",     "color": Color(0.75, 0.75, 1.0)},
+		{"slot": "breastplate", "label": "Chest",      "color": Color(0.75, 0.75, 1.0)},
+		{"slot": "pants",       "label": "Pants",      "color": Color(0.75, 0.75, 1.0)},
+		{"slot": "shoes",       "label": "Shoes",      "color": Color(0.75, 0.75, 1.0)},
+		{"slot": "gauntlets",   "label": "Gauntlets",  "color": Color(0.75, 0.75, 1.0)},
+	]
+	for cfg in armor_config:
+		var s: String = cfg["slot"]
+		if equip_filter != "all" and equip_filter != s:
+			continue
+		_add_section_header(cfg["label"], cfg["color"])
+		_add_slot_row(s, slot_labels[s], equipped.get(s, {}), inv)
 
 func _add_section_header(text: String, color: Color = Color(0.9, 0.8, 0.5)) -> void:
 	var sep := HSeparator.new()
