@@ -305,7 +305,7 @@ func _show_modifier_selection(choices: Array) -> void:
 
 func on_run_started(_seed: int) -> void:
 	_show_run()
-	run_base_status = "Run active (seed %d)" % seed
+	run_base_status = "Run active (seed %d)" % _seed
 	_refresh_run_status()
 
 func set_available_loadouts(weapons: Array) -> void:
@@ -446,7 +446,7 @@ func on_objective_failed(contract: Dictionary) -> void:
 
 func show_modifier_selection(_seed: int) -> void:
 	var count := DataStore.get_modifier_choices_per_run()
-	var choices := DataStore.get_random_modifiers(count, seed)
+	var choices := DataStore.get_random_modifiers(count, _seed)
 	_show_modifier_selection(choices)
 
 func refresh_vendor() -> void:
