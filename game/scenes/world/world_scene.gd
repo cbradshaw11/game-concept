@@ -570,7 +570,7 @@ func _setup_zone_markers() -> void:
 	_add_ring_outline(150.0, Color(0.4, 0.9, 0.4, 0.4))   # home base boundary
 	_add_ring_outline(800.0, Color(0.6, 0.8, 0.3, 0.3))   # inner ring
 	_add_ring_outline(2000.0, Color(0.9, 0.7, 0.2, 0.3))  # mid ring
-	_add_ring_outline(3000.0, Color(0.9, 0.2, 0.2, 0.3))  # outer ring
+	_add_ring_outline(4000.0, Color(0.9, 0.2, 0.2, 0.3))  # outer ring
 
 func _add_ring_outline(radius: float, color: Color) -> void:
 	var line := Line2D.new()
@@ -701,7 +701,7 @@ func _draw_minimap(control: Control, map_size: float) -> void:
 		[150.0,  Color(0.4, 0.9, 0.4, 0.4)],
 		[800.0,  Color(0.6, 0.8, 0.3, 0.35)],
 		[2000.0, Color(0.9, 0.7, 0.2, 0.35)],
-		[3000.0, Color(0.9, 0.2, 0.2, 0.35)],
+		[4000.0, Color(0.9, 0.2, 0.2, 0.35)],
 	]
 	for ring_data in rings:
 		var r: float = ring_data[0] * scale_factor
