@@ -3,11 +3,15 @@ extends Node
 signal inventory_changed
 signal inventory_dropped(gold: int, items: Array, drop_position: Vector2)
 signal bank_changed
+signal potion_used(potion_id: String, item: Dictionary)
 
 var carried_gold: int = 0
 var carried_items: Array = []
 var bank_gold: int = 0
 var bank_items: Array = []
+
+# Potions: potion_id → { "item": Dictionary, "count": int }
+var carried_potions: Dictionary = {}
 
 # Equipment slots — what the player currently has equipped
 var equipped: Dictionary = {
@@ -114,6 +118,40 @@ func _recalculate_stats() -> void:
 		elif category == "armor":
 			# gauntlets can have damage_bonus too
 			melee_damage_bonus += dmg
+
+func add_potion(item: Dictionary) -> void:
+	var pid: String = item.get("id", "")
+	if pid == "":
+		return
+	if carried_potions.has(pid):
+		carried_potions[pid]["count"] += 1
+	else:
+		carried_potions[pid] = { "item": item.duplicate(), "count": 1 }
+	inventory_changed.emit()
+
+func use_potion(potion_id: String) -> bool:
+	if not carried_potions.has(potion_id):
+		return false
+	var stack: Dictionary = carried_potions[potion_id]
+	if stack["count"] <= 0:
+		return false
+	stack["count"] -= 1
+	var item: Dictionary = stack["item"]
+	if stack["count"] <= 0:
+		carried_potions.erase(potion_id)
+	potion_used.emit(potion_id, item)
+	inventory_changed.emit()
+	return true
+
+func get_potion_stack(potion_id: String) -> Dictionary:
+	return carried_potions.get(potion_id, {})
+
+func get_all_potions() -> Array:
+	var result: Array = []
+	for pid in carried_potions:
+		var stack: Dictionary = carried_potions[pid]
+		result.append({ "id": pid, "item": stack["item"], "count": stack["count"] })
+	return result
 
 func on_player_death(death_position: Vector2) -> void:
 	# Equipped items are NOT dropped — only carried_items and carried_gold

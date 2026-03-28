@@ -17,6 +17,10 @@ var player_max_health := 100.0
 var combined_menu: Node = null
 var item_shop: Node = null
 
+# Potion speed buff
+var potion_speed_bonus: float = 0.0
+var speed_buff_timer: float = 0.0
+
 const HOME_POS := Vector2.ZERO
 
 # Zone colors
@@ -62,6 +66,8 @@ func _ready() -> void:
 	_inv().inventory_dropped.connect(_on_inventory_dropped)
 	_inv().inventory_changed.connect(_update_hud)
 	_inv().bank_changed.connect(_update_hud)
+	_inv().potion_used.connect(_on_potion_used)
+	_setup_potion_hud()
 	_update_hud()
 	target_bg_color = zone_colors["sanctuary"]
 	current_bg_color = target_bg_color
@@ -83,6 +89,8 @@ func _process(delta: float) -> void:
 	_handle_sanctuary_regen(delta)
 	_handle_spawning(delta)
 	_handle_hub_interaction()
+	_handle_potion_input()
+	_tick_speed_buff(delta)
 	# Update distance as 2D from home
 	var dist: float = player.position.distance_to(HOME_POS)
 	_wm().player_distance = dist
@@ -277,6 +285,7 @@ func _handle_input(delta: float) -> void:
 		var inv: Node = _inv()
 		if inv:
 			effective_speed += float(inv.get("speed_bonus"))
+		effective_speed += potion_speed_bonus
 		player.position += norm_dir * effective_speed * delta
 		_last_move_dir = norm_dir
 
@@ -571,6 +580,104 @@ func _add_circle_marker(radius: float, text: String, color: Color) -> void:
 		home_lbl.add_theme_color_override("font_color", Color(0.4, 0.6, 1.0, 0.9))
 		zone_markers.add_child(home_lbl)
 
+# ── Potion system ──────────────────────────────────────
+
+var _h_was_pressed: bool = false
+var potion_hud_label: Label = null
+
+func _setup_potion_hud() -> void:
+	potion_hud_label = Label.new()
+	potion_hud_label.add_theme_font_size_override("font_size", 12)
+	potion_hud_label.add_theme_color_override("font_color", Color(0.7, 0.9, 0.7))
+	potion_hud_label.anchor_left = 0.0
+	potion_hud_label.anchor_top = 1.0
+	potion_hud_label.anchor_right = 1.0
+	potion_hud_label.anchor_bottom = 1.0
+	potion_hud_label.offset_top = -30.0
+	potion_hud_label.offset_bottom = 0.0
+	potion_hud_label.offset_left = 10.0
+	potion_hud_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	hud_layer.add_child(potion_hud_label)
+
+func _update_potion_hud() -> void:
+	if potion_hud_label == null:
+		return
+	var inv: Node = _inv()
+	if inv == null:
+		potion_hud_label.text = ""
+		return
+	var potions: Array = inv.get_all_potions()
+	if potions.size() == 0:
+		potion_hud_label.text = ""
+		return
+	var parts: Array = []
+	for stack in potions:
+		var short_name: String = _potion_short_name(stack["item"])
+		parts.append("[%s x%d]" % [short_name, stack["count"]])
+	potion_hud_label.text = "H=Heal  |  Potions: %s" % " ".join(parts)
+
+func _potion_short_name(item: Dictionary) -> String:
+	var n: String = item.get("name", "?")
+	if n.begins_with("Small"):
+		return "Heal S"
+	if n.begins_with("Large"):
+		return "Heal L"
+	if n.find("Speed") >= 0:
+		return "Speed"
+	return n.substr(0, 8)
+
+func _handle_potion_input() -> void:
+	if _is_menu_open():
+		return
+	var h_now: bool = Input.is_key_pressed(KEY_H)
+	if h_now and not _h_was_pressed:
+		_use_healing_potion()
+	_h_was_pressed = h_now
+
+func _use_healing_potion() -> void:
+	var inv: Node = _inv()
+	if inv == null:
+		return
+	# Prefer small heal first, then large
+	for pid in ["potion_heal_small", "potion_heal_large"]:
+		if inv.get_potion_stack(pid).size() > 0:
+			inv.use_potion(pid)
+			return
+
+func _on_potion_used(potion_id: String, item: Dictionary) -> void:
+	if item.has("heal_amount"):
+		var heal: float = float(item.get("heal_amount"))
+		player_health = minf(player_health + heal, player_max_health)
+	if item.has("speed_bonus") and item.has("duration"):
+		potion_speed_bonus = float(item.get("speed_bonus"))
+		speed_buff_timer = float(item.get("duration"))
+	# Floating label
+	var msg: String = "Used %s" % item.get("name", "Potion")
+	if item.has("heal_amount"):
+		msg += " +%d HP" % int(item.get("heal_amount"))
+	_show_potion_toast(msg)
+
+func _tick_speed_buff(delta: float) -> void:
+	if speed_buff_timer > 0.0:
+		speed_buff_timer -= delta
+		if speed_buff_timer <= 0.0:
+			potion_speed_bonus = 0.0
+			speed_buff_timer = 0.0
+
+func _show_potion_toast(text: String) -> void:
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.add_theme_font_size_override("font_size", 16)
+	lbl.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
+	lbl.anchor_left = 0.5
+	lbl.anchor_top = 0.3
+	lbl.offset_left = -100.0
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hud_layer.add_child(lbl)
+	var tw := create_tween()
+	tw.tween_property(lbl, "modulate:a", 0.0, 2.0)
+	tw.tween_callback(lbl.queue_free)
+
 func _update_hud() -> void:
 	if not is_inside_tree():
 		return
@@ -581,3 +688,4 @@ func _update_hud() -> void:
 	gold_label.text = "Carried: %dg" % _inv().carried_gold
 	bank_label.text = "Bank: %dg" % _inv().bank_gold
 	distance_label.text = "Move: WASD  |  Melee: Z/Click  |  Ranged: Q  |  Distance: %d" % int(_wm().player_distance)
+	_update_potion_hud()

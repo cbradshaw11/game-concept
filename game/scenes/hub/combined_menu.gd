@@ -10,6 +10,7 @@ var bank_vbox: VBoxContainer
 var equip_vbox: VBoxContainer
 var stats_vbox: VBoxContainer
 var slots_vbox: VBoxContainer
+var potions_vbox: VBoxContainer
 var items_vbox: VBoxContainer
 
 # Bank gold sub-panels
@@ -267,6 +268,20 @@ func _build_ui() -> void:
 	slots_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	eq_scroll.add_child(slots_vbox)
 
+	# ── Potions section ──
+	var potions_sep := HSeparator.new()
+	equip_vbox.add_child(potions_sep)
+
+	var pot_title := Label.new()
+	pot_title.text = "Potions"
+	pot_title.add_theme_font_size_override("font_size", 14)
+	pot_title.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5))
+	equip_vbox.add_child(pot_title)
+
+	potions_vbox = VBoxContainer.new()
+	potions_vbox.add_theme_constant_override("separation", 4)
+	equip_vbox.add_child(potions_vbox)
+
 	var stats_sep := HSeparator.new()
 	equip_vbox.add_child(stats_sep)
 
@@ -297,6 +312,7 @@ func _refresh() -> void:
 	_update_bank_visibility()
 	_refresh_gold()
 	_rebuild_slots()
+	_rebuild_potions()
 	_rebuild_stats()
 	if bank_screen == BankScreen.ITEMS:
 		_rebuild_items_list()
@@ -547,6 +563,51 @@ func _add_slot_row(slot: String, label: String, item: Dictionary, inv: Node) -> 
 		var s := slot
 		unequip_btn.pressed.connect(func(): inv.call("unequip_item", s))
 		hbox.add_child(unequip_btn)
+
+func _rebuild_potions() -> void:
+	for child in potions_vbox.get_children():
+		child.queue_free()
+
+	var inv: Node = get_node_or_null("/root/InventorySystem")
+	if inv == null:
+		return
+	var potions: Array = inv.get_all_potions()
+	if potions.size() == 0:
+		var empty_lbl := Label.new()
+		empty_lbl.text = "No potions carried."
+		empty_lbl.add_theme_font_size_override("font_size", 12)
+		empty_lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+		potions_vbox.add_child(empty_lbl)
+		return
+
+	for stack in potions:
+		var item: Dictionary = stack["item"]
+		var count: int = stack["count"]
+		var pid: String = stack["id"]
+
+		var hbox := HBoxContainer.new()
+		hbox.add_theme_constant_override("separation", 8)
+		potions_vbox.add_child(hbox)
+
+		var name_lbl := Label.new()
+		name_lbl.text = "%s x%d" % [item.get("name", "???"), count]
+		name_lbl.add_theme_font_size_override("font_size", 12)
+		name_lbl.custom_minimum_size = Vector2(170, 0)
+		hbox.add_child(name_lbl)
+
+		var effect_lbl := Label.new()
+		effect_lbl.text = _get_stat_summary(item)
+		effect_lbl.add_theme_font_size_override("font_size", 11)
+		effect_lbl.add_theme_color_override("font_color", Color(0.6, 0.9, 0.6))
+		effect_lbl.custom_minimum_size = Vector2(90, 0)
+		hbox.add_child(effect_lbl)
+
+		var use_btn := Button.new()
+		use_btn.text = "Use"
+		use_btn.custom_minimum_size = Vector2(50, 24)
+		var p := pid
+		use_btn.pressed.connect(func(): inv.use_potion(p))
+		hbox.add_child(use_btn)
 
 func _rebuild_stats() -> void:
 	for child in stats_vbox.get_children():
