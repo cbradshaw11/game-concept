@@ -367,9 +367,24 @@ func _on_inventory_dropped(gold: int, _items: Array, drop_position: Vector2) -> 
 	loot_drops.append(loot)
 
 func _handle_hub_interaction() -> void:
-	if _wm().current_zone == "sanctuary":
-		if Input.is_action_just_pressed("interact") and home_hub == null:
-			_open_home_hub()
+	var in_sanctuary: bool = str(_wm().current_zone) == "sanctuary"
+	# Show/hide "Press E — Bank" prompt near player when at home
+	var prompt: Node = get_node_or_null("BankPrompt")
+	if prompt == null and in_sanctuary:
+		var lbl := Label.new()
+		lbl.name = "BankPrompt"
+		lbl.text = "Press E — Bank"
+		lbl.add_theme_font_size_override("font_size", 13)
+		lbl.add_theme_color_override("font_color", Color(0.5, 0.9, 1.0))
+		lbl.z_index = 10
+		add_child(lbl)
+	elif prompt != null:
+		prompt.visible = in_sanctuary
+		if in_sanctuary:
+			(prompt as Label).position = player.position + Vector2(-50, -75)
+	# Open bank on E press
+	if in_sanctuary and Input.is_key_just_pressed(KEY_E) and home_hub == null:
+		_open_home_hub()
 
 func _open_home_hub() -> void:
 	home_hub = HomeHubScene.instantiate()
