@@ -34,10 +34,17 @@ var sell_scroll: ScrollContainer
 # ── Inventory & Bank state ──
 var inv_content: HBoxContainer
 var bank_vbox: VBoxContainer
-var equip_vbox: VBoxContainer
+var equip_vbox: HBoxContainer
 var stats_vbox: VBoxContainer
 var slots_vbox: VBoxContainer
 var potions_vbox: VBoxContainer
+var content_vbox: VBoxContainer
+var equip_filter: String = "all"
+var filter_buttons: Dictionary = {}
+var potions_sep_node: HSeparator
+var pot_title_node: Label
+var stats_sep_node: HSeparator
+var st_title_node: Label
 var items_vbox: VBoxContainer
 var bank_controls: VBoxContainer
 var bank_locked_label: Label
@@ -825,22 +832,34 @@ func _build_inv_tab() -> void:
 	inv_content.add_child(vsep)
 
 	# ── RIGHT PANE: Equipment + Stats ──
-	equip_vbox = VBoxContainer.new()
-	equip_vbox.add_theme_constant_override("separation", 6)
+	equip_vbox = HBoxContainer.new()
+	equip_vbox.add_theme_constant_override("separation", 0)
 	equip_vbox.custom_minimum_size = Vector2(440, 0)
 	equip_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inv_content.add_child(equip_vbox)
+
+	# Filter sidebar
+	_build_filter_sidebar()
+
+	var eq_vsep := VSeparator.new()
+	equip_vbox.add_child(eq_vsep)
+
+	# Content area
+	content_vbox = VBoxContainer.new()
+	content_vbox.add_theme_constant_override("separation", 6)
+	content_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	equip_vbox.add_child(content_vbox)
 
 	var eq_title := Label.new()
 	eq_title.text = "Equipment"
 	eq_title.add_theme_font_size_override("font_size", 16)
 	eq_title.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
 	eq_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	equip_vbox.add_child(eq_title)
+	content_vbox.add_child(eq_title)
 
 	var eq_scroll := ScrollContainer.new()
-	eq_scroll.custom_minimum_size = Vector2(420, 220)
-	equip_vbox.add_child(eq_scroll)
+	eq_scroll.custom_minimum_size = Vector2(320, 220)
+	content_vbox.add_child(eq_scroll)
 
 	slots_vbox = VBoxContainer.new()
 	slots_vbox.add_theme_constant_override("separation", 4)
@@ -848,31 +867,31 @@ func _build_inv_tab() -> void:
 	eq_scroll.add_child(slots_vbox)
 
 	# Potions section
-	var potions_sep := HSeparator.new()
-	equip_vbox.add_child(potions_sep)
+	potions_sep_node = HSeparator.new()
+	content_vbox.add_child(potions_sep_node)
 
-	var pot_title := Label.new()
-	pot_title.text = "Potions"
-	pot_title.add_theme_font_size_override("font_size", 14)
-	pot_title.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5))
-	equip_vbox.add_child(pot_title)
+	pot_title_node = Label.new()
+	pot_title_node.text = "Potions"
+	pot_title_node.add_theme_font_size_override("font_size", 14)
+	pot_title_node.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5))
+	content_vbox.add_child(pot_title_node)
 
 	potions_vbox = VBoxContainer.new()
 	potions_vbox.add_theme_constant_override("separation", 4)
-	equip_vbox.add_child(potions_vbox)
+	content_vbox.add_child(potions_vbox)
 
-	var stats_sep := HSeparator.new()
-	equip_vbox.add_child(stats_sep)
+	stats_sep_node = HSeparator.new()
+	content_vbox.add_child(stats_sep_node)
 
-	var st_title := Label.new()
-	st_title.text = "Stats"
-	st_title.add_theme_font_size_override("font_size", 14)
-	st_title.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
-	equip_vbox.add_child(st_title)
+	st_title_node = Label.new()
+	st_title_node.text = "Stats"
+	st_title_node.add_theme_font_size_override("font_size", 14)
+	st_title_node.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
+	content_vbox.add_child(st_title_node)
 
 	stats_vbox = VBoxContainer.new()
 	stats_vbox.add_theme_constant_override("separation", 5)
-	equip_vbox.add_child(stats_vbox)
+	content_vbox.add_child(stats_vbox)
 
 # ── Bank controls ──
 
@@ -1055,6 +1074,76 @@ func _on_withdraw_confirm() -> void:
 	_hide_withdraw()
 	_refresh_gold()
 
+# ── Equipment filter sidebar ──
+
+func _build_filter_sidebar() -> void:
+	var sidebar := VBoxContainer.new()
+	sidebar.custom_minimum_size = Vector2(90, 0)
+	sidebar.add_theme_constant_override("separation", 2)
+	equip_vbox.add_child(sidebar)
+
+	var filters := [
+		["All", "all"],
+		["⚔ Melee", "melee"],
+		["🏹 Ranged", "ranged"],
+		["✦ Magic", "magic"],
+		["_separator_", ""],
+		["Helmet", "helmet"],
+		["Chest", "breastplate"],
+		["Pants", "pants"],
+		["Shoes", "shoes"],
+		["Gauntlets", "gauntlets"],
+		["🧪 Potions", "potions"],
+		["📊 Stats", "stats"],
+	]
+
+	for f in filters:
+		if f[0] == "_separator_":
+			var lbl := Label.new()
+			lbl.text = "─── Armor ───"
+			lbl.add_theme_font_size_override("font_size", 10)
+			lbl.add_theme_color_override("font_color", Color(0.5, 0.7, 1.0))
+			sidebar.add_child(lbl)
+			continue
+
+		var btn := Button.new()
+		btn.text = f[0]
+		btn.custom_minimum_size = Vector2(88, 22)
+		btn.add_theme_font_size_override("font_size", 11)
+		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var key: String = f[1]
+		btn.pressed.connect(func(): _set_equip_filter(key))
+		sidebar.add_child(btn)
+		filter_buttons[f[1]] = btn
+
+	_update_filter_highlight()
+
+func _set_equip_filter(key: String) -> void:
+	equip_filter = key
+	_update_filter_highlight()
+	_rebuild_slots()
+	_rebuild_potions()
+	_rebuild_stats()
+	_update_equip_section_visibility()
+
+func _update_filter_highlight() -> void:
+	for k in filter_buttons:
+		var btn: Button = filter_buttons[k]
+		if k == equip_filter:
+			btn.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+		else:
+			btn.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+
+func _update_equip_section_visibility() -> void:
+	var show_potions: bool = equip_filter == "all" or equip_filter == "potions"
+	var show_stats: bool = equip_filter == "all" or equip_filter == "stats"
+	potions_sep_node.visible = show_potions
+	pot_title_node.visible = show_potions
+	potions_vbox.visible = show_potions
+	stats_sep_node.visible = show_stats
+	st_title_node.visible = show_stats
+	stats_vbox.visible = show_stats
+
 # ── Equipment (right pane of Inventory tab) ──
 
 func _rebuild_slots() -> void:
@@ -1063,6 +1152,10 @@ func _rebuild_slots() -> void:
 
 	var inv: Node = get_node_or_null("/root/InventorySystem")
 	if inv == null:
+		return
+
+	# Hide slots entirely for potions/stats-only filters
+	if equip_filter == "potions" or equip_filter == "stats":
 		return
 
 	var equipped: Dictionary = inv.get("equipped")
@@ -1078,19 +1171,28 @@ func _rebuild_slots() -> void:
 	}
 
 	# Weapons — split by type
-	_add_section_header("⚔ Melee", Color(1.0, 0.5, 0.3))
-	_add_slot_row("weapon_melee", slot_labels["weapon_melee"], equipped.get("weapon_melee", {}), inv)
+	if equip_filter in ["all", "melee"]:
+		_add_section_header("⚔ Melee", Color(1.0, 0.5, 0.3))
+		_add_slot_row("weapon_melee", slot_labels["weapon_melee"], equipped.get("weapon_melee", {}), inv)
 
-	_add_section_header("🏹 Ranged", Color(0.4, 0.9, 0.5))
-	_add_slot_row("weapon_ranged", slot_labels["weapon_ranged"], equipped.get("weapon_ranged", {}), inv)
+	if equip_filter in ["all", "ranged"]:
+		_add_section_header("🏹 Ranged", Color(0.4, 0.9, 0.5))
+		_add_slot_row("weapon_ranged", slot_labels["weapon_ranged"], equipped.get("weapon_ranged", {}), inv)
 
-	_add_section_header("✦ Magic", Color(0.6, 0.4, 1.0))
-	_add_slot_row("weapon_magic", slot_labels["weapon_magic"], equipped.get("weapon_magic", {}), inv)
+	if equip_filter in ["all", "magic"]:
+		_add_section_header("✦ Magic", Color(0.6, 0.4, 1.0))
+		_add_slot_row("weapon_magic", slot_labels["weapon_magic"], equipped.get("weapon_magic", {}), inv)
 
 	# Armor
-	_add_section_header("🛡 Armor", Color(0.5, 0.7, 1.0))
-	for slot in ["helmet", "breastplate", "pants", "shoes", "gauntlets"]:
-		_add_slot_row(slot, slot_labels[slot], equipped.get(slot, {}), inv)
+	var armor_slots := ["helmet", "breastplate", "pants", "shoes", "gauntlets"]
+	var show_armor: bool = equip_filter == "all" or equip_filter in armor_slots
+	if show_armor:
+		_add_section_header("🛡 Armor", Color(0.5, 0.7, 1.0))
+		if equip_filter == "all":
+			for slot in armor_slots:
+				_add_slot_row(slot, slot_labels[slot], equipped.get(slot, {}), inv)
+		else:
+			_add_slot_row(equip_filter, slot_labels[equip_filter], equipped.get(equip_filter, {}), inv)
 
 func _add_section_header(text: String, color: Color = Color(0.9, 0.8, 0.5)) -> void:
 	var sep := HSeparator.new()
@@ -1261,6 +1363,7 @@ func _refresh() -> void:
 		_rebuild_slots()
 		_rebuild_potions()
 		_rebuild_stats()
+		_update_equip_section_visibility()
 		_rebuild_items_list()
 
 func _get_stat_summary(item: Dictionary) -> String:
