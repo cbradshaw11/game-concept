@@ -66,6 +66,7 @@ func _ready() -> void:
 	player.position = HOME_POS
 
 var attack_cooldown: float = 0.0
+var _e_was_pressed: bool = false
 
 func _process(delta: float) -> void:
 	_handle_input(delta)
@@ -383,8 +384,10 @@ func _handle_hub_interaction() -> void:
 		if in_sanctuary:
 			(prompt as Label).position = player.position + Vector2(-50, -75)
 	# Open bank on E press
-	if in_sanctuary and Input.is_key_just_pressed(KEY_E) and home_hub == null:
+	var e_now: bool = Input.is_key_pressed(KEY_E)
+	if in_sanctuary and e_now and not _e_was_pressed and home_hub == null:
 		_open_home_hub()
+	_e_was_pressed = e_now
 
 func _open_home_hub() -> void:
 	home_hub = HomeHubScene.instantiate()

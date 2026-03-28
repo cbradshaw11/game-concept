@@ -144,8 +144,8 @@ func _refresh() -> void:
 	var inv: Node = get_node_or_null("/root/InventorySystem")
 	if inv == null:
 		return
-	bank_label.text = "Bank:  %d gold" % int(inv.get("bank_gold", 0))
-	carried_label.text = "In pocket:  %d gold" % int(inv.get("carried_gold", 0))
+	bank_label.text = "Bank:  %d gold" % int(inv.get("bank_gold"))
+	carried_label.text = "In pocket:  %d gold" % int(inv.get("carried_gold"))
 
 func _show_main_screen() -> void:
 	current_screen = Screen.MAIN
@@ -165,7 +165,7 @@ func _on_deposit_all() -> void:
 	var inv: Node = get_node_or_null("/root/InventorySystem")
 	if inv == null:
 		return
-	var carried: int = int(inv.get("carried_gold", 0))
+	var carried: int = int(inv.get("carried_gold"))
 	if carried > 0:
 		inv.call("deposit_to_bank", carried, [])
 	_refresh()
@@ -174,7 +174,7 @@ func _on_withdraw_all() -> void:
 	var inv: Node = get_node_or_null("/root/InventorySystem")
 	if inv == null:
 		return
-	var bank: int = int(inv.get("bank_gold", 0))
+	var bank: int = int(inv.get("bank_gold"))
 	if bank > 0:
 		inv.call("withdraw_gold", bank)
 	_show_main_screen()
