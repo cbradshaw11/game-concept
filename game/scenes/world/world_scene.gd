@@ -100,13 +100,6 @@ func _do_melee_attack() -> void:
 	var swing_dir: Vector2 = _last_move_dir
 	if nearest != null:
 		swing_dir = (nearest.position - player.position).normalized()
-	var origin: Vector2 = player.position
-
-	# Player lunge forward and back
-	var tw := create_tween()
-	tw.tween_property(player, "position", origin + swing_dir * 22.0, 0.06)
-	tw.tween_property(player, "position", origin, 0.12)
-
 	# Sword sweep — pivot Node2D that rotates, with blade as child Line2D
 	var pivot := Node2D.new()
 	pivot.position = player.position + swing_dir * 10.0
@@ -324,13 +317,6 @@ func _check_enemy_damage(delta: float) -> void:
 				var dmg: int = enemy.get_meta("damage", 10)
 				player_health -= float(dmg)
 				damage_timers[key] = 1.0
-
-				# Enemy lunge animation
-				var e_origin: Vector2 = enemy.position
-				var lunge_toward: Vector2 = (player.position - enemy.position).normalized() * 14.0
-				var e_tw := create_tween()
-				e_tw.tween_property(enemy, "position", e_origin + lunge_toward, 0.06)
-				e_tw.tween_property(enemy, "position", e_origin, 0.1)
 
 				# Player hit flash — full red modulate
 				player.modulate = Color(2.0, 0.2, 0.2)
