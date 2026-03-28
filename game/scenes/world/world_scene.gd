@@ -314,6 +314,11 @@ func _handle_input(delta: float) -> void:
 		effective_speed += potion_speed_bonus
 		player.position += norm_dir * effective_speed * delta
 		_last_move_dir = norm_dir
+		# Hard world boundary — clamp player inside outer ring
+		var world_edge: float = _wm().WORLD_EDGE
+		var dist_from_home: float = player.position.distance_to(HOME_POS)
+		if dist_from_home > world_edge:
+			player.position = HOME_POS + (player.position - HOME_POS).normalized() * world_edge
 
 func _update_background(delta: float) -> void:
 	current_bg_color = current_bg_color.lerp(target_bg_color, delta * 3.0)
@@ -472,6 +477,10 @@ func _handle_spawning(delta: float) -> void:
 	if away_dir == Vector2.ZERO:
 		away_dir = Vector2.RIGHT
 	var spawn_pos: Vector2 = player.position + away_dir * 300.0
+	# Clamp spawn position inside world boundary
+	var world_edge: float = _wm().WORLD_EDGE
+	if spawn_pos.distance_to(HOME_POS) > world_edge:
+		spawn_pos = HOME_POS + spawn_pos.normalized() * (world_edge - 50.0)
 	var enemy: Node2D = spawner.spawn_enemy(zone, spawn_pos, enemy_container)
 	if enemy != null:
 		enemies.append(enemy)
