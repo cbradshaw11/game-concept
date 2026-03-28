@@ -485,9 +485,13 @@ func _rebuild_sell_panel() -> void:
 		sell_bank_vbox.add_child(empty)
 
 func _add_sell_row(parent: VBoxContainer, item: Dictionary, slot: String, is_equipped: bool) -> void:
+	var row := VBoxContainer.new()
+	row.add_theme_constant_override("separation", 2)
+	parent.add_child(row)
+
 	var hbox := HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 8)
-	parent.add_child(hbox)
+	row.add_child(hbox)
 
 	var name_lbl := Label.new()
 	name_lbl.text = item.get("name", "???")
@@ -519,8 +523,41 @@ func _add_sell_row(parent: VBoxContainer, item: Dictionary, slot: String, is_equ
 	var item_ref := item
 	var slot_ref := slot
 	var eq_ref := is_equipped
-	sell_btn.pressed.connect(func(): _sell_item(item_ref, slot_ref, eq_ref))
+	sell_btn.pressed.connect(func(): _show_sell_confirm(row, item_ref, slot_ref, eq_ref, sell_price))
 	hbox.add_child(sell_btn)
+
+var _sell_confirm_row: Node = null
+
+func _show_sell_confirm(row: VBoxContainer, item: Dictionary, slot: String, is_equipped: bool, sell_price: int) -> void:
+	# Dismiss any existing confirm
+	if _sell_confirm_row != null and is_instance_valid(_sell_confirm_row):
+		var old := _sell_confirm_row.get_node_or_null("SellConfirm")
+		if old:
+			old.queue_free()
+	_sell_confirm_row = row
+
+	var confirm := HBoxContainer.new()
+	confirm.name = "SellConfirm"
+	confirm.add_theme_constant_override("separation", 8)
+	row.add_child(confirm)
+
+	var lbl := Label.new()
+	lbl.text = "Sell %s for %dg?" % [item.get("name", "item"), sell_price]
+	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.add_theme_color_override("font_color", Color(1.0, 0.75, 0.3))
+	confirm.add_child(lbl)
+
+	var yes_btn := Button.new()
+	yes_btn.text = "Yes"
+	yes_btn.custom_minimum_size = Vector2(45, 22)
+	yes_btn.pressed.connect(func(): _sell_item(item, slot, is_equipped))
+	confirm.add_child(yes_btn)
+
+	var no_btn := Button.new()
+	no_btn.text = "No"
+	no_btn.custom_minimum_size = Vector2(45, 22)
+	no_btn.pressed.connect(func(): confirm.queue_free(); _sell_confirm_row = null)
+	confirm.add_child(no_btn)
 
 func _sell_item(item: Dictionary, slot: String, is_equipped: bool) -> void:
 	var inv: Node = get_node_or_null("/root/InventorySystem")
