@@ -1122,17 +1122,24 @@ func _build_filter_sidebar() -> void:
 		["⚔ Melee", "melee", ""],
 		["🏹 Ranged", "ranged", ""],
 		["✦ Magic", "magic", ""],
+		["_gap_", "", ""],
 		["_header_", "Armor", "🛡"],
 		["Helmet", "helmet", ""],
 		["Chest", "breastplate", ""],
 		["Pants", "pants", ""],
 		["Shoes", "shoes", ""],
 		["Gauntlets", "gauntlets", ""],
+		["_gap_", "", ""],
 		["_header_", "Potions", "🧪"],
 		["🧪 Potions", "potions", ""],
 	]
 
 	for f in filters:
+		if f[0] == "_gap_":
+			var gap := Control.new()
+			gap.custom_minimum_size = Vector2(0, 6)
+			sidebar.add_child(gap)
+			continue
 		if f[0] == "_header_":
 			var lbl := Label.new()
 			lbl.text = "─ %s %s ─" % [f[2], f[1]]
