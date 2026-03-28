@@ -562,14 +562,14 @@ func _setup_zone_markers() -> void:
 	var fill_count := 120
 	for i in range(fill_count):
 		var angle: float = TAU * float(i) / float(fill_count)
-		fill_points.append(Vector2(cos(angle), sin(angle)) * 200.0)
+		fill_points.append(Vector2(cos(angle), sin(angle)) * 400.0)
 	sanctuary_fill.polygon = fill_points
 	sanctuary_fill.color = Color(0.2, 0.4, 0.8, 0.08)
 	zone_markers.add_child(sanctuary_fill)
 	# Draw colored ring outlines
-	_add_ring_outline(200.0, Color(0.4, 0.9, 0.4, 0.25))
-	_add_ring_outline(700.0, Color(0.9, 0.7, 0.2, 0.25))
-	_add_ring_outline(1200.0, Color(0.9, 0.2, 0.2, 0.25))
+	_add_ring_outline(400.0, Color(0.4, 0.9, 0.4, 0.25))
+	_add_ring_outline(1400.0, Color(0.9, 0.7, 0.2, 0.25))
+	_add_ring_outline(2400.0, Color(0.9, 0.2, 0.2, 0.25))
 
 func _add_ring_outline(radius: float, color: Color) -> void:
 	var line := Line2D.new()
@@ -681,7 +681,7 @@ func _setup_minimap() -> void:
 	exp_panel.add_child(minimap_expanded_control)
 
 func _draw_minimap(control: Control, map_size: float) -> void:
-	var outer_r: float = 1200.0
+	var outer_r: float = 2400.0
 	var scale_factor: float = map_size / (outer_r * 2.5)
 	var center := Vector2(map_size / 2.0, map_size / 2.0)
 
@@ -693,9 +693,9 @@ func _draw_minimap(control: Control, map_size: float) -> void:
 
 	# Zone ring outlines
 	var rings := [
-		[200.0, Color(0.4, 0.9, 0.4, 0.3)],
-		[700.0, Color(0.9, 0.7, 0.2, 0.3)],
-		[1200.0, Color(0.9, 0.2, 0.2, 0.3)],
+		[400.0, Color(0.4, 0.9, 0.4, 0.3)],
+		[1400.0, Color(0.9, 0.7, 0.2, 0.3)],
+		[2400.0, Color(0.9, 0.2, 0.2, 0.3)],
 	]
 	for ring_data in rings:
 		var r: float = ring_data[0] * scale_factor
