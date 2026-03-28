@@ -3,9 +3,11 @@ extends Node
 signal zone_changed(old_zone: String, new_zone: String)
 signal player_distance_changed(distance: float)
 
-const INNER_START := 300.0
-const MID_START := 2000.0
-const OUTER_START := 2400.0
+const SANCTUARY_RADIUS := 150.0  # home base safe zone
+const INNER_START := 150.0
+const MID_START := 800.0
+const OUTER_START := 2000.0
+const WORLD_EDGE := 3000.0
 
 var player_distance: float = 0.0:
 	set(value):
@@ -33,6 +35,8 @@ func get_zone_for_distance(d: float) -> String:
 
 func get_zone_boundary(zone: String) -> float:
 	match zone:
+		"sanctuary":
+			return SANCTUARY_RADIUS
 		"inner":
 			return INNER_START
 		"mid":
