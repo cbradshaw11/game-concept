@@ -68,6 +68,9 @@ func _ready() -> void:
 	_setup_potion_hud()
 	_update_hud()
 	target_bg_color = zone_colors["sanctuary"]
+	# DEV: start with gold for testing the shop/menu
+	_inv().add_carried_gold(500)
+	_inv().bank_gold = 500
 	current_bg_color = target_bg_color
 	player.position = HOME_POS
 
