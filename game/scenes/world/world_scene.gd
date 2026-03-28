@@ -1,9 +1,8 @@
 extends Node2D
 
 const EnemySpawner = preload("res://scripts/systems/enemy_spawner.gd")
-const HomeHubScene = preload("res://scenes/hub/home_hub.tscn")
+const CombinedMenuScene = preload("res://scenes/hub/combined_menu.tscn")
 const ItemShopScene = preload("res://scenes/hub/item_shop.tscn")
-const InventoryMenuScene = preload("res://scenes/hub/inventory_menu.tscn")
 
 var player_speed := 200.0
 var spawner := EnemySpawner.new()
@@ -15,9 +14,8 @@ var loot_drops: Array[Node2D] = []
 var damage_timers: Dictionary = {}
 var player_health := 100.0
 var player_max_health := 100.0
-var home_hub: Node = null
+var combined_menu: Node = null
 var item_shop: Node = null
-var inventory_menu: Node = null
 
 const HOME_POS := Vector2.ZERO
 
@@ -186,7 +184,7 @@ func _do_ranged_attack() -> void:
 	)
 
 func _is_menu_open() -> bool:
-	return home_hub != null or item_shop != null or inventory_menu != null
+	return combined_menu != null or item_shop != null
 
 func _get_nearest_enemy(max_dist: float) -> Node2D:
 	var nearest: Node2D = null
@@ -487,7 +485,7 @@ func _handle_hub_interaction() -> void:
 	if bank_prompt == null and in_sanctuary:
 		var lbl := Label.new()
 		lbl.name = "BankPrompt"
-		lbl.text = "E — Bank"
+		lbl.text = "E — Bank & Inventory"
 		lbl.add_theme_font_size_override("font_size", 13)
 		lbl.add_theme_color_override("font_color", Color(0.5, 0.9, 1.0))
 		lbl.z_index = 10
@@ -501,7 +499,7 @@ func _handle_hub_interaction() -> void:
 	if shop_prompt == null and in_sanctuary:
 		var lbl := Label.new()
 		lbl.name = "ShopPrompt"
-		lbl.text = "T — Shop    I — Inventory"
+		lbl.text = "T — Shop"
 		lbl.add_theme_font_size_override("font_size", 13)
 		lbl.add_theme_color_override("font_color", Color(0.9, 0.8, 0.4))
 		lbl.z_index = 10
@@ -512,10 +510,10 @@ func _handle_hub_interaction() -> void:
 		if in_sanctuary:
 			(shop_prompt as Label).position = player.position + Vector2(-50, -55)
 
-	# Open bank on E press
+	# Open combined menu on E press (sanctuary) or I press (anywhere)
 	var e_now: bool = Input.is_key_pressed(KEY_E)
 	if in_sanctuary and e_now and not _e_was_pressed and not _is_menu_open():
-		_open_home_hub()
+		_open_combined_menu(true)
 	_e_was_pressed = e_now
 
 	# Open shop on T press
@@ -524,21 +522,22 @@ func _handle_hub_interaction() -> void:
 		_open_item_shop()
 	_t_was_pressed = t_now
 
-	# Open inventory on I press (anywhere)
+	# Open combined menu on I press (anywhere, bank locked if not at home)
 	var i_now: bool = Input.is_key_pressed(KEY_I)
 	if i_now and not _i_was_pressed and not _is_menu_open():
-		_open_inventory_menu()
+		_open_combined_menu(in_sanctuary)
 	_i_was_pressed = i_now
 
-func _open_home_hub() -> void:
-	home_hub = HomeHubScene.instantiate()
-	add_child(home_hub)
-	home_hub.hub_closed.connect(_on_hub_closed)
+func _open_combined_menu(at_home: bool) -> void:
+	combined_menu = CombinedMenuScene.instantiate()
+	combined_menu.at_home = at_home
+	add_child(combined_menu)
+	combined_menu.menu_closed.connect(_on_combined_menu_closed)
 
-func _on_hub_closed() -> void:
-	if home_hub != null:
-		home_hub.queue_free()
-		home_hub = null
+func _on_combined_menu_closed() -> void:
+	if combined_menu != null:
+		combined_menu.queue_free()
+		combined_menu = null
 
 func _open_item_shop() -> void:
 	item_shop = ItemShopScene.instantiate()
@@ -550,15 +549,6 @@ func _on_shop_closed() -> void:
 		item_shop.queue_free()
 		item_shop = null
 
-func _open_inventory_menu() -> void:
-	inventory_menu = InventoryMenuScene.instantiate()
-	add_child(inventory_menu)
-	inventory_menu.inventory_closed.connect(_on_inventory_closed)
-
-func _on_inventory_closed() -> void:
-	if inventory_menu != null:
-		inventory_menu.queue_free()
-		inventory_menu = null
 
 func _setup_zone_markers() -> void:
 	# Draw concentric circle markers for each zone boundary
