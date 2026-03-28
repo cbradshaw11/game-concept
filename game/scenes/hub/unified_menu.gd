@@ -1117,26 +1117,28 @@ func _build_filter_sidebar() -> void:
 	equip_vbox.add_child(sidebar)
 
 	var filters := [
-		["All", "all"],
-		["⚔ Melee", "melee"],
-		["🏹 Ranged", "ranged"],
-		["✦ Magic", "magic"],
-		["_separator_", ""],
-		["Helmet", "helmet"],
-		["Chest", "breastplate"],
-		["Pants", "pants"],
-		["Shoes", "shoes"],
-		["Gauntlets", "gauntlets"],
-		["🧪 Potions", "potions"],
-		["📊 Stats", "stats"],
+		["All", "all", ""],
+		["_header_", "Weapons", "⚔"],
+		["⚔ Melee", "melee", ""],
+		["🏹 Ranged", "ranged", ""],
+		["✦ Magic", "magic", ""],
+		["_header_", "Armor", "🛡"],
+		["Helmet", "helmet", ""],
+		["Chest", "breastplate", ""],
+		["Pants", "pants", ""],
+		["Shoes", "shoes", ""],
+		["Gauntlets", "gauntlets", ""],
+		["_header_", "Potions", "🧪"],
+		["🧪 Potions", "potions", ""],
 	]
 
 	for f in filters:
-		if f[0] == "_separator_":
+		if f[0] == "_header_":
 			var lbl := Label.new()
-			lbl.text = "─── Armor ───"
+			lbl.text = "─ %s %s ─" % [f[2], f[1]]
 			lbl.add_theme_font_size_override("font_size", 10)
-			lbl.add_theme_color_override("font_color", Color(0.5, 0.7, 1.0))
+			var hdr_color := Color(0.9, 0.6, 0.3) if f[1] == "Weapons" else (Color(0.5, 0.7, 1.0) if f[1] == "Armor" else Color(0.4, 1.0, 0.5))
+			lbl.add_theme_color_override("font_color", hdr_color)
 			sidebar.add_child(lbl)
 			continue
 
@@ -1150,6 +1152,30 @@ func _build_filter_sidebar() -> void:
 		sidebar.add_child(btn)
 		filter_buttons[f[1]] = btn
 
+	# Stats toggle at the bottom — separated
+	var spacer := Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sidebar.add_child(spacer)
+
+	var stats_sep := HSeparator.new()
+	sidebar.add_child(stats_sep)
+
+	var stats_btn := Button.new()
+	stats_btn.text = "📊 Stats"
+	stats_btn.custom_minimum_size = Vector2(88, 22)
+	stats_btn.add_theme_font_size_override("font_size", 11)
+	stats_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	stats_btn.pressed.connect(_toggle_stats)
+	sidebar.add_child(stats_btn)
+	filter_buttons["stats"] = stats_btn
+
+	_update_filter_highlight()
+
+var stats_visible: bool = true
+
+func _toggle_stats() -> void:
+	stats_visible = not stats_visible
+	_update_equip_section_visibility()
 	_update_filter_highlight()
 
 func _set_equip_filter(key: String) -> void:
@@ -1164,20 +1190,18 @@ func _set_equip_filter(key: String) -> void:
 func _update_filter_highlight() -> void:
 	for k in filter_buttons:
 		var btn: Button = filter_buttons[k]
-		if k == equip_filter:
-			btn.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
-		else:
-			btn.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+		var is_active: bool = (k == "stats" and stats_visible) or (k != "stats" and k == equip_filter)
+		btn.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0) if is_active else Color(0.6, 0.6, 0.6))
 
 func _update_equip_section_visibility() -> void:
 	var show_potions: bool = equip_filter == "all" or equip_filter == "potions"
-	var show_stats: bool = equip_filter == "all" or equip_filter == "stats"
 	potions_sep_node.visible = show_potions
 	pot_title_node.visible = show_potions
 	potions_vbox.visible = show_potions
-	stats_sep_node.visible = show_stats
-	st_title_node.visible = show_stats
-	stats_vbox.visible = show_stats
+	# Stats respects the toggle regardless of filter
+	stats_sep_node.visible = stats_visible
+	st_title_node.visible = stats_visible
+	stats_vbox.visible = stats_visible
 
 # ── Equipment (right pane of Inventory tab) ──
 
