@@ -28,7 +28,6 @@ var shop_locked_label: Label
 var shop_content: HBoxContainer
 var sell_equipped_vbox: VBoxContainer
 var sell_bank_vbox: VBoxContainer
-var sell_potions_vbox: VBoxContainer
 var sell_scroll: ScrollContainer
 
 # ── Inventory & Bank state ──
@@ -288,19 +287,6 @@ func _build_shop_tab() -> void:
 	sell_bank_vbox.add_theme_constant_override("separation", 3)
 	sell_inner.add_child(sell_bank_vbox)
 
-	# Potions header + section
-	var pot_hdr_sep := HSeparator.new()
-	sell_inner.add_child(pot_hdr_sep)
-
-	var pot_hdr := Label.new()
-	pot_hdr.text = "Potions"
-	pot_hdr.add_theme_font_size_override("font_size", 14)
-	pot_hdr.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5))
-	sell_inner.add_child(pot_hdr)
-
-	sell_potions_vbox = VBoxContainer.new()
-	sell_potions_vbox.add_theme_constant_override("separation", 3)
-	sell_inner.add_child(sell_potions_vbox)
 
 func _show_shop_category(cat: String) -> void:
 	shop_category = cat
@@ -432,11 +418,8 @@ func _buy_item(item: Dictionary) -> void:
 		return
 	inv.carried_gold -= cost
 	var bought_item: Dictionary = item.duplicate()
-	if bought_item.get("category", "") == "potion":
-		inv.add_potion(bought_item)
-	else:
-		inv.bank_items.append(bought_item)
-		inv.bank_changed.emit()
+	inv.bank_items.append(bought_item)
+	inv.bank_changed.emit()
 	inv.inventory_changed.emit()
 	shop_confirm_row_parent = null
 	_rebuild_shop_item_list()
@@ -463,8 +446,6 @@ func _rebuild_sell_panel() -> void:
 	for child in sell_equipped_vbox.get_children():
 		child.queue_free()
 	for child in sell_bank_vbox.get_children():
-		child.queue_free()
-	for child in sell_potions_vbox.get_children():
 		child.queue_free()
 
 	var inv: Node = get_node_or_null("/root/InventorySystem")
@@ -509,10 +490,12 @@ func _rebuild_sell_panel() -> void:
 	var bank_groups := {
 		"weapon_melee": [], "weapon_ranged": [], "weapon_magic": [],
 		"helmet": [], "breastplate": [], "pants": [], "shoes": [], "gauntlets": [],
-		"other": []
+		"potion": [], "other": []
 	}
 	for item in bank_items_arr:
-		if item.get("category", "") == "potion":
+		var cat: String = item.get("category", "")
+		if cat == "potion":
+			bank_groups["potion"].append(item)
 			continue
 		var s: String = item.get("slot", "")
 		if bank_groups.has(s):
@@ -529,6 +512,7 @@ func _rebuild_sell_panel() -> void:
 		{"key": "pants",          "label": "Pants",     "color": Color(0.75, 0.75, 1.0)},
 		{"key": "shoes",          "label": "Shoes",     "color": Color(0.75, 0.75, 1.0)},
 		{"key": "gauntlets",      "label": "Gauntlets", "color": Color(0.75, 0.75, 1.0)},
+		{"key": "potion",         "label": "🧪 Potions", "color": Color(0.5, 1.0, 0.5)},
 		{"key": "other",          "label": "Other",     "color": Color(0.8, 0.8, 0.8)},
 	]
 	var has_bank := false
@@ -548,65 +532,7 @@ func _rebuild_sell_panel() -> void:
 		empty.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 		sell_bank_vbox.add_child(empty)
 
-	# Carried potions
-	var potions: Array = inv.get_all_potions()
-	if potions.size() == 0:
-		var empty := Label.new()
-		empty.text = "No potions carried"
-		empty.add_theme_font_size_override("font_size", 12)
-		empty.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
-		sell_potions_vbox.add_child(empty)
-	else:
-		for stack in potions:
-			var item: Dictionary = stack["item"]
-			var count: int = stack["count"]
-			var pid: String = stack["id"]
-			var sell_price: int = int(floor(float(item.get("cost", 5)) * 0.65))
-			if sell_price < 1:
-				sell_price = 1
 
-			var hbox := HBoxContainer.new()
-			hbox.add_theme_constant_override("separation", 8)
-			sell_potions_vbox.add_child(hbox)
-
-			var name_lbl := Label.new()
-			name_lbl.text = "%s x%d" % [item.get("name", "???"), count]
-			name_lbl.add_theme_font_size_override("font_size", 12)
-			name_lbl.custom_minimum_size = Vector2(140, 0)
-			hbox.add_child(name_lbl)
-
-			var price_lbl := Label.new()
-			price_lbl.text = "-> %dg" % sell_price
-			price_lbl.add_theme_font_size_override("font_size", 12)
-			price_lbl.add_theme_color_override("font_color", Color(0.9, 0.8, 0.2))
-			price_lbl.custom_minimum_size = Vector2(50, 0)
-			hbox.add_child(price_lbl)
-
-			var sell_btn := Button.new()
-			sell_btn.text = "Sell"
-			sell_btn.custom_minimum_size = Vector2(50, 24)
-			var p := pid
-			var sp := sell_price
-			sell_btn.pressed.connect(func(): _sell_potion(p, sp))
-			hbox.add_child(sell_btn)
-
-func _sell_potion(potion_id: String, sell_price: int) -> void:
-	var inv: Node = get_node_or_null("/root/InventorySystem")
-	if inv == null:
-		return
-	# Decrement potion count (reuse use_potion to remove one from stack)
-	if not inv.carried_potions.has(potion_id):
-		return
-	var stack: Dictionary = inv.carried_potions[potion_id]
-	if stack["count"] <= 0:
-		return
-	stack["count"] -= 1
-	if stack["count"] <= 0:
-		inv.carried_potions.erase(potion_id)
-	inv.carried_gold += sell_price
-	inv.inventory_changed.emit()
-	_rebuild_sell_panel()
-	_rebuild_shop_item_list()
 
 func _add_sell_sub_header(parent: VBoxContainer, text: String, color: Color) -> void:
 	var lbl := Label.new()
@@ -1022,11 +948,15 @@ func _rebuild_items_list() -> void:
 			hbox.add_child(badge_lbl)
 
 			var item_ref := item
-			var equip_btn := Button.new()
-			equip_btn.text = "Equip"
-			equip_btn.custom_minimum_size = Vector2(55, 24)
-			equip_btn.pressed.connect(func(): _equip_item(item_ref))
-			hbox.add_child(equip_btn)
+			var is_potion: bool = item.get("category", "") == "potion"
+			var action_btn := Button.new()
+			action_btn.text = "Carry" if is_potion else "Equip"
+			action_btn.custom_minimum_size = Vector2(55, 24)
+			if is_potion:
+				action_btn.pressed.connect(func(): _carry_potion(item_ref))
+			else:
+				action_btn.pressed.connect(func(): _equip_item(item_ref))
+			hbox.add_child(action_btn)
 
 			var discard_btn := Button.new()
 			discard_btn.text = "Discard"
@@ -1048,6 +978,13 @@ func _equip_item(item: Dictionary) -> void:
 	if inv == null:
 		return
 	inv.call("equip_item", item)
+	_rebuild_items_list()
+
+func _carry_potion(item: Dictionary) -> void:
+	var inv: Node = get_node_or_null("/root/InventorySystem")
+	if inv == null:
+		return
+	inv.withdraw_potion(item)
 	_rebuild_items_list()
 
 func _show_discard_confirm(row: VBoxContainer, item: Dictionary, idx: int) -> void:
@@ -1397,6 +1334,12 @@ func _rebuild_potions() -> void:
 		var p := pid
 		use_btn.pressed.connect(func(): inv.use_potion(p))
 		hbox.add_child(use_btn)
+
+		var deposit_btn := Button.new()
+		deposit_btn.text = "Deposit"
+		deposit_btn.custom_minimum_size = Vector2(60, 24)
+		deposit_btn.pressed.connect(func(): inv.deposit_potion(p))
+		hbox.add_child(deposit_btn)
 
 func _rebuild_stats() -> void:
 	for child in stats_vbox.get_children():
