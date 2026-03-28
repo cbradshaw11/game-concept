@@ -1,53 +1,28 @@
 {
   "shop_items": [
-    {
-      "id": "twin_fangs",
-      "type": "weapon",
-      "name": "Twin Fangs",
-      "cost": 80,
-      "description": "Two quick cuts are better than one slow one."
-    },
-    {
-      "id": "war_hammer",
-      "type": "weapon",
-      "name": "War Hammer",
-      "cost": 90,
-      "description": "It doesnt need to be fast. It just needs to land."
-    },
-    {
-      "id": "resonance_staff",
-      "type": "weapon",
-      "name": "Resonance Staff",
-      "cost": 100,
-      "description": "Attuned to the worlds grain. The wall does not know it has been opened."
-    },
-    {
-      "id": "greatsword_iron",
-      "type": "weapon",
-      "name": "Iron Greatsword",
-      "cost": 120,
-      "description": "Wide arc. Slow. Hits everything in front of you."
-    },
-    {
-      "id": "crossbow_iron",
-      "type": "weapon",
-      "name": "Iron Crossbow",
-      "cost": 130,
-      "description": "Slow to load. Punishing when it lands."
-    },
-    {
-      "id": "resonance_orb",
-      "type": "weapon",
-      "name": "Resonance Orb",
-      "cost": 140,
-      "description": "Light attacks are precise. The heavy detonates everything in range."
-    },
-    {
-      "id": "void_lance",
-      "type": "weapon",
-      "name": "Void Lance",
-      "cost": 150,
-      "description": "The light attack pierces. The heavy drains their will to fight."
-    }
+    { "id": "sword_iron", "category": "weapon", "slot": "weapon_melee", "name": "Iron Sword", "cost": 30, "damage_bonus": 5, "description": "Basic iron sword." },
+    { "id": "sword_steel", "category": "weapon", "slot": "weapon_melee", "name": "Steel Sword", "cost": 80, "damage_bonus": 12, "description": "Sharper and heavier." },
+    { "id": "sword_void", "category": "weapon", "slot": "weapon_melee", "name": "Void Blade", "cost": 200, "damage_bonus": 25, "description": "Cuts through reality." },
+    { "id": "twin_fangs", "category": "weapon", "slot": "weapon_melee", "name": "Twin Fangs", "cost": 90, "damage_bonus": 10, "attack_speed_bonus": 0.15, "description": "Two quick cuts." },
+    { "id": "war_hammer", "category": "weapon", "slot": "weapon_melee", "name": "War Hammer", "cost": 110, "damage_bonus": 18, "description": "Slow but devastating." },
+    { "id": "bow_iron", "category": "weapon", "slot": "weapon_ranged", "name": "Iron Bow", "cost": 40, "damage_bonus": 8, "description": "Simple ranged weapon." },
+    { "id": "bow_longbow", "category": "weapon", "slot": "weapon_ranged", "name": "Longbow", "cost": 100, "damage_bonus": 18, "description": "More range, more power." },
+    { "id": "crossbow_iron", "category": "weapon", "slot": "weapon_ranged", "name": "Iron Crossbow", "cost": 130, "damage_bonus": 22, "description": "Slow to load. Punishing." },
+    { "id": "staff_basic", "category": "weapon", "slot": "weapon_magic", "name": "Apprentice Staff", "cost": 50, "damage_bonus": 9, "description": "Entry-level arcane." },
+    { "id": "resonance_staff", "category": "weapon", "slot": "weapon_magic", "name": "Resonance Staff", "cost": 120, "damage_bonus": 20, "description": "Attuned to the world's grain." },
+    { "id": "void_lance", "category": "weapon", "slot": "weapon_magic", "name": "Void Lance", "cost": 180, "damage_bonus": 28, "description": "Pierces and drains." },
+    { "id": "potion_heal_small", "category": "potion", "slot": "potion", "name": "Small Health Potion", "cost": 15, "heal_amount": 25, "description": "Restores 25 HP instantly.", "consumable": true },
+    { "id": "potion_heal_large", "category": "potion", "slot": "potion", "name": "Large Health Potion", "cost": 40, "heal_amount": 60, "description": "Restores 60 HP instantly.", "consumable": true },
+    { "id": "potion_speed", "category": "potion", "slot": "potion", "name": "Speed Potion", "cost": 35, "speed_bonus": 80, "duration": 8.0, "description": "Move faster for 8 seconds.", "consumable": true },
+    { "id": "helmet_iron", "category": "armor", "slot": "helmet", "name": "Iron Helmet", "cost": 60, "defense": 3, "description": "Basic head protection." },
+    { "id": "helmet_steel", "category": "armor", "slot": "helmet", "name": "Steel Helmet", "cost": 150, "defense": 7, "description": "Sturdy steel." },
+    { "id": "chest_iron", "category": "armor", "slot": "breastplate", "name": "Iron Breastplate", "cost": 80, "defense": 5, "description": "Protects the torso." },
+    { "id": "chest_steel", "category": "armor", "slot": "breastplate", "name": "Steel Breastplate", "cost": 200, "defense": 12, "description": "Heavy but resilient." },
+    { "id": "pants_iron", "category": "armor", "slot": "pants", "name": "Iron Greaves", "cost": 50, "defense": 3, "description": "Leg protection." },
+    { "id": "pants_steel", "category": "armor", "slot": "pants", "name": "Steel Greaves", "cost": 120, "defense": 7, "description": "Heavier leg armor." },
+    { "id": "shoes_iron", "category": "armor", "slot": "shoes", "name": "Iron Boots", "cost": 40, "defense": 2, "description": "Sturdy footwear." },
+    { "id": "shoes_swift", "category": "armor", "slot": "shoes", "name": "Swift Boots", "cost": 100, "defense": 1, "speed_bonus": 20, "description": "Light and fast." },
+    { "id": "gauntlets_iron", "category": "armor", "slot": "gauntlets", "name": "Iron Gauntlets", "cost": 45, "defense": 2, "description": "Protect your hands." },
+    { "id": "gauntlets_steel", "category": "armor", "slot": "gauntlets", "name": "Steel Gauntlets", "cost": 110, "defense": 5, "damage_bonus": 3, "description": "Punch harder too." }
   ]
 }

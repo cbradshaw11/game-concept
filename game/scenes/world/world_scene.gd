@@ -2,6 +2,8 @@ extends Node2D
 
 const EnemySpawner = preload("res://scripts/systems/enemy_spawner.gd")
 const HomeHubScene = preload("res://scenes/hub/home_hub.tscn")
+const ItemShopScene = preload("res://scenes/hub/item_shop.tscn")
+const InventoryMenuScene = preload("res://scenes/hub/inventory_menu.tscn")
 
 var player_speed := 200.0
 var spawner := EnemySpawner.new()
@@ -14,6 +16,8 @@ var damage_timers: Dictionary = {}
 var player_health := 100.0
 var player_max_health := 100.0
 var home_hub: Node = null
+var item_shop: Node = null
+var inventory_menu: Node = null
 
 const HOME_POS := Vector2.ZERO
 
@@ -67,6 +71,8 @@ func _ready() -> void:
 
 var attack_cooldown: float = 0.0
 var _e_was_pressed: bool = false
+var _t_was_pressed: bool = false
+var _i_was_pressed: bool = false
 var _last_move_dir: Vector2 = Vector2.RIGHT
 
 func _process(delta: float) -> void:
@@ -144,12 +150,16 @@ func _do_melee_attack() -> void:
 	trail_tw.tween_property(trail, "modulate:a", 0.0, 0.18)
 	trail_tw.tween_callback(trail.queue_free)
 
-	# Deal damage
+	# Deal damage — base 15 + melee_damage_bonus from equipment
+	var base_dmg: int = 15
+	var inv: Node = _inv()
+	if inv:
+		base_dmg += int(inv.get("melee_damage_bonus"))
 	for enemy in enemies:
 		if not is_instance_valid(enemy) or not enemy.get_meta("alive", false):
 			continue
 		if player.position.distance_to(enemy.position) <= 80.0:
-			_deal_damage_to_enemy(enemy, 15)
+			_deal_damage_to_enemy(enemy, base_dmg)
 
 func _do_ranged_attack() -> void:
 	var nearest: Node2D = _get_nearest_enemy(500.0)
@@ -161,16 +171,22 @@ func _do_ranged_attack() -> void:
 	proj.color = Color(0.9, 0.95, 1.0)
 	proj.position = player.position - Vector2(5, 5)
 	add_child(proj)
+	# Base 20 + ranged_damage_bonus from equipment
+	var base_dmg: int = 20
+	var inv: Node = _inv()
+	if inv:
+		base_dmg += int(inv.get("ranged_damage_bonus"))
+	var dmg_val := base_dmg
 	var tw := create_tween()
 	tw.tween_property(proj, "position", nearest.position - Vector2(5, 5), 0.25)
 	tw.tween_callback(func():
 		proj.queue_free()
 		if is_instance_valid(nearest) and nearest.get_meta("alive", false):
-			_deal_damage_to_enemy(nearest, 20)
+			_deal_damage_to_enemy(nearest, dmg_val)
 	)
 
 func _is_menu_open() -> bool:
-	return home_hub != null
+	return home_hub != null or item_shop != null or inventory_menu != null
 
 func _get_nearest_enemy(max_dist: float) -> Node2D:
 	var nearest: Node2D = null
@@ -245,6 +261,8 @@ func _on_enemy_killed(enemy: Node2D) -> void:
 	tw.tween_callback(enemy.queue_free)
 
 func _handle_input(delta: float) -> void:
+	if _is_menu_open():
+		return
 	var dir := Vector2.ZERO
 	if Input.is_action_pressed("ui_right") or Input.is_key_pressed(KEY_D):
 		dir.x += 1.0
@@ -256,7 +274,12 @@ func _handle_input(delta: float) -> void:
 		dir.y -= 1.0
 	if dir != Vector2.ZERO:
 		var norm_dir: Vector2 = dir.normalized()
-		player.position += norm_dir * player_speed * delta
+		# Apply speed bonus from equipment
+		var effective_speed := player_speed
+		var inv: Node = _inv()
+		if inv:
+			effective_speed += float(inv.get("speed_bonus"))
+		player.position += norm_dir * effective_speed * delta
 		_last_move_dir = norm_dir
 
 func _update_background(delta: float) -> void:
@@ -317,6 +340,10 @@ func _check_enemy_damage(delta: float) -> void:
 			damage_timers[key] -= delta
 			if damage_timers[key] <= 0.0:
 				var dmg: int = enemy.get_meta("damage", 10)
+				# Subtract total_defense from equipment (min 1 damage)
+				var inv: Node = _inv()
+				if inv:
+					dmg = maxi(1, dmg - int(inv.get("total_defense")))
 				player_health -= float(dmg)
 				damage_timers[key] = 1.0
 
@@ -452,25 +479,56 @@ func _on_inventory_dropped(gold: int, _items: Array, drop_position: Vector2) -> 
 
 func _handle_hub_interaction() -> void:
 	var in_sanctuary: bool = str(_wm().current_zone) == "sanctuary"
-	# Show/hide "Press E — Bank" prompt near player when at home
-	var prompt: Node = get_node_or_null("BankPrompt")
-	if prompt == null and in_sanctuary:
+
+	# Show/hide prompts near player when at home
+	var bank_prompt: Node = get_node_or_null("BankPrompt")
+	var shop_prompt: Node = get_node_or_null("ShopPrompt")
+
+	if bank_prompt == null and in_sanctuary:
 		var lbl := Label.new()
 		lbl.name = "BankPrompt"
-		lbl.text = "Press E — Bank"
+		lbl.text = "E — Bank"
 		lbl.add_theme_font_size_override("font_size", 13)
 		lbl.add_theme_color_override("font_color", Color(0.5, 0.9, 1.0))
 		lbl.z_index = 10
 		add_child(lbl)
-	elif prompt != null:
-		prompt.visible = in_sanctuary
+		bank_prompt = lbl
+	if bank_prompt != null:
+		bank_prompt.visible = in_sanctuary
 		if in_sanctuary:
-			(prompt as Label).position = player.position + Vector2(-50, -75)
+			(bank_prompt as Label).position = player.position + Vector2(-50, -75)
+
+	if shop_prompt == null and in_sanctuary:
+		var lbl := Label.new()
+		lbl.name = "ShopPrompt"
+		lbl.text = "T — Shop    I — Inventory"
+		lbl.add_theme_font_size_override("font_size", 13)
+		lbl.add_theme_color_override("font_color", Color(0.9, 0.8, 0.4))
+		lbl.z_index = 10
+		add_child(lbl)
+		shop_prompt = lbl
+	if shop_prompt != null:
+		shop_prompt.visible = in_sanctuary
+		if in_sanctuary:
+			(shop_prompt as Label).position = player.position + Vector2(-50, -55)
+
 	# Open bank on E press
 	var e_now: bool = Input.is_key_pressed(KEY_E)
-	if in_sanctuary and e_now and not _e_was_pressed and home_hub == null:
+	if in_sanctuary and e_now and not _e_was_pressed and not _is_menu_open():
 		_open_home_hub()
 	_e_was_pressed = e_now
+
+	# Open shop on T press
+	var t_now: bool = Input.is_key_pressed(KEY_T)
+	if in_sanctuary and t_now and not _t_was_pressed and not _is_menu_open():
+		_open_item_shop()
+	_t_was_pressed = t_now
+
+	# Open inventory on I press (anywhere)
+	var i_now: bool = Input.is_key_pressed(KEY_I)
+	if i_now and not _i_was_pressed and not _is_menu_open():
+		_open_inventory_menu()
+	_i_was_pressed = i_now
 
 func _open_home_hub() -> void:
 	home_hub = HomeHubScene.instantiate()
@@ -481,6 +539,26 @@ func _on_hub_closed() -> void:
 	if home_hub != null:
 		home_hub.queue_free()
 		home_hub = null
+
+func _open_item_shop() -> void:
+	item_shop = ItemShopScene.instantiate()
+	add_child(item_shop)
+	item_shop.shop_closed.connect(_on_shop_closed)
+
+func _on_shop_closed() -> void:
+	if item_shop != null:
+		item_shop.queue_free()
+		item_shop = null
+
+func _open_inventory_menu() -> void:
+	inventory_menu = InventoryMenuScene.instantiate()
+	add_child(inventory_menu)
+	inventory_menu.inventory_closed.connect(_on_inventory_closed)
+
+func _on_inventory_closed() -> void:
+	if inventory_menu != null:
+		inventory_menu.queue_free()
+		inventory_menu = null
 
 func _setup_zone_markers() -> void:
 	# Draw concentric circle markers for each zone boundary
