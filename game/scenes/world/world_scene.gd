@@ -95,46 +95,60 @@ func _handle_attack(delta: float) -> void:
 		attack_cooldown = 0.8
 
 func _do_melee_attack() -> void:
-	# Lunge player sprite forward toward nearest enemy
 	var nearest: Node2D = _get_nearest_enemy(120.0)
-	var lunge_dir := Vector2.RIGHT
+	var swing_dir := Vector2.RIGHT
 	if nearest != null:
-		lunge_dir = (nearest.position - player.position).normalized()
+		swing_dir = (nearest.position - player.position).normalized()
 	var origin: Vector2 = player.position
+
+	# Player lunge forward and back
 	var tw := create_tween()
-	tw.tween_property(player, "position", origin + lunge_dir * 18.0, 0.07)
-	tw.tween_property(player, "position", origin, 0.1)
+	tw.tween_property(player, "position", origin + swing_dir * 22.0, 0.06)
+	tw.tween_property(player, "position", origin, 0.12)
 
-	# Sword shape — blade + guard drawn as Polygon2D, swings and fades
-	var sword := Polygon2D.new()
-	var perp := Vector2(-lunge_dir.y, lunge_dir.x)
-	var base: Vector2 = player.position + lunge_dir * 12.0
-	# Blade: long thin diamond pointing in lunge_dir
-	sword.polygon = PackedVector2Array([
-		base + perp * 4.0,                    # guard left
-		base - perp * 4.0,                    # guard right
-		base + lunge_dir * 44.0 + perp * 2.0, # blade mid-left
-		base + lunge_dir * 60.0,              # tip
-		base + lunge_dir * 44.0 - perp * 2.0  # blade mid-right
-	])
-	sword.color = Color(0.85, 0.92, 1.0, 0.95)  # steel blue-white
-	# Guard crosspiece
-	var guard := Polygon2D.new()
-	guard.polygon = PackedVector2Array([
-		base + perp * 10.0 - lunge_dir * 3.0,
-		base + perp * 10.0 + lunge_dir * 3.0,
-		base - perp * 10.0 + lunge_dir * 3.0,
-		base - perp * 10.0 - lunge_dir * 3.0,
-	])
-	guard.color = Color(0.7, 0.6, 0.3)  # gold guard
-	add_child(sword)
-	add_child(guard)
-	var arc_tw := create_tween()
-	arc_tw.tween_property(sword, "modulate:a", 0.0, 0.2)
-	arc_tw.parallel().tween_property(guard, "modulate:a", 0.0, 0.2)
-	arc_tw.tween_callback(func(): sword.queue_free(); guard.queue_free())
+	# Sword sweep — pivot Node2D that rotates, with blade as child Line2D
+	var pivot := Node2D.new()
+	pivot.position = player.position + swing_dir * 10.0
+	pivot.rotation = atan2(swing_dir.y, swing_dir.x) - deg_to_rad(50.0)
+	add_child(pivot)
 
-	# Deal damage to enemies in range
+	# Blade
+	var blade := Line2D.new()
+	blade.width = 5.0
+	blade.default_color = Color(0.88, 0.94, 1.0)
+	blade.add_point(Vector2(8, 0))
+	blade.add_point(Vector2(54, 0))
+	pivot.add_child(blade)
+
+	# Guard (short crosspiece)
+	var guard := Line2D.new()
+	guard.width = 4.0
+	guard.default_color = Color(0.75, 0.62, 0.25)
+	guard.add_point(Vector2(6, -10))
+	guard.add_point(Vector2(6, 10))
+	pivot.add_child(guard)
+
+	# Sweep arc over 100 degrees then fade
+	var swing_tw := create_tween()
+	swing_tw.tween_property(pivot, "rotation", pivot.rotation + deg_to_rad(100.0), 0.15).set_ease(Tween.EASE_OUT)
+	swing_tw.tween_property(pivot, "modulate:a", 0.0, 0.08)
+	swing_tw.tween_callback(pivot.queue_free)
+
+	# Slash trail — faint white arc Line2D
+	var trail := Line2D.new()
+	trail.width = 18.0
+	trail.default_color = Color(1.0, 1.0, 0.85, 0.35)
+	var trail_origin: Vector2 = player.position + swing_dir * 30.0
+	var perp := Vector2(-swing_dir.y, swing_dir.x)
+	trail.add_point(trail_origin + perp * 28.0 - swing_dir * 10.0)
+	trail.add_point(trail_origin + swing_dir * 36.0)
+	trail.add_point(trail_origin - perp * 28.0 - swing_dir * 10.0)
+	add_child(trail)
+	var trail_tw := create_tween()
+	trail_tw.tween_property(trail, "modulate:a", 0.0, 0.18)
+	trail_tw.tween_callback(trail.queue_free)
+
+	# Deal damage
 	for enemy in enemies:
 		if not is_instance_valid(enemy) or not enemy.get_meta("alive", false):
 			continue
@@ -307,11 +321,50 @@ func _check_enemy_damage(delta: float) -> void:
 				var dmg: int = enemy.get_meta("damage", 10)
 				player_health -= float(dmg)
 				damage_timers[key] = 1.0
-				# Flash player red
-				player.modulate = Color(1.5, 0.3, 0.3)
-				var tw := create_tween()
-				tw.tween_interval(0.15)
-				tw.tween_callback(func(): if is_instance_valid(player): player.modulate = Color.WHITE)
+
+				# Enemy lunge animation
+				var e_origin: Vector2 = enemy.position
+				var lunge_toward: Vector2 = (player.position - enemy.position).normalized() * 14.0
+				var e_tw := create_tween()
+				e_tw.tween_property(enemy, "position", e_origin + lunge_toward, 0.06)
+				e_tw.tween_property(enemy, "position", e_origin, 0.1)
+
+				# Player hit flash — full red modulate
+				player.modulate = Color(2.0, 0.2, 0.2)
+				var flash_tw := create_tween()
+				flash_tw.tween_property(player, "modulate", Color.WHITE, 0.25)
+
+				# Screen shake — offset camera
+				var cam: Camera2D = $Player/Camera2D
+				var shake_origin: Vector2 = cam.offset
+				var shake_tw := create_tween()
+				shake_tw.tween_property(cam, "offset", shake_origin + Vector2(randf_range(-8,8), randf_range(-6,6)), 0.04)
+				shake_tw.tween_property(cam, "offset", shake_origin, 0.1)
+
+				# Red damage flash overlay on screen
+				var overlay := ColorRect.new()
+				overlay.color = Color(0.8, 0.0, 0.0, 0.22)
+				overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+				overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				var ol_layer := CanvasLayer.new()
+				ol_layer.add_child(overlay)
+				add_child(ol_layer)
+				var ol_tw := create_tween()
+				ol_tw.tween_property(overlay, "color", Color(0.8, 0.0, 0.0, 0.0), 0.3)
+				ol_tw.tween_callback(func(): ol_layer.queue_free())
+
+				# Floating damage on player
+				var hit_lbl := Label.new()
+				hit_lbl.text = "-%d" % dmg
+				hit_lbl.position = player.position + Vector2(-10, -50)
+				hit_lbl.add_theme_color_override("font_color", Color(1.0, 0.25, 0.25))
+				hit_lbl.add_theme_font_size_override("font_size", 14)
+				add_child(hit_lbl)
+				var hl_tw := create_tween()
+				hl_tw.tween_property(hit_lbl, "position", hit_lbl.position + Vector2(0, -28), 0.5)
+				hl_tw.parallel().tween_property(hit_lbl, "modulate:a", 0.0, 0.5)
+				hl_tw.tween_callback(hit_lbl.queue_free)
+
 				if player_health <= 0.0:
 					_on_player_death()
 					return
