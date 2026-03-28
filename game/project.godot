@@ -3,7 +3,7 @@ config_version=5
 
 [application]
 config/name="TheLongWalk"
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/world/world_scene.tscn"
 
 [autoload]
 SettingsManager="*res://autoload/settings_manager.gd"
