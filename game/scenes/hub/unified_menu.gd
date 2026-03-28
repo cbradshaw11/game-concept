@@ -790,41 +790,49 @@ func _build_inv_tab() -> void:
 	eq_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content_vbox.add_child(eq_title)
 
+	# Single scroll container for everything — slots, potions, stats all scroll together
 	var eq_scroll := ScrollContainer.new()
-	eq_scroll.custom_minimum_size = Vector2(320, 220)
+	eq_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	eq_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content_vbox.add_child(eq_scroll)
+
+	var inner_vbox := VBoxContainer.new()
+	inner_vbox.add_theme_constant_override("separation", 4)
+	inner_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	eq_scroll.add_child(inner_vbox)
 
 	slots_vbox = VBoxContainer.new()
 	slots_vbox.add_theme_constant_override("separation", 4)
 	slots_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	eq_scroll.add_child(slots_vbox)
+	inner_vbox.add_child(slots_vbox)
 
-	# Potions section
 	potions_sep_node = HSeparator.new()
-	content_vbox.add_child(potions_sep_node)
+	inner_vbox.add_child(potions_sep_node)
 
 	pot_title_node = Label.new()
-	pot_title_node.text = "Potions"
-	pot_title_node.add_theme_font_size_override("font_size", 14)
+	pot_title_node.text = "🧪 Potions"
+	pot_title_node.add_theme_font_size_override("font_size", 13)
 	pot_title_node.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5))
-	content_vbox.add_child(pot_title_node)
+	inner_vbox.add_child(pot_title_node)
 
 	potions_vbox = VBoxContainer.new()
 	potions_vbox.add_theme_constant_override("separation", 4)
-	content_vbox.add_child(potions_vbox)
+	potions_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inner_vbox.add_child(potions_vbox)
 
 	stats_sep_node = HSeparator.new()
-	content_vbox.add_child(stats_sep_node)
+	inner_vbox.add_child(stats_sep_node)
 
 	st_title_node = Label.new()
-	st_title_node.text = "Stats"
-	st_title_node.add_theme_font_size_override("font_size", 14)
+	st_title_node.text = "📊 Stats"
+	st_title_node.add_theme_font_size_override("font_size", 13)
 	st_title_node.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
-	content_vbox.add_child(st_title_node)
+	inner_vbox.add_child(st_title_node)
 
 	stats_vbox = VBoxContainer.new()
 	stats_vbox.add_theme_constant_override("separation", 5)
-	content_vbox.add_child(stats_vbox)
+	stats_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inner_vbox.add_child(stats_vbox)
 
 # ── Bank controls ──
 
