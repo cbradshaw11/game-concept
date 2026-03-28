@@ -906,8 +906,10 @@ func _rebuild_items_list() -> void:
 		var potion_keys := ["all", "stats", "potions"]
 		var item_key: String = cfg["key"]
 		var show := false
-		if equip_filter == "all" or equip_filter == "stats":
+		if equip_filter in ["all", "stats"]:
 			show = true
+		elif equip_filter == "none":
+			show = false
 		elif item_key in ["melee", "ranged", "magic"] and equip_filter in weapon_keys:
 			show = equip_filter == "weapons" or equip_filter == item_key
 		elif item_key in ["helmet", "breastplate", "pants", "shoes", "gauntlets"] and equip_filter in armor_keys:
@@ -1076,6 +1078,7 @@ func _build_filter_sidebar() -> void:
 
 	var filters := [
 		["All", "all", ""],
+		["None", "none", ""],
 		["_header_", "Weapons", "⚔", "weapons", Color(0.9, 0.6, 0.3)],
 		["⚔ Melee", "melee", ""],
 		["🏹 Ranged", "ranged", ""],
@@ -1166,12 +1169,14 @@ func _update_filter_highlight() -> void:
 			is_active = equip_filter in ["weapons", "melee", "ranged", "magic"]
 		elif k == "armor":
 			is_active = equip_filter in ["armor", "helmet", "breastplate", "pants", "shoes", "gauntlets"]
+		elif k == "none":
+			is_active = equip_filter == "none"
 		else:
 			is_active = k == equip_filter
 		btn.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0) if is_active else Color(0.6, 0.6, 0.6))
 
 func _update_equip_section_visibility() -> void:
-	var show_potions: bool = equip_filter in ["all", "potions"]
+	var show_potions: bool = equip_filter in ["all", "potions"] and equip_filter != "none"
 	potions_sep_node.visible = show_potions
 	pot_title_node.visible = show_potions
 	potions_vbox.visible = show_potions
@@ -1190,8 +1195,8 @@ func _rebuild_slots() -> void:
 	if inv == null:
 		return
 
-	# Hide slots entirely for potions/stats-only filters
-	if equip_filter == "potions" or equip_filter == "stats":
+	# Hide slots entirely for potions/stats/none filters
+	if equip_filter in ["potions", "stats", "none"]:
 		return
 
 	var weapon_filters := ["all", "weapons", "melee", "ranged", "magic"]
