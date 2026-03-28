@@ -846,48 +846,70 @@ func _rebuild_items_list() -> void:
 		items_vbox.add_child(empty_lbl)
 		return
 
-	for i in range(bank_items_arr.size()):
-		var item: Dictionary = bank_items_arr[i]
-		var row := VBoxContainer.new()
-		row.add_theme_constant_override("separation", 2)
-		items_vbox.add_child(row)
+	# Group items by category
+	var categories := {"weapon": [], "armor": [], "potion": [], "other": []}
+	for item in bank_items_arr:
+		var cat: String = item.get("category", "other")
+		if not categories.has(cat):
+			cat = "other"
+		categories[cat].append(item)
 
-		var hbox := HBoxContainer.new()
-		hbox.add_theme_constant_override("separation", 8)
-		row.add_child(hbox)
+	var cat_config := [
+		{"key": "weapon", "label": "Weapons",  "color": Color(0.9, 0.6, 0.4)},
+		{"key": "armor",  "label": "Armor",    "color": Color(0.5, 0.8, 1.0)},
+		{"key": "potion", "label": "Potions",  "color": Color(0.5, 1.0, 0.6)},
+		{"key": "other",  "label": "Other",    "color": Color(0.8, 0.8, 0.8)},
+	]
 
-		var name_lbl := Label.new()
-		name_lbl.text = item.get("name", "???")
-		name_lbl.add_theme_font_size_override("font_size", 13)
-		name_lbl.custom_minimum_size = Vector2(130, 0)
-		hbox.add_child(name_lbl)
+	for cfg in cat_config:
+		var items_in_cat: Array = categories[cfg["key"]]
+		if items_in_cat.size() == 0:
+			continue
+		_add_inv_category_header(cfg["label"], cfg["color"])
+		for i in range(items_in_cat.size()):
+			var item: Dictionary = items_in_cat[i]
+			var row := VBoxContainer.new()
+			row.add_theme_constant_override("separation", 2)
+			items_vbox.add_child(row)
 
-		var stat_lbl := Label.new()
-		stat_lbl.text = _get_stat_summary(item)
-		stat_lbl.add_theme_font_size_override("font_size", 11)
-		stat_lbl.add_theme_color_override("font_color", Color(0.6, 0.9, 0.6))
-		stat_lbl.custom_minimum_size = Vector2(100, 0)
-		hbox.add_child(stat_lbl)
+			var hbox := HBoxContainer.new()
+			hbox.add_theme_constant_override("separation", 8)
+			row.add_child(hbox)
 
-		var slot_lbl := Label.new()
-		slot_lbl.text = item.get("slot", "")
-		slot_lbl.add_theme_font_size_override("font_size", 11)
-		slot_lbl.add_theme_color_override("font_color", Color(0.5, 0.7, 0.9))
-		slot_lbl.custom_minimum_size = Vector2(70, 0)
-		hbox.add_child(slot_lbl)
+			var name_lbl := Label.new()
+			name_lbl.text = item.get("name", "???")
+			name_lbl.add_theme_font_size_override("font_size", 13)
+			name_lbl.custom_minimum_size = Vector2(130, 0)
+			hbox.add_child(name_lbl)
 
-		var equip_btn := Button.new()
-		equip_btn.text = "Equip"
-		equip_btn.custom_minimum_size = Vector2(55, 24)
-		var item_ref := item
-		equip_btn.pressed.connect(func(): _equip_item(item_ref))
-		hbox.add_child(equip_btn)
+			var stat_lbl := Label.new()
+			stat_lbl.text = _get_stat_summary(item)
+			stat_lbl.add_theme_font_size_override("font_size", 11)
+			stat_lbl.add_theme_color_override("font_color", Color(0.6, 0.9, 0.6))
+			stat_lbl.custom_minimum_size = Vector2(100, 0)
+			hbox.add_child(stat_lbl)
 
-		var discard_btn := Button.new()
-		discard_btn.text = "Discard"
-		discard_btn.custom_minimum_size = Vector2(55, 24)
-		discard_btn.pressed.connect(func(): _show_discard_confirm(row, item_ref, i))
-		hbox.add_child(discard_btn)
+			var item_ref := item
+			var equip_btn := Button.new()
+			equip_btn.text = "Equip"
+			equip_btn.custom_minimum_size = Vector2(55, 24)
+			equip_btn.pressed.connect(func(): _equip_item(item_ref))
+			hbox.add_child(equip_btn)
+
+			var discard_btn := Button.new()
+			discard_btn.text = "Discard"
+			discard_btn.custom_minimum_size = Vector2(55, 24)
+			discard_btn.pressed.connect(func(): _show_discard_confirm(row, item_ref, i))
+			hbox.add_child(discard_btn)
+
+func _add_inv_category_header(text: String, color: Color) -> void:
+	var sep := HSeparator.new()
+	items_vbox.add_child(sep)
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.add_theme_font_size_override("font_size", 13)
+	lbl.add_theme_color_override("font_color", color)
+	items_vbox.add_child(lbl)
 
 func _equip_item(item: Dictionary) -> void:
 	var inv: Node = get_node_or_null("/root/InventorySystem")
@@ -996,6 +1018,8 @@ func _rebuild_slots() -> void:
 		_add_slot_row(slot, slot_labels[slot], equipped.get(slot, {}), inv)
 
 func _add_section_header(text: String) -> void:
+	var sep := HSeparator.new()
+	slots_vbox.add_child(sep)
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.add_theme_font_size_override("font_size", 13)
