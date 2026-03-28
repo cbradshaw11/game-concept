@@ -3,7 +3,7 @@ extends Node
 signal zone_changed(old_zone: String, new_zone: String)
 signal player_distance_changed(distance: float)
 
-const INNER_START := 400.0
+const INNER_START := 300.0
 const MID_START := 2000.0
 const OUTER_START := 2400.0
 

@@ -562,12 +562,12 @@ func _setup_zone_markers() -> void:
 	var fill_count := 120
 	for i in range(fill_count):
 		var angle: float = TAU * float(i) / float(fill_count)
-		fill_points.append(Vector2(cos(angle), sin(angle)) * 400.0)
+		fill_points.append(Vector2(cos(angle), sin(angle)) * 300.0)
 	sanctuary_fill.polygon = fill_points
 	sanctuary_fill.color = Color(0.2, 0.4, 0.8, 0.08)
 	zone_markers.add_child(sanctuary_fill)
 	# Draw colored ring outlines
-	_add_ring_outline(400.0, Color(0.4, 0.9, 0.4, 0.25))
+	_add_ring_outline(300.0, Color(0.4, 0.9, 0.4, 0.25))
 	_add_ring_outline(2000.0, Color(0.9, 0.7, 0.2, 0.25))
 	_add_ring_outline(2400.0, Color(0.9, 0.2, 0.2, 0.25))
 
@@ -681,35 +681,38 @@ func _setup_minimap() -> void:
 	exp_panel.add_child(minimap_expanded_control)
 
 func _draw_minimap(control: Control, map_size: float) -> void:
-	var outer_r: float = 2400.0
-	var scale_factor: float = map_size / (outer_r * 2.5)
+	# Map is player-centered. Scale: show ~800 world units around the player
+	var view_radius: float = 800.0
+	var scale_factor: float = (map_size * 0.5) / view_radius
 	var center := Vector2(map_size / 2.0, map_size / 2.0)
+	var cam_origin: Vector2 = player.position  # map center tracks player
 
 	# Explored areas (fog of war reveal)
 	for pos in explored_positions:
-		var map_pos: Vector2 = (pos - HOME_POS) * scale_factor + center
+		var map_pos: Vector2 = (pos - cam_origin) * scale_factor + center
 		if map_pos.x >= -10.0 and map_pos.x <= map_size + 10.0 and map_pos.y >= -10.0 and map_pos.y <= map_size + 10.0:
-			control.draw_circle(map_pos, 8.0 * (map_size / 160.0), Color(0.3, 0.5, 0.3, 0.5))
+			control.draw_circle(map_pos, 6.0 * (map_size / 160.0), Color(0.3, 0.5, 0.3, 0.5))
 
-	# Zone ring outlines
+	# Zone ring outlines (drawn relative to HOME_POS, which moves as cam moves)
 	var rings := [
-		[400.0, Color(0.4, 0.9, 0.4, 0.3)],
-		[2000.0, Color(0.9, 0.7, 0.2, 0.3)],
-		[2400.0, Color(0.9, 0.2, 0.2, 0.3)],
+		[300.0, Color(0.4, 0.9, 0.4, 0.35)],
+		[2000.0, Color(0.9, 0.7, 0.2, 0.35)],
+		[2400.0, Color(0.9, 0.2, 0.2, 0.35)],
 	]
 	for ring_data in rings:
 		var r: float = ring_data[0] * scale_factor
-		control.draw_arc(center, r, 0.0, TAU, 64, ring_data[1], 1.0)
+		var ring_center: Vector2 = (HOME_POS - cam_origin) * scale_factor + center
+		control.draw_arc(ring_center, r, 0.0, TAU, 80, ring_data[1], 1.5)
 
-	# Home icon — small white square at center
-	control.draw_rect(Rect2(center - Vector2(3, 3), Vector2(6, 6)), Color(0.85, 0.75, 0.5, 0.9))
+	# Home icon — small square, positioned relative to camera
+	var home_map: Vector2 = (HOME_POS - cam_origin) * scale_factor + center
+	if home_map.x >= -6 and home_map.x <= map_size + 6 and home_map.y >= -6 and home_map.y <= map_size + 6:
+		control.draw_rect(Rect2(home_map - Vector2(4, 4), Vector2(8, 8)), Color(0.85, 0.75, 0.5, 0.9))
+		control.draw_rect(Rect2(home_map - Vector2(4, 4), Vector2(8, 8)), Color(1.0, 1.0, 1.0, 0.5), false, 1.0)
 
-	# Player dot
-	var dot_r: float = 3.0 * (map_size / 160.0)
-	var player_map_pos: Vector2 = (player.position - HOME_POS) * scale_factor + center
-	player_map_pos.x = clampf(player_map_pos.x, dot_r, map_size - dot_r)
-	player_map_pos.y = clampf(player_map_pos.y, dot_r, map_size - dot_r)
-	control.draw_circle(player_map_pos, dot_r, Color(1.0, 1.0, 0.3, 1.0))
+	# Player dot — always at center of map
+	var dot_r: float = 3.5 * (map_size / 160.0)
+	control.draw_circle(center, dot_r, Color(1.0, 1.0, 0.3, 1.0))
 
 func _on_minimap_click(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
