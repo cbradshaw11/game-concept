@@ -23,6 +23,24 @@ var player_distance: float = 0.0:
 
 var current_zone: String = "sanctuary"
 
+# Ring gate lock state — only inner_gate (at MID_START) and mid_gate (at OUTER_START)
+var rings_unlocked: Dictionary = { "inner_gate": false, "mid_gate": false }
+
+func unlock_ring(gate_id: String) -> void:
+	rings_unlocked[gate_id] = true
+
+func is_ring_locked(gate_id: String) -> bool:
+	return not rings_unlocked.get(gate_id, false)
+
+func get_gate_radius(gate_id: String) -> float:
+	match gate_id:
+		"inner_gate":
+			return MID_START
+		"mid_gate":
+			return OUTER_START
+		_:
+			return 0.0
+
 func get_zone_for_distance(d: float) -> String:
 	if d >= OUTER_START:
 		return "outer"

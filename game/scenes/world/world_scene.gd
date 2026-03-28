@@ -30,6 +30,12 @@ var speed_buff_timer: float = 0.0
 
 const HOME_POS := Vector2.ZERO
 
+# Ring gate system
+var held_keys: Array[String] = []
+var inner_gate_node: Node2D = null
+var mid_gate_node: Node2D = null
+var _f_was_pressed: bool = false
+
 # Zone colors
 var zone_colors := {
 	"sanctuary": Color(0.102, 0.165, 0.227),
@@ -82,9 +88,6 @@ func _ready() -> void:
 	zone_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 0.5))
 	_update_hud()
 	target_bg_color = zone_colors["sanctuary"]
-	# DEV: start with gold for testing the shop/menu
-	_inv().add_carried_gold(500)
-	_inv().bank_gold = 500
 	current_bg_color = target_bg_color
 	player.position = HOME_POS
 
@@ -103,6 +106,7 @@ func _process(delta: float) -> void:
 	_handle_sanctuary_regen(delta)
 	_handle_spawning(delta)
 	_handle_hub_interaction()
+	_handle_gate_interaction()
 	_handle_potion_input()
 	_tick_speed_buff(delta)
 	# Update distance as 2D from home
@@ -270,7 +274,7 @@ func _deal_damage_to_enemy(enemy: Node2D, dmg: int) -> void:
 
 func _on_enemy_killed(enemy: Node2D) -> void:
 	enemy.set_meta("alive", false)
-	# Drop loot
+	# Drop loot — gold
 	var gold: int = randi_range(5, 20)
 	var loot := Node2D.new()
 	loot.position = enemy.position
@@ -287,6 +291,32 @@ func _on_enemy_killed(enemy: Node2D) -> void:
 	loot.add_child(lbl)
 	loot_container.add_child(loot)
 	loot_drops.append(loot)
+	# Key drop — 8% chance from inner/mid zone enemies
+	var enemy_zone: String = enemy.get_meta("zone", "")
+	var key_id := ""
+	if enemy_zone == "inner" and _wm().is_ring_locked("inner_gate"):
+		key_id = "inner_gate"
+	elif enemy_zone == "mid" and _wm().is_ring_locked("mid_gate"):
+		key_id = "mid_gate"
+	if key_id != "" and randf() < 0.08:
+		var key_loot := Node2D.new()
+		key_loot.position = enemy.position + Vector2(20, 0)
+		key_loot.set_meta("gold", 0)
+		key_loot.set_meta("key_id", key_id)
+		var key_rect := ColorRect.new()
+		key_rect.size = Vector2(16, 16)
+		key_rect.position = Vector2(-8, -8)
+		key_rect.color = Color(1.0, 0.85, 0.1)
+		key_loot.add_child(key_rect)
+		var key_lbl := Label.new()
+		var key_name: String = "Inner Key" if key_id == "inner_gate" else "Mid Key"
+		key_lbl.text = key_name
+		key_lbl.position = Vector2(-20, -28)
+		key_lbl.add_theme_font_size_override("font_size", 10)
+		key_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.1))
+		key_loot.add_child(key_lbl)
+		loot_container.add_child(key_loot)
+		loot_drops.append(key_loot)
 	# Fade out and remove enemy
 	var tw := create_tween()
 	tw.tween_property(enemy, "modulate:a", 0.0, 0.3)
@@ -319,6 +349,13 @@ func _handle_input(delta: float) -> void:
 		var dist_from_home: float = player.position.distance_to(HOME_POS)
 		if dist_from_home > world_edge:
 			player.position = HOME_POS + (player.position - HOME_POS).normalized() * world_edge
+		# Ring gate walls — locked gates block passage outward
+		for gate_id in ["inner_gate", "mid_gate"]:
+			if _wm().is_ring_locked(gate_id):
+				var gate_r: float = _wm().get_gate_radius(gate_id)
+				var d: float = player.position.distance_to(HOME_POS)
+				if d > gate_r:
+					player.position = HOME_POS + (player.position - HOME_POS).normalized() * (gate_r - 5.0)
 
 func _update_background(delta: float) -> void:
 	current_bg_color = current_bg_color.lerp(target_bg_color, delta * 3.0)
@@ -453,8 +490,15 @@ func _check_loot_pickup() -> void:
 			loot_drops.remove_at(i)
 			continue
 		if player.position.distance_to(loot.position) < 40.0:
-			var gold: int = loot.get_meta("gold", 0)
-			_inv().add_carried_gold(gold)
+			if loot.has_meta("key_id"):
+				var kid: String = loot.get_meta("key_id")
+				if kid not in held_keys:
+					held_keys.append(kid)
+				var key_name: String = "Inner Key" if kid == "inner_gate" else "Mid Key"
+				_show_floating_text("Found %s!" % key_name, player.position, Color(1.0, 0.85, 0.1))
+			else:
+				var gold: int = loot.get_meta("gold", 0)
+				_inv().add_carried_gold(gold)
 			loot.queue_free()
 			loot_drops.remove_at(i)
 
@@ -580,6 +624,9 @@ func _setup_zone_markers() -> void:
 	_add_ring_outline(1200.0, Color(0.6, 0.8, 0.3, 0.3))  # inner ring
 	_add_ring_outline(2000.0, Color(0.9, 0.7, 0.2, 0.3))  # mid ring
 	_add_ring_outline(4000.0, Color(0.9, 0.2, 0.2, 0.3))  # outer ring
+	# Gate nodes at ring boundaries
+	inner_gate_node = _create_gate_node("inner_gate", _wm().MID_START)
+	mid_gate_node = _create_gate_node("mid_gate", _wm().OUTER_START)
 
 func _add_ring_outline(radius: float, color: Color) -> void:
 	var line := Line2D.new()
@@ -590,6 +637,112 @@ func _add_ring_outline(radius: float, color: Color) -> void:
 		var angle: float = TAU * float(i) / float(point_count)
 		line.add_point(Vector2(cos(angle), sin(angle)) * radius)
 	zone_markers.add_child(line)
+
+func _create_gate_node(gate_id: String, radius: float) -> Node2D:
+	var gate := Node2D.new()
+	gate.name = gate_id
+	gate.position = HOME_POS + Vector2(0, -radius)  # north of home
+	# Gate body
+	var body := ColorRect.new()
+	body.name = "Body"
+	body.size = Vector2(20, 12)
+	body.position = Vector2(-10, -6)
+	body.color = Color(0.7, 0.6, 0.3, 0.9)
+	gate.add_child(body)
+	# Label
+	var lbl := Label.new()
+	lbl.name = "GateLabel"
+	lbl.text = "[ Gate ]"
+	lbl.position = Vector2(-24, -24)
+	lbl.add_theme_font_size_override("font_size", 10)
+	lbl.add_theme_color_override("font_color", Color(0.7, 0.6, 0.3, 0.9))
+	gate.add_child(lbl)
+	zone_markers.add_child(gate)
+	return gate
+
+func _update_gate_visual(gate_node: Node2D, gate_id: String) -> void:
+	if gate_node == null:
+		return
+	var body: ColorRect = gate_node.get_node_or_null("Body")
+	var lbl: Label = gate_node.get_node_or_null("GateLabel")
+	if _wm().is_ring_locked(gate_id):
+		if body:
+			body.color = Color(0.7, 0.6, 0.3, 0.9)
+		if lbl:
+			lbl.text = "[ Gate ]"
+			lbl.add_theme_color_override("font_color", Color(0.7, 0.6, 0.3, 0.9))
+	else:
+		if body:
+			body.color = Color(0.3, 0.3, 0.3, 0.3)
+		if lbl:
+			lbl.text = "[ Open ]"
+			lbl.add_theme_color_override("font_color", Color(0.3, 0.3, 0.3, 0.3))
+
+func _handle_gate_interaction() -> void:
+	if _is_menu_open():
+		return
+	var gate_prompt: Node = get_node_or_null("GatePrompt")
+	var show_prompt := false
+	var prompt_text := ""
+	var prompt_pos := Vector2.ZERO
+	var gates := {"inner_gate": inner_gate_node, "mid_gate": mid_gate_node}
+	var f_now: bool = Input.is_key_pressed(KEY_F)
+	for gate_id in gates:
+		var gate_node: Node2D = gates[gate_id]
+		if gate_node == null:
+			continue
+		if not _wm().is_ring_locked(gate_id):
+			continue
+		var dist: float = player.position.distance_to(gate_node.position)
+		if dist < 60.0:
+			show_prompt = true
+			prompt_pos = gate_node.position + Vector2(-80, -45)
+			if gate_id in held_keys:
+				prompt_text = "F — Unlock (key ready)"
+				if f_now and not _f_was_pressed:
+					_unlock_gate(gate_id, gate_node)
+			else:
+				prompt_text = "F — Locked (no key)"
+	_f_was_pressed = f_now
+	if show_prompt:
+		if gate_prompt == null:
+			var lbl := Label.new()
+			lbl.name = "GatePrompt"
+			lbl.add_theme_font_size_override("font_size", 12)
+			lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.1))
+			lbl.z_index = 10
+			add_child(lbl)
+			gate_prompt = lbl
+		(gate_prompt as Label).text = prompt_text
+		(gate_prompt as Label).position = prompt_pos
+		gate_prompt.visible = true
+	elif gate_prompt != null:
+		gate_prompt.visible = false
+
+func _unlock_gate(gate_id: String, gate_node: Node2D) -> void:
+	_wm().unlock_ring(gate_id)
+	held_keys.erase(gate_id)
+	# Flash white then update to open visual
+	var body: ColorRect = gate_node.get_node_or_null("Body")
+	if body:
+		body.color = Color(1.0, 1.0, 1.0, 1.0)
+		var tw := create_tween()
+		tw.tween_property(body, "color", Color(0.3, 0.3, 0.3, 0.3), 0.5)
+	_update_gate_visual(gate_node, gate_id)
+	var gate_name: String = "Inner Ring" if gate_id == "inner_gate" else "Mid Ring"
+	_show_floating_text("%s unlocked!" % gate_name, player.position, Color(1.0, 0.85, 0.1))
+
+func _show_floating_text(text: String, pos: Vector2, color: Color) -> void:
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.position = pos + Vector2(-40, -60)
+	lbl.add_theme_font_size_override("font_size", 14)
+	lbl.add_theme_color_override("font_color", color)
+	add_child(lbl)
+	var tw := create_tween()
+	tw.tween_property(lbl, "position", lbl.position + Vector2(0, -30), 1.0)
+	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 1.0)
+	tw.tween_callback(lbl.queue_free)
 
 func _setup_home_icon() -> void:
 	# House base — filled square
@@ -745,7 +898,26 @@ func _draw_minimap(control: Control, map_size: float) -> void:
 	var home_ring_r: float = 150.0 * scale_factor
 	control.draw_arc(ring_center, home_ring_r, 0.0, TAU, 60, Color(0.4, 0.9, 0.4, 0.7), 1.5)
 
-	# Step 5: Player dot — always at center
+	# Step 5: Gate markers on minimap
+	var gate_defs := {"inner_gate": inner_gate_node, "mid_gate": mid_gate_node}
+	for gate_id in gate_defs:
+		var gate_node: Node2D = gate_defs[gate_id]
+		if gate_node == null:
+			continue
+		if not _wm().is_ring_locked(gate_id):
+			continue
+		var gate_map: Vector2 = (gate_node.position - cam_origin) * scale_factor + center
+		if gate_map.x >= -4 and gate_map.x <= map_size + 4 and gate_map.y >= -4 and gate_map.y <= map_size + 4:
+			# Only show if explored nearby
+			var gate_visible := false
+			for exp_pos in explored_positions:
+				if exp_pos.distance_squared_to(gate_node.position) < 120000.0:
+					gate_visible = true
+					break
+			if gate_visible:
+				control.draw_rect(Rect2(gate_map - Vector2(2, 2), Vector2(4, 4)), Color(1.0, 0.85, 0.1, 0.9))
+
+	# Step 6: Player dot — always at center
 	var dot_r: float = 3.5 * (map_size / 160.0)
 	control.draw_circle(center, dot_r, Color(1.0, 1.0, 0.3, 1.0))
 
