@@ -382,7 +382,7 @@ func _add_shop_item_row(item: Dictionary, carried: int) -> void:
 		buy_btn.disabled = true
 		buy_btn.modulate = Color(0.5, 0.5, 0.5)
 	else:
-		buy_btn.pressed.connect(func(): _show_buy_confirm(row, item))
+		buy_btn.pressed.connect(func(): _buy_item(item))
 	hbox.add_child(buy_btn)
 
 func _show_buy_confirm(row: VBoxContainer, item: Dictionary) -> void:
@@ -640,7 +640,7 @@ func _add_sell_row(parent: VBoxContainer, item: Dictionary, slot: String, is_equ
 	var item_ref := item
 	var slot_ref := slot
 	var eq_ref := is_equipped
-	sell_btn.pressed.connect(func(): _show_sell_confirm(row, item_ref, slot_ref, eq_ref, sell_price))
+	sell_btn.pressed.connect(func(): _sell_item(item_ref, slot_ref, eq_ref))
 	hbox.add_child(sell_btn)
 
 var _sell_confirm_row: Node = null
