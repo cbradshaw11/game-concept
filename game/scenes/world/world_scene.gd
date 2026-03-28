@@ -693,37 +693,59 @@ func _setup_minimap() -> void:
 	exp_panel.add_child(minimap_expanded_control)
 
 func _draw_minimap(control: Control, map_size: float) -> void:
-	# Map is player-centered. Scale: show ~800 world units around the player
 	var view_radius: float = 800.0
 	var scale_factor: float = (map_size * 0.5) / view_radius
 	var center := Vector2(map_size / 2.0, map_size / 2.0)
-	var cam_origin: Vector2 = player.position  # map center tracks player
+	var cam_origin: Vector2 = player.position
+	var reveal_r: float = 7.0 * (map_size / 160.0)  # reveal circle radius per point
 
-	# Explored areas (fog of war reveal)
+	var ring_defs := [
+		[150.0,  Color(0.4, 0.9, 0.4, 0.9)],
+		[800.0,  Color(0.6, 0.8, 0.3, 0.9)],
+		[2000.0, Color(0.9, 0.7, 0.2, 0.9)],
+		[4000.0, Color(0.9, 0.2, 0.2, 0.9)],
+	]
+	var ring_center: Vector2 = (HOME_POS - cam_origin) * scale_factor + center
+
+	# Step 1: Draw explored terrain (revealed ground)
 	for pos in explored_positions:
 		var map_pos: Vector2 = (pos - cam_origin) * scale_factor + center
-		if map_pos.x >= -10.0 and map_pos.x <= map_size + 10.0 and map_pos.y >= -10.0 and map_pos.y <= map_size + 10.0:
-			control.draw_circle(map_pos, 6.0 * (map_size / 160.0), Color(0.3, 0.5, 0.3, 0.5))
+		if map_pos.x >= -reveal_r and map_pos.x <= map_size + reveal_r and map_pos.y >= -reveal_r and map_pos.y <= map_size + reveal_r:
+			control.draw_circle(map_pos, reveal_r, Color(0.18, 0.28, 0.18, 1.0))
 
-	# Zone ring outlines (drawn relative to HOME_POS, which moves as cam moves)
-	var rings := [
-		[150.0,  Color(0.4, 0.9, 0.4, 0.4)],
-		[800.0,  Color(0.6, 0.8, 0.3, 0.35)],
-		[2000.0, Color(0.9, 0.7, 0.2, 0.35)],
-		[4000.0, Color(0.9, 0.2, 0.2, 0.35)],
-	]
-	for ring_data in rings:
-		var r: float = ring_data[0] * scale_factor
-		var ring_center: Vector2 = (HOME_POS - cam_origin) * scale_factor + center
-		control.draw_arc(ring_center, r, 0.0, TAU, 80, ring_data[1], 1.5)
+	# Step 2: Draw ring segments only where they pass through explored areas
+	# Check each ring arc segment — only draw segments near an explored point
+	for ring_data in ring_defs:
+		var world_r: float = ring_data[0]
+		var ring_col: Color = ring_data[1]
+		var map_r: float = world_r * scale_factor
+		var seg_count := 120
+		for i in range(seg_count):
+			var angle_a: float = (float(i) / seg_count) * TAU
+			var angle_b: float = (float(i + 1) / seg_count) * TAU
+			var seg_mid_world: Vector2 = HOME_POS + Vector2(cos((angle_a + angle_b) * 0.5), sin((angle_a + angle_b) * 0.5)) * world_r
+			# Check if any explored point is near this segment
+			var visible := false
+			for exp_pos in explored_positions:
+				if exp_pos.distance_squared_to(seg_mid_world) < 120000.0:  # ~350 world units reveal radius for rings
+					visible = true
+					break
+			if visible:
+				var p_a: Vector2 = ring_center + Vector2(cos(angle_a), sin(angle_a)) * map_r
+				var p_b: Vector2 = ring_center + Vector2(cos(angle_b), sin(angle_b)) * map_r
+				control.draw_line(p_a, p_b, ring_col, 1.5)
 
-	# Home icon — small square, positioned relative to camera
+	# Step 3: Home icon — always visible (home base is always known)
 	var home_map: Vector2 = (HOME_POS - cam_origin) * scale_factor + center
 	if home_map.x >= -6 and home_map.x <= map_size + 6 and home_map.y >= -6 and home_map.y <= map_size + 6:
-		control.draw_rect(Rect2(home_map - Vector2(4, 4), Vector2(8, 8)), Color(0.85, 0.75, 0.5, 0.9))
-		control.draw_rect(Rect2(home_map - Vector2(4, 4), Vector2(8, 8)), Color(1.0, 1.0, 1.0, 0.5), false, 1.0)
+		control.draw_rect(Rect2(home_map - Vector2(4, 4), Vector2(8, 8)), Color(0.85, 0.75, 0.5, 0.95))
+		control.draw_rect(Rect2(home_map - Vector2(4, 4), Vector2(8, 8)), Color(1.0, 1.0, 1.0, 0.6), false, 1.0)
 
-	# Player dot — always at center of map
+	# Step 4: Home ring always visible (you always know where home is)
+	var home_ring_r: float = 150.0 * scale_factor
+	control.draw_arc(ring_center, home_ring_r, 0.0, TAU, 60, Color(0.4, 0.9, 0.4, 0.7), 1.5)
+
+	# Step 5: Player dot — always at center
 	var dot_r: float = 3.5 * (map_size / 160.0)
 	control.draw_circle(center, dot_r, Color(1.0, 1.0, 0.3, 1.0))
 
