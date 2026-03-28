@@ -576,8 +576,8 @@ func _setup_zone_markers() -> void:
 	sanctuary_fill.color = Color(0.2, 0.4, 0.8, 0.08)
 	zone_markers.add_child(sanctuary_fill)
 	# Draw colored ring outlines
-	_add_ring_outline(150.0, Color(0.4, 0.9, 0.4, 0.4))   # home base boundary
-	_add_ring_outline(800.0, Color(0.6, 0.8, 0.3, 0.3))   # inner ring
+	_add_ring_outline(150.0, Color(0.4, 0.9, 0.4, 0.4))    # home base boundary
+	_add_ring_outline(1200.0, Color(0.6, 0.8, 0.3, 0.3))  # inner ring
 	_add_ring_outline(2000.0, Color(0.9, 0.7, 0.2, 0.3))  # mid ring
 	_add_ring_outline(4000.0, Color(0.9, 0.2, 0.2, 0.3))  # outer ring
 
@@ -701,7 +701,7 @@ func _draw_minimap(control: Control, map_size: float) -> void:
 
 	var ring_defs := [
 		[150.0,  Color(0.4, 0.9, 0.4, 0.9)],
-		[800.0,  Color(0.6, 0.8, 0.3, 0.9)],
+		[1200.0, Color(0.6, 0.8, 0.3, 0.9)],
 		[2000.0, Color(0.9, 0.7, 0.2, 0.9)],
 		[4000.0, Color(0.9, 0.2, 0.2, 0.9)],
 	]

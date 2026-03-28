@@ -5,7 +5,7 @@ signal player_distance_changed(distance: float)
 
 const SANCTUARY_RADIUS := 150.0  # home base safe zone
 const INNER_START := 150.0
-const MID_START := 800.0
+const MID_START := 1200.0
 const OUTER_START := 2000.0
 const WORLD_EDGE := 4000.0
 
