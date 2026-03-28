@@ -978,7 +978,9 @@ func _rebuild_items_list() -> void:
 			row.add_child(hbox)
 
 			var name_lbl := Label.new()
-			name_lbl.text = item.get("name", "???")
+			var cat2: String = item.get("category", "")
+			var icon: String = "⚔ " if cat2 == "weapon" else ("🛡 " if cat2 == "armor" else ("🧪 " if cat2 == "potion" else ""))
+			name_lbl.text = icon + item.get("name", "???")
 			name_lbl.add_theme_font_size_override("font_size", 13)
 			name_lbl.custom_minimum_size = Vector2(130, 0)
 			hbox.add_child(name_lbl)
