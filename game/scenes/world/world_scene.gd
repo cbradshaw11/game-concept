@@ -624,6 +624,7 @@ func _setup_minimap() -> void:
 	style.border_color = Color(0.6, 0.6, 0.6, 0.6)
 	style.set_border_width_all(1)
 	panel.add_theme_stylebox_override("panel", style)
+	panel.clip_contents = true
 	hud_layer.add_child(panel)
 
 	minimap_control = Control.new()
@@ -658,6 +659,7 @@ func _setup_minimap() -> void:
 	exp_style.border_color = Color(0.7, 0.7, 0.7, 0.7)
 	exp_style.set_border_width_all(2)
 	exp_panel.add_theme_stylebox_override("panel", exp_style)
+	exp_panel.clip_contents = true
 	exp_panel.visible = false
 	hud_layer.add_child(exp_panel)
 
