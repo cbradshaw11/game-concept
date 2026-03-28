@@ -966,8 +966,21 @@ func _rebuild_items_list() -> void:
 		var items_in_cat: Array = cfg["items"]
 		if items_in_cat.size() == 0:
 			continue
-		# Respect sidebar filter — "all"/"stats" shows everything, otherwise match key
-		if equip_filter != "all" and equip_filter != "stats" and cfg["key"] != equip_filter:
+		# Respect sidebar filter
+		var weapon_keys := ["all", "stats", "weapons", "melee", "ranged", "magic"]
+		var armor_keys  := ["all", "stats", "armor", "helmet", "breastplate", "pants", "shoes", "gauntlets"]
+		var potion_keys := ["all", "stats", "potions"]
+		var item_key: String = cfg["key"]
+		var show := false
+		if equip_filter == "all" or equip_filter == "stats":
+			show = true
+		elif item_key in ["melee", "ranged", "magic"] and equip_filter in weapon_keys:
+			show = equip_filter == "weapons" or equip_filter == item_key
+		elif item_key in ["helmet", "breastplate", "pants", "shoes", "gauntlets"] and equip_filter in armor_keys:
+			show = equip_filter == "armor" or equip_filter == item_key
+		elif item_key == "potions" and equip_filter in potion_keys:
+			show = true
+		if not show:
 			continue
 		_add_inv_category_header(cfg["label"], cfg["color"])
 		for i in range(items_in_cat.size()):
@@ -1118,19 +1131,19 @@ func _build_filter_sidebar() -> void:
 
 	var filters := [
 		["All", "all", ""],
-		["_header_", "Weapons", "⚔"],
+		["_header_", "Weapons", "⚔", "weapons", Color(0.9, 0.6, 0.3)],
 		["⚔ Melee", "melee", ""],
 		["🏹 Ranged", "ranged", ""],
 		["✦ Magic", "magic", ""],
 		["_gap_", "", ""],
-		["_header_", "Armor", "🛡"],
+		["_header_", "Armor", "🛡", "armor", Color(0.5, 0.7, 1.0)],
 		["Helmet", "helmet", ""],
 		["Chest", "breastplate", ""],
 		["Pants", "pants", ""],
 		["Shoes", "shoes", ""],
 		["Gauntlets", "gauntlets", ""],
 		["_gap_", "", ""],
-		["_header_", "Potions", "🧪"],
+		["_header_", "Potions", "🧪", "potions", Color(0.4, 1.0, 0.5)],
 		["🧪 Potions", "potions", ""],
 	]
 
@@ -1141,12 +1154,16 @@ func _build_filter_sidebar() -> void:
 			sidebar.add_child(gap)
 			continue
 		if f[0] == "_header_":
-			var lbl := Label.new()
-			lbl.text = "─ %s %s ─" % [f[2], f[1]]
-			lbl.add_theme_font_size_override("font_size", 10)
-			var hdr_color := Color(0.9, 0.6, 0.3) if f[1] == "Weapons" else (Color(0.5, 0.7, 1.0) if f[1] == "Armor" else Color(0.4, 1.0, 0.5))
-			lbl.add_theme_color_override("font_color", hdr_color)
-			sidebar.add_child(lbl)
+			var hdr_btn := Button.new()
+			hdr_btn.text = "─ %s %s ─" % [f[2], f[1]]
+			hdr_btn.add_theme_font_size_override("font_size", 10)
+			hdr_btn.add_theme_color_override("font_color", f[4])
+			hdr_btn.custom_minimum_size = Vector2(88, 20)
+			hdr_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			var hdr_key: String = f[3]
+			hdr_btn.pressed.connect(func(): _set_equip_filter(hdr_key))
+			sidebar.add_child(hdr_btn)
+			filter_buttons[f[3]] = hdr_btn
 			continue
 
 		var btn := Button.new()
@@ -1197,11 +1214,19 @@ func _set_equip_filter(key: String) -> void:
 func _update_filter_highlight() -> void:
 	for k in filter_buttons:
 		var btn: Button = filter_buttons[k]
-		var is_active: bool = (k == "stats" and stats_visible) or (k != "stats" and k == equip_filter)
+		var is_active: bool = false
+		if k == "stats":
+			is_active = stats_visible
+		elif k == "weapons":
+			is_active = equip_filter in ["weapons", "melee", "ranged", "magic"]
+		elif k == "armor":
+			is_active = equip_filter in ["armor", "helmet", "breastplate", "pants", "shoes", "gauntlets"]
+		else:
+			is_active = k == equip_filter
 		btn.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0) if is_active else Color(0.6, 0.6, 0.6))
 
 func _update_equip_section_visibility() -> void:
-	var show_potions: bool = equip_filter == "all" or equip_filter == "potions"
+	var show_potions: bool = equip_filter in ["all", "potions"]
 	potions_sep_node.visible = show_potions
 	pot_title_node.visible = show_potions
 	potions_vbox.visible = show_potions
@@ -1224,6 +1249,9 @@ func _rebuild_slots() -> void:
 	if equip_filter == "potions" or equip_filter == "stats":
 		return
 
+	var weapon_filters := ["all", "weapons", "melee", "ranged", "magic"]
+	var armor_filters  := ["all", "armor", "helmet", "breastplate", "pants", "shoes", "gauntlets"]
+
 	var equipped: Dictionary = inv.get("equipped")
 	var slot_labels := {
 		"weapon_melee": "Melee Weapon",
@@ -1237,15 +1265,15 @@ func _rebuild_slots() -> void:
 	}
 
 	# Weapons — split by type
-	if equip_filter in ["all", "melee"]:
+	if equip_filter in weapon_filters and equip_filter in ["all", "weapons", "melee"]:
 		_add_section_header("⚔ Melee", Color(1.0, 0.5, 0.3))
 		_add_slot_row("weapon_melee", slot_labels["weapon_melee"], equipped.get("weapon_melee", {}), inv)
 
-	if equip_filter in ["all", "ranged"]:
+	if equip_filter in weapon_filters and equip_filter in ["all", "weapons", "ranged"]:
 		_add_section_header("🏹 Ranged", Color(0.4, 0.9, 0.5))
 		_add_slot_row("weapon_ranged", slot_labels["weapon_ranged"], equipped.get("weapon_ranged", {}), inv)
 
-	if equip_filter in ["all", "magic"]:
+	if equip_filter in weapon_filters and equip_filter in ["all", "weapons", "magic"]:
 		_add_section_header("✦ Magic", Color(0.6, 0.4, 1.0))
 		_add_slot_row("weapon_magic", slot_labels["weapon_magic"], equipped.get("weapon_magic", {}), inv)
 
@@ -1259,7 +1287,7 @@ func _rebuild_slots() -> void:
 	]
 	for cfg in armor_config:
 		var s: String = cfg["slot"]
-		if equip_filter != "all" and equip_filter != s:
+		if equip_filter not in ["all", "armor"] and equip_filter != s:
 			continue
 		_add_section_header(cfg["label"], cfg["color"])
 		_add_slot_row(s, slot_labels[s], equipped.get(s, {}), inv)
