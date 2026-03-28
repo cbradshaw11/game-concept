@@ -102,27 +102,37 @@ func _handle_attack(delta: float) -> void:
 
 func _deal_damage_to_enemy(enemy: Node2D, dmg: int) -> void:
 	var hp: int = enemy.get_meta("hp", 0)
-	hp -= dmg
+	var max_hp: int = enemy.get_meta("max_hp", 1)
+	hp = max(0, hp - dmg)
 	enemy.set_meta("hp", hp)
-	# Flash red briefly
-	var sprite: ColorRect = enemy.get_child(0) if enemy.get_child_count() > 0 else null
-	if sprite and sprite is ColorRect:
-		var orig: Color = sprite.color
-		sprite.color = Color(1, 0.3, 0.3)
+
+	# Update HP bar
+	var hp_bar: Node = enemy.find_child("HPBar", false, false)
+	if hp_bar and hp_bar is ColorRect:
+		var ratio: float = float(hp) / float(max_hp)
+		(hp_bar as ColorRect).size.x = 48.0 * ratio
+		(hp_bar as ColorRect).color = Color(0.2, 0.85, 0.2) if ratio > 0.4 else Color(0.85, 0.2, 0.2)
+
+	# Flash sprite red
+	var sprite: Node = enemy.find_child("Sprite", false, false)
+	if sprite and sprite is Sprite2D:
+		(sprite as Sprite2D).modulate = Color(1.5, 0.3, 0.3)
 		var tw := create_tween()
-		tw.tween_interval(0.12)
-		tw.tween_callback(func(): if is_instance_valid(sprite): sprite.color = orig)
-	# Show damage number
+		tw.tween_interval(0.1)
+		tw.tween_callback(func(): if is_instance_valid(sprite): (sprite as Sprite2D).modulate = Color.WHITE)
+
+	# Floating damage number
 	var lbl := Label.new()
 	lbl.text = "-%d" % dmg
-	lbl.position = enemy.position + Vector2(-10, -30)
+	lbl.position = enemy.position + Vector2(-10, -60)
 	lbl.add_theme_color_override("font_color", Color(1, 0.8, 0.2))
-	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.add_theme_font_size_override("font_size", 13)
 	add_child(lbl)
 	var tw2 := create_tween()
 	tw2.tween_property(lbl, "position", lbl.position + Vector2(0, -30), 0.5)
 	tw2.parallel().tween_property(lbl, "modulate:a", 0.0, 0.5)
 	tw2.tween_callback(lbl.queue_free)
+
 	if hp <= 0:
 		_on_enemy_killed(enemy)
 
@@ -211,6 +221,8 @@ func _check_enemy_damage(delta: float) -> void:
 			continue
 		if not enemy.get_meta("alive", false):
 			continue
+		if enemy.get_meta("paused", false):
+			continue
 		var dist: float = player.position.distance_to(enemy.position)
 		if dist < 40.0:
 			var key: int = enemy.get_instance_id()
@@ -221,6 +233,11 @@ func _check_enemy_damage(delta: float) -> void:
 				var dmg: int = enemy.get_meta("damage", 10)
 				player_health -= float(dmg)
 				damage_timers[key] = 1.0
+				# Flash player red
+				player.modulate = Color(1.5, 0.3, 0.3)
+				var tw := create_tween()
+				tw.tween_interval(0.15)
+				tw.tween_callback(func(): if is_instance_valid(player): player.modulate = Color.WHITE)
 				if player_health <= 0.0:
 					_on_player_death()
 					return
