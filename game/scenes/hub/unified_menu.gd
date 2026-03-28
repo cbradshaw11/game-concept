@@ -28,6 +28,7 @@ var shop_locked_label: Label
 var shop_content: HBoxContainer
 var sell_equipped_vbox: VBoxContainer
 var sell_bank_vbox: VBoxContainer
+var sell_potions_vbox: VBoxContainer
 var sell_scroll: ScrollContainer
 
 # ── Inventory & Bank state ──
@@ -40,18 +41,13 @@ var potions_vbox: VBoxContainer
 var items_vbox: VBoxContainer
 var bank_controls: VBoxContainer
 var bank_locked_label: Label
-enum BankScreen { GOLD, WITHDRAW, ITEMS }
-var bank_screen: BankScreen = BankScreen.GOLD
+var withdraw_active: bool = false
 var withdraw_input_text: String = ""
 var withdraw_input_label: Label
-var gold_panel: VBoxContainer
-var withdraw_panel: VBoxContainer
-var items_panel: VBoxContainer
+var withdraw_row: HBoxContainer
 var bank_label: Label
 var carried_label: Label
 var confirm_discard_row: Node = null
-var gold_tab_btn: Button
-var items_tab_btn: Button
 
 func _ready() -> void:
 	_build_ui()
@@ -285,6 +281,20 @@ func _build_shop_tab() -> void:
 	sell_bank_vbox.add_theme_constant_override("separation", 3)
 	sell_inner.add_child(sell_bank_vbox)
 
+	# Potions header + section
+	var pot_hdr_sep := HSeparator.new()
+	sell_inner.add_child(pot_hdr_sep)
+
+	var pot_hdr := Label.new()
+	pot_hdr.text = "Potions"
+	pot_hdr.add_theme_font_size_override("font_size", 14)
+	pot_hdr.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5))
+	sell_inner.add_child(pot_hdr)
+
+	sell_potions_vbox = VBoxContainer.new()
+	sell_potions_vbox.add_theme_constant_override("separation", 3)
+	sell_inner.add_child(sell_potions_vbox)
+
 func _show_shop_category(cat: String) -> void:
 	shop_category = cat
 	shop_confirm_row_parent = null
@@ -447,6 +457,8 @@ func _rebuild_sell_panel() -> void:
 		child.queue_free()
 	for child in sell_bank_vbox.get_children():
 		child.queue_free()
+	for child in sell_potions_vbox.get_children():
+		child.queue_free()
 
 	var inv: Node = get_node_or_null("/root/InventorySystem")
 	if inv == null:
@@ -484,6 +496,66 @@ func _rebuild_sell_panel() -> void:
 		empty.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 		sell_bank_vbox.add_child(empty)
 
+	# Carried potions
+	var potions: Array = inv.get_all_potions()
+	if potions.size() == 0:
+		var empty := Label.new()
+		empty.text = "No potions carried"
+		empty.add_theme_font_size_override("font_size", 12)
+		empty.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+		sell_potions_vbox.add_child(empty)
+	else:
+		for stack in potions:
+			var item: Dictionary = stack["item"]
+			var count: int = stack["count"]
+			var pid: String = stack["id"]
+			var sell_price: int = int(floor(float(item.get("cost", 5)) * 0.65))
+			if sell_price < 1:
+				sell_price = 1
+
+			var hbox := HBoxContainer.new()
+			hbox.add_theme_constant_override("separation", 8)
+			sell_potions_vbox.add_child(hbox)
+
+			var name_lbl := Label.new()
+			name_lbl.text = "%s x%d" % [item.get("name", "???"), count]
+			name_lbl.add_theme_font_size_override("font_size", 12)
+			name_lbl.custom_minimum_size = Vector2(140, 0)
+			hbox.add_child(name_lbl)
+
+			var price_lbl := Label.new()
+			price_lbl.text = "-> %dg" % sell_price
+			price_lbl.add_theme_font_size_override("font_size", 12)
+			price_lbl.add_theme_color_override("font_color", Color(0.9, 0.8, 0.2))
+			price_lbl.custom_minimum_size = Vector2(50, 0)
+			hbox.add_child(price_lbl)
+
+			var sell_btn := Button.new()
+			sell_btn.text = "Sell"
+			sell_btn.custom_minimum_size = Vector2(50, 24)
+			var p := pid
+			var sp := sell_price
+			sell_btn.pressed.connect(func(): _sell_potion(p, sp))
+			hbox.add_child(sell_btn)
+
+func _sell_potion(potion_id: String, sell_price: int) -> void:
+	var inv: Node = get_node_or_null("/root/InventorySystem")
+	if inv == null:
+		return
+	# Decrement potion count (reuse use_potion to remove one from stack)
+	if not inv.carried_potions.has(potion_id):
+		return
+	var stack: Dictionary = inv.carried_potions[potion_id]
+	if stack["count"] <= 0:
+		return
+	stack["count"] -= 1
+	if stack["count"] <= 0:
+		inv.carried_potions.erase(potion_id)
+	inv.carried_gold += sell_price
+	inv.inventory_changed.emit()
+	_rebuild_sell_panel()
+	_rebuild_shop_item_list()
+
 func _add_sell_row(parent: VBoxContainer, item: Dictionary, slot: String, is_equipped: bool) -> void:
 	var row := VBoxContainer.new()
 	row.add_theme_constant_override("separation", 2)
@@ -511,7 +583,7 @@ func _add_sell_row(parent: VBoxContainer, item: Dictionary, slot: String, is_equ
 		sell_price = 1
 
 	var price_lbl := Label.new()
-	price_lbl.text = "→ %dg" % sell_price
+	price_lbl.text = "-> %dg" % sell_price
 	price_lbl.add_theme_font_size_override("font_size", 12)
 	price_lbl.add_theme_color_override("font_color", Color(0.9, 0.8, 0.2))
 	price_lbl.custom_minimum_size = Vector2(50, 0)
@@ -628,49 +700,23 @@ func _build_inv_tab() -> void:
 	bank_controls.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	bank_vbox.add_child(bank_controls)
 
-	var tab_row := HBoxContainer.new()
-	tab_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	tab_row.add_theme_constant_override("separation", 16)
-	bank_controls.add_child(tab_row)
-
-	gold_tab_btn = Button.new()
-	gold_tab_btn.text = "Gold"
-	gold_tab_btn.custom_minimum_size = Vector2(90, 28)
-	gold_tab_btn.pressed.connect(_show_gold_screen)
-	tab_row.add_child(gold_tab_btn)
-
-	items_tab_btn = Button.new()
-	items_tab_btn.text = "Items"
-	items_tab_btn.custom_minimum_size = Vector2(90, 28)
-	items_tab_btn.pressed.connect(_show_items_screen)
-	tab_row.add_child(items_tab_btn)
-
-	var tab_sep := HSeparator.new()
-	bank_controls.add_child(tab_sep)
-
-	# Gold sub-panel
-	gold_panel = VBoxContainer.new()
-	gold_panel.add_theme_constant_override("separation", 10)
-	bank_controls.add_child(gold_panel)
-
+	# Gold labels
 	bank_label = Label.new()
 	bank_label.add_theme_font_size_override("font_size", 15)
 	bank_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	gold_panel.add_child(bank_label)
+	bank_controls.add_child(bank_label)
 
 	carried_label = Label.new()
 	carried_label.add_theme_font_size_override("font_size", 14)
 	carried_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	carried_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.5))
-	gold_panel.add_child(carried_label)
+	bank_controls.add_child(carried_label)
 
-	var gold_sep := HSeparator.new()
-	gold_panel.add_child(gold_sep)
-
+	# Button row: Deposit All + Withdraw
 	var btn_row := HBoxContainer.new()
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	btn_row.add_theme_constant_override("separation", 16)
-	gold_panel.add_child(btn_row)
+	bank_controls.add_child(btn_row)
 
 	var deposit_btn := Button.new()
 	deposit_btn.text = "Deposit All"
@@ -681,68 +727,48 @@ func _build_inv_tab() -> void:
 	var withdraw_btn := Button.new()
 	withdraw_btn.text = "Withdraw"
 	withdraw_btn.custom_minimum_size = Vector2(120, 36)
-	withdraw_btn.pressed.connect(_show_withdraw_screen)
+	withdraw_btn.pressed.connect(_toggle_withdraw)
 	btn_row.add_child(withdraw_btn)
 
-	# Withdraw sub-panel
-	withdraw_panel = VBoxContainer.new()
-	withdraw_panel.add_theme_constant_override("separation", 10)
-	withdraw_panel.visible = false
-	bank_controls.add_child(withdraw_panel)
-
-	var wtitle := Label.new()
-	wtitle.text = "Withdraw Gold"
-	wtitle.add_theme_font_size_override("font_size", 16)
-	wtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	withdraw_panel.add_child(wtitle)
+	# Withdraw input row (hidden by default)
+	withdraw_row = HBoxContainer.new()
+	withdraw_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	withdraw_row.add_theme_constant_override("separation", 8)
+	withdraw_row.visible = false
+	bank_controls.add_child(withdraw_row)
 
 	withdraw_input_label = Label.new()
 	withdraw_input_label.text = "Amount: _"
-	withdraw_input_label.add_theme_font_size_override("font_size", 20)
-	withdraw_input_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	withdraw_panel.add_child(withdraw_input_label)
-
-	var key_hint := Label.new()
-	key_hint.text = "Type an amount, then press Enter"
-	key_hint.add_theme_font_size_override("font_size", 11)
-	key_hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
-	key_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	withdraw_panel.add_child(key_hint)
-
-	var wbtn_row := HBoxContainer.new()
-	wbtn_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	wbtn_row.add_theme_constant_override("separation", 12)
-	withdraw_panel.add_child(wbtn_row)
+	withdraw_input_label.add_theme_font_size_override("font_size", 16)
+	withdraw_row.add_child(withdraw_input_label)
 
 	var all_btn := Button.new()
 	all_btn.text = "Withdraw All"
-	all_btn.custom_minimum_size = Vector2(110, 34)
+	all_btn.custom_minimum_size = Vector2(100, 30)
 	all_btn.pressed.connect(_on_withdraw_all)
-	wbtn_row.add_child(all_btn)
+	withdraw_row.add_child(all_btn)
 
 	var confirm_btn := Button.new()
 	confirm_btn.text = "Confirm"
-	confirm_btn.custom_minimum_size = Vector2(90, 34)
+	confirm_btn.custom_minimum_size = Vector2(80, 30)
 	confirm_btn.pressed.connect(_on_withdraw_confirm)
-	wbtn_row.add_child(confirm_btn)
+	withdraw_row.add_child(confirm_btn)
 
-	var back_btn := Button.new()
-	back_btn.text = "Back"
-	back_btn.custom_minimum_size = Vector2(70, 34)
-	back_btn.pressed.connect(_show_gold_screen)
-	wbtn_row.add_child(back_btn)
+	var cancel_btn := Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.custom_minimum_size = Vector2(70, 30)
+	cancel_btn.pressed.connect(_hide_withdraw)
+	withdraw_row.add_child(cancel_btn)
 
-	# Items sub-panel
-	items_panel = VBoxContainer.new()
-	items_panel.add_theme_constant_override("separation", 6)
-	items_panel.visible = false
-	items_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	bank_controls.add_child(items_panel)
+	# Separator before items
+	var items_sep := HSeparator.new()
+	bank_controls.add_child(items_sep)
 
+	# ScrollContainer with categorized bank items
 	var iscroll := ScrollContainer.new()
-	iscroll.custom_minimum_size = Vector2(370, 300)
+	iscroll.custom_minimum_size = Vector2(370, 260)
 	iscroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	items_panel.add_child(iscroll)
+	bank_controls.add_child(iscroll)
 
 	items_vbox = VBoxContainer.new()
 	items_vbox.add_theme_constant_override("separation", 4)
@@ -803,30 +829,18 @@ func _build_inv_tab() -> void:
 	stats_vbox.add_theme_constant_override("separation", 5)
 	equip_vbox.add_child(stats_vbox)
 
-# ── Bank screens (Inventory tab) ──
+# ── Bank controls ──
 
-func _show_gold_screen() -> void:
-	bank_screen = BankScreen.GOLD
-	withdraw_input_text = ""
-	gold_panel.visible = true
-	withdraw_panel.visible = false
-	items_panel.visible = false
-	_refresh_gold()
-
-func _show_withdraw_screen() -> void:
-	bank_screen = BankScreen.WITHDRAW
+func _toggle_withdraw() -> void:
+	withdraw_active = true
 	withdraw_input_text = ""
 	withdraw_input_label.text = "Amount: _"
-	gold_panel.visible = false
-	withdraw_panel.visible = true
-	items_panel.visible = false
+	withdraw_row.visible = true
 
-func _show_items_screen() -> void:
-	bank_screen = BankScreen.ITEMS
-	gold_panel.visible = false
-	withdraw_panel.visible = false
-	items_panel.visible = true
-	_rebuild_items_list()
+func _hide_withdraw() -> void:
+	withdraw_active = false
+	withdraw_input_text = ""
+	withdraw_row.visible = false
 
 func _rebuild_items_list() -> void:
 	for child in items_vbox.get_children():
@@ -977,7 +991,8 @@ func _on_withdraw_all() -> void:
 	var bank: int = int(inv.get("bank_gold"))
 	if bank > 0:
 		inv.call("withdraw_gold", bank)
-	_show_gold_screen()
+	_hide_withdraw()
+	_refresh_gold()
 
 func _on_withdraw_confirm() -> void:
 	var amount: int = int(withdraw_input_text) if withdraw_input_text.is_valid_int() else 0
@@ -985,7 +1000,8 @@ func _on_withdraw_confirm() -> void:
 		var inv: Node = get_node_or_null("/root/InventorySystem")
 		if inv != null:
 			inv.call("withdraw_gold", amount)
-	_show_gold_screen()
+	_hide_withdraw()
+	_refresh_gold()
 
 # ── Equipment (right pane of Inventory tab) ──
 
@@ -1009,33 +1025,61 @@ func _rebuild_slots() -> void:
 		"gauntlets": "Gauntlets",
 	}
 
-	_add_section_header("Weapons")
+	_add_section_header("Weapons", Color(0.9, 0.6, 0.3))
+	var weapon_tags := {
+		"weapon_melee": {"text": "Melee", "color": Color(1.0, 0.5, 0.3)},
+		"weapon_ranged": {"text": "Ranged", "color": Color(0.4, 0.9, 0.5)},
+		"weapon_magic": {"text": "Magic", "color": Color(0.6, 0.4, 1.0)},
+	}
 	for slot in ["weapon_melee", "weapon_ranged", "weapon_magic"]:
-		_add_slot_row(slot, slot_labels[slot], equipped.get(slot, {}), inv)
+		_add_slot_row(slot, slot_labels[slot], equipped.get(slot, {}), inv, weapon_tags[slot])
 
-	_add_section_header("Armor")
+	var armor_tag := {"text": "", "color": Color(0.7, 0.7, 0.9)}
+	_add_section_header("Armor", Color(0.5, 0.7, 1.0))
+	var armor_tags := {
+		"helmet": {"text": "Helmet", "color": Color(0.7, 0.7, 0.9)},
+		"breastplate": {"text": "Chest", "color": Color(0.7, 0.7, 0.9)},
+		"pants": {"text": "Pants", "color": Color(0.7, 0.7, 0.9)},
+		"shoes": {"text": "Shoes", "color": Color(0.7, 0.7, 0.9)},
+		"gauntlets": {"text": "Gauntlets", "color": Color(0.7, 0.7, 0.9)},
+	}
 	for slot in ["helmet", "breastplate", "pants", "shoes", "gauntlets"]:
-		_add_slot_row(slot, slot_labels[slot], equipped.get(slot, {}), inv)
+		_add_slot_row(slot, slot_labels[slot], equipped.get(slot, {}), inv, armor_tags[slot])
 
-func _add_section_header(text: String) -> void:
+func _add_section_header(text: String, color: Color = Color(0.9, 0.8, 0.5)) -> void:
 	var sep := HSeparator.new()
 	slots_vbox.add_child(sep)
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.add_theme_font_size_override("font_size", 13)
-	lbl.add_theme_color_override("font_color", Color(0.9, 0.8, 0.5))
+	lbl.add_theme_color_override("font_color", color)
 	slots_vbox.add_child(lbl)
 
-func _add_slot_row(slot: String, label: String, item: Dictionary, inv: Node) -> void:
+func _add_slot_row(slot: String, label: String, item: Dictionary, inv: Node, tag: Dictionary = {}) -> void:
 	var hbox := HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 8)
 	slots_vbox.add_child(hbox)
 
-	var slot_lbl := Label.new()
-	slot_lbl.text = label + ":"
-	slot_lbl.add_theme_font_size_override("font_size", 12)
-	slot_lbl.custom_minimum_size = Vector2(110, 0)
-	hbox.add_child(slot_lbl)
+	# Type tag label
+	if not tag.is_empty() and tag.get("text", "") != "":
+		var tag_lbl := Label.new()
+		tag_lbl.text = tag["text"]
+		tag_lbl.add_theme_font_size_override("font_size", 11)
+		tag_lbl.add_theme_color_override("font_color", tag["color"])
+		tag_lbl.custom_minimum_size = Vector2(55, 0)
+		hbox.add_child(tag_lbl)
+
+		var slot_lbl := Label.new()
+		slot_lbl.text = ":"
+		slot_lbl.add_theme_font_size_override("font_size", 12)
+		slot_lbl.custom_minimum_size = Vector2(10, 0)
+		hbox.add_child(slot_lbl)
+	else:
+		var slot_lbl := Label.new()
+		slot_lbl.text = label + ":"
+		slot_lbl.add_theme_font_size_override("font_size", 12)
+		slot_lbl.custom_minimum_size = Vector2(110, 0)
+		hbox.add_child(slot_lbl)
 
 	if item.is_empty():
 		var empty := Label.new()
@@ -1171,8 +1215,7 @@ func _refresh() -> void:
 		_rebuild_slots()
 		_rebuild_potions()
 		_rebuild_stats()
-		if bank_screen == BankScreen.ITEMS:
-			_rebuild_items_list()
+		_rebuild_items_list()
 
 func _get_stat_summary(item: Dictionary) -> String:
 	var parts: Array = []
@@ -1199,7 +1242,7 @@ func _input(event: InputEvent) -> void:
 			menu_closed.emit()
 			return
 		# Withdraw numeric input
-		if active_tab == 1 and bank_screen == BankScreen.WITHDRAW and at_home:
+		if active_tab == 1 and withdraw_active and at_home:
 			if key.keycode >= KEY_0 and key.keycode <= KEY_9:
 				withdraw_input_text += str(key.keycode - KEY_0)
 				withdraw_input_label.text = "Amount: %s" % withdraw_input_text
