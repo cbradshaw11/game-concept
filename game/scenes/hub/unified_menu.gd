@@ -950,21 +950,24 @@ func _rebuild_items_list() -> void:
 	var armor_gauntlets: Array = categories["armor"].filter(func(i): return i.get("slot") == "gauntlets")
 
 	var cat_config := [
-		{"items": weapon_melee,      "label": "⚔ Melee",   "color": Color(1.0, 0.5, 0.3)},
-		{"items": weapon_ranged,     "label": "🏹 Ranged",  "color": Color(0.4, 0.9, 0.5)},
-		{"items": weapon_magic,      "label": "✦ Magic",   "color": Color(0.6, 0.4, 1.0)},
-		{"items": armor_helmet,      "label": "Helmet",    "color": Color(0.75, 0.75, 1.0)},
-		{"items": armor_chest,       "label": "Chest",     "color": Color(0.75, 0.75, 1.0)},
-		{"items": armor_pants,       "label": "Pants",     "color": Color(0.75, 0.75, 1.0)},
-		{"items": armor_shoes,       "label": "Shoes",     "color": Color(0.75, 0.75, 1.0)},
-		{"items": armor_gauntlets,   "label": "Gauntlets", "color": Color(0.75, 0.75, 1.0)},
-		{"items": categories["potion"], "label": "Potions","color": Color(0.5, 1.0, 0.6)},
-		{"items": categories["other"],  "label": "Other",  "color": Color(0.8, 0.8, 0.8)},
+		{"key": "melee",       "items": weapon_melee,         "label": "⚔ Melee",   "color": Color(1.0, 0.5, 0.3)},
+		{"key": "ranged",      "items": weapon_ranged,        "label": "🏹 Ranged",  "color": Color(0.4, 0.9, 0.5)},
+		{"key": "magic",       "items": weapon_magic,         "label": "✦ Magic",   "color": Color(0.6, 0.4, 1.0)},
+		{"key": "helmet",      "items": armor_helmet,         "label": "Helmet",    "color": Color(0.75, 0.75, 1.0)},
+		{"key": "breastplate", "items": armor_chest,          "label": "Chest",     "color": Color(0.75, 0.75, 1.0)},
+		{"key": "pants",       "items": armor_pants,          "label": "Pants",     "color": Color(0.75, 0.75, 1.0)},
+		{"key": "shoes",       "items": armor_shoes,          "label": "Shoes",     "color": Color(0.75, 0.75, 1.0)},
+		{"key": "gauntlets",   "items": armor_gauntlets,      "label": "Gauntlets", "color": Color(0.75, 0.75, 1.0)},
+		{"key": "potions",     "items": categories["potion"], "label": "Potions",   "color": Color(0.5, 1.0, 0.6)},
+		{"key": "other",       "items": categories["other"],  "label": "Other",     "color": Color(0.8, 0.8, 0.8)},
 	]
 
 	for cfg in cat_config:
 		var items_in_cat: Array = cfg["items"]
 		if items_in_cat.size() == 0:
+			continue
+		# Respect sidebar filter — "all"/"stats" shows everything, otherwise match key
+		if equip_filter != "all" and equip_filter != "stats" and cfg["key"] != equip_filter:
 			continue
 		_add_inv_category_header(cfg["label"], cfg["color"])
 		for i in range(items_in_cat.size()):
@@ -1156,6 +1159,7 @@ func _set_equip_filter(key: String) -> void:
 	_rebuild_potions()
 	_rebuild_stats()
 	_update_equip_section_visibility()
+	_rebuild_items_list()
 
 func _update_filter_highlight() -> void:
 	for k in filter_buttons:
