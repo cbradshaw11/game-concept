@@ -67,6 +67,7 @@ func _ready() -> void:
 
 var attack_cooldown: float = 0.0
 var _e_was_pressed: bool = false
+var _last_move_dir: Vector2 = Vector2.RIGHT
 
 func _process(delta: float) -> void:
 	_handle_input(delta)
@@ -96,7 +97,7 @@ func _handle_attack(delta: float) -> void:
 
 func _do_melee_attack() -> void:
 	var nearest: Node2D = _get_nearest_enemy(120.0)
-	var swing_dir := Vector2.RIGHT
+	var swing_dir: Vector2 = _last_move_dir
 	if nearest != null:
 		swing_dir = (nearest.position - player.position).normalized()
 	var origin: Vector2 = player.position
@@ -109,7 +110,7 @@ func _do_melee_attack() -> void:
 	# Sword sweep — pivot Node2D that rotates, with blade as child Line2D
 	var pivot := Node2D.new()
 	pivot.position = player.position + swing_dir * 10.0
-	pivot.rotation = atan2(swing_dir.y, swing_dir.x) - deg_to_rad(50.0)
+	pivot.rotation = atan2(swing_dir.y, swing_dir.x) - deg_to_rad(30.0)
 	add_child(pivot)
 
 	# Blade
@@ -130,7 +131,7 @@ func _do_melee_attack() -> void:
 
 	# Sweep arc over 100 degrees then fade
 	var swing_tw := create_tween()
-	swing_tw.tween_property(pivot, "rotation", pivot.rotation + deg_to_rad(100.0), 0.15).set_ease(Tween.EASE_OUT)
+	swing_tw.tween_property(pivot, "rotation", pivot.rotation + deg_to_rad(60.0), 0.18).set_ease(Tween.EASE_OUT)
 	swing_tw.tween_property(pivot, "modulate:a", 0.0, 0.08)
 	swing_tw.tween_callback(pivot.queue_free)
 
@@ -259,7 +260,9 @@ func _handle_input(delta: float) -> void:
 	if Input.is_action_pressed("ui_up") or Input.is_key_pressed(KEY_W):
 		dir.y -= 1.0
 	if dir != Vector2.ZERO:
-		player.position += dir.normalized() * player_speed * delta
+		var norm_dir: Vector2 = dir.normalized()
+		player.position += norm_dir * player_speed * delta
+		_last_move_dir = norm_dir
 
 func _update_background(delta: float) -> void:
 	current_bg_color = current_bg_color.lerp(target_bg_color, delta * 3.0)
