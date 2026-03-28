@@ -1025,26 +1025,20 @@ func _rebuild_slots() -> void:
 		"gauntlets": "Gauntlets",
 	}
 
-	_add_section_header("Weapons", Color(0.9, 0.6, 0.3))
-	var weapon_tags := {
-		"weapon_melee": {"text": "Melee", "color": Color(1.0, 0.5, 0.3)},
-		"weapon_ranged": {"text": "Ranged", "color": Color(0.4, 0.9, 0.5)},
-		"weapon_magic": {"text": "Magic", "color": Color(0.6, 0.4, 1.0)},
-	}
-	for slot in ["weapon_melee", "weapon_ranged", "weapon_magic"]:
-		_add_slot_row(slot, slot_labels[slot], equipped.get(slot, {}), inv, weapon_tags[slot])
+	# Weapons — split by type
+	_add_section_header("⚔ Melee", Color(1.0, 0.5, 0.3))
+	_add_slot_row("weapon_melee", slot_labels["weapon_melee"], equipped.get("weapon_melee", {}), inv)
 
-	var armor_tag := {"text": "", "color": Color(0.7, 0.7, 0.9)}
-	_add_section_header("Armor", Color(0.5, 0.7, 1.0))
-	var armor_tags := {
-		"helmet": {"text": "Helmet", "color": Color(0.7, 0.7, 0.9)},
-		"breastplate": {"text": "Chest", "color": Color(0.7, 0.7, 0.9)},
-		"pants": {"text": "Pants", "color": Color(0.7, 0.7, 0.9)},
-		"shoes": {"text": "Shoes", "color": Color(0.7, 0.7, 0.9)},
-		"gauntlets": {"text": "Gauntlets", "color": Color(0.7, 0.7, 0.9)},
-	}
+	_add_section_header("🏹 Ranged", Color(0.4, 0.9, 0.5))
+	_add_slot_row("weapon_ranged", slot_labels["weapon_ranged"], equipped.get("weapon_ranged", {}), inv)
+
+	_add_section_header("✦ Magic", Color(0.6, 0.4, 1.0))
+	_add_slot_row("weapon_magic", slot_labels["weapon_magic"], equipped.get("weapon_magic", {}), inv)
+
+	# Armor
+	_add_section_header("🛡 Armor", Color(0.5, 0.7, 1.0))
 	for slot in ["helmet", "breastplate", "pants", "shoes", "gauntlets"]:
-		_add_slot_row(slot, slot_labels[slot], equipped.get(slot, {}), inv, armor_tags[slot])
+		_add_slot_row(slot, slot_labels[slot], equipped.get(slot, {}), inv)
 
 func _add_section_header(text: String, color: Color = Color(0.9, 0.8, 0.5)) -> void:
 	var sep := HSeparator.new()
