@@ -50,13 +50,13 @@ const SFX_REGISTRY := {
 # ── Music Registry ───────────────────────────────────────────────────────────
 
 const MUSIC_REGISTRY := {
-	"sanctuary": "res://audio/music/sanctuary.ogg",
-	"combat_inner": "res://audio/music/combat_inner.ogg",
-	"combat_mid": "res://audio/music/combat_mid.ogg",
-	"combat_outer": "res://audio/music/combat_outer.ogg",
-	"warden": "res://audio/music/warden.ogg",
-	"title": "res://audio/music/title.ogg",
-	"victory": "res://audio/music/victory.ogg",
+	"sanctuary": "res://assets/audio/music_sanctuary.wav",
+	"combat_inner": "res://assets/audio/music_combat.wav",
+	"combat_mid": "res://assets/audio/music_combat.wav",
+	"combat_outer": "res://assets/audio/music_combat.wav",
+	"warden": "res://assets/audio/music_combat.wav",
+	"title": "res://assets/audio/music_sanctuary.wav",
+	"victory": "res://assets/audio/sfx_victory.wav",
 }
 
 # ── Internal State ───────────────────────────────────────────────────────────
