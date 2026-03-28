@@ -86,31 +86,74 @@ func _handle_attack(delta: float) -> void:
 	attack_cooldown -= delta
 	if attack_cooldown > 0.0:
 		return
-	var did_attack := false
 	if Input.is_action_just_pressed("attack_melee"):
-		# Melee — hit enemies within 80px
-		for enemy in enemies:
-			if not is_instance_valid(enemy) or not enemy.get_meta("alive", false):
-				continue
-			if player.position.distance_to(enemy.position) <= 80.0:
-				_deal_damage_to_enemy(enemy, 15)
-		did_attack = true
+		_do_melee_attack()
 		attack_cooldown = 0.5
 	elif Input.is_action_just_pressed("attack_ranged"):
-		# Ranged — hit nearest enemy within 400px
-		var nearest: Node2D = null
-		var nearest_dist := 400.0
-		for enemy in enemies:
-			if not is_instance_valid(enemy) or not enemy.get_meta("alive", false):
-				continue
-			var d: float = player.position.distance_to(enemy.position)
-			if d < nearest_dist:
-				nearest_dist = d
-				nearest = enemy
-		if nearest != null:
-			_deal_damage_to_enemy(nearest, 20)
-		did_attack = true
+		_do_ranged_attack()
 		attack_cooldown = 0.8
+
+func _do_melee_attack() -> void:
+	# Lunge player sprite forward toward nearest enemy
+	var nearest: Node2D = _get_nearest_enemy(120.0)
+	var lunge_dir := Vector2.RIGHT
+	if nearest != null:
+		lunge_dir = (nearest.position - player.position).normalized()
+	var origin: Vector2 = player.position
+	var tw := create_tween()
+	tw.tween_property(player, "position", origin + lunge_dir * 18.0, 0.07)
+	tw.tween_property(player, "position", origin, 0.1)
+
+	# Sword arc — white/yellow Line2D that fades out
+	var arc := Line2D.new()
+	arc.width = 3.0
+	arc.default_color = Color(1.0, 0.95, 0.5, 1.0)
+	var arc_origin: Vector2 = player.position + lunge_dir * 10.0
+	var perp := Vector2(-lunge_dir.y, lunge_dir.x)
+	arc.add_point(arc_origin + perp * 20.0)
+	arc.add_point(arc_origin + lunge_dir * 40.0)
+	arc.add_point(arc_origin - perp * 20.0)
+	add_child(arc)
+	var arc_tw := create_tween()
+	arc_tw.tween_property(arc, "modulate:a", 0.0, 0.15)
+	arc_tw.tween_callback(arc.queue_free)
+
+	# Deal damage to enemies in range
+	for enemy in enemies:
+		if not is_instance_valid(enemy) or not enemy.get_meta("alive", false):
+			continue
+		if player.position.distance_to(enemy.position) <= 80.0:
+			_deal_damage_to_enemy(enemy, 15)
+
+func _do_ranged_attack() -> void:
+	var nearest: Node2D = _get_nearest_enemy(500.0)
+	if nearest == null:
+		return
+	# Spawn a white projectile that flies to the enemy
+	var proj := ColorRect.new()
+	proj.size = Vector2(10, 10)
+	proj.color = Color(0.9, 0.95, 1.0)
+	proj.position = player.position - Vector2(5, 5)
+	add_child(proj)
+	var tw := create_tween()
+	tw.tween_property(proj, "position", nearest.position - Vector2(5, 5), 0.25)
+	tw.tween_callback(func():
+		proj.queue_free()
+		if is_instance_valid(nearest) and nearest.get_meta("alive", false):
+			_deal_damage_to_enemy(nearest, 20)
+	)
+
+func _get_nearest_enemy(max_dist: float) -> Node2D:
+	var nearest: Node2D = null
+	var nearest_dist: float = max_dist
+	for enemy in enemies:
+		if not is_instance_valid(enemy) or not enemy.get_meta("alive", false):
+			continue
+		var d: float = player.position.distance_to(enemy.position)
+		if d < nearest_dist:
+			nearest_dist = d
+			nearest = enemy
+	return nearest
 
 func _deal_damage_to_enemy(enemy: Node2D, dmg: int) -> void:
 	var hp: int = enemy.get_meta("hp", 0)
