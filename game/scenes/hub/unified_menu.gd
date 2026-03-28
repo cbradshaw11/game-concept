@@ -464,14 +464,27 @@ func _rebuild_sell_panel() -> void:
 	if inv == null:
 		return
 
-	var has_equipped := false
+	# Equipped — grouped by weapon type then armor
 	var equipped: Dictionary = inv.get("equipped")
-	for slot in ["weapon_melee", "weapon_ranged", "weapon_magic", "helmet", "breastplate", "pants", "shoes", "gauntlets"]:
-		var item: Dictionary = equipped.get(slot, {})
-		if item.is_empty():
+	var sell_groups := [
+		{"label": "⚔ Melee",   "color": Color(1.0, 0.5, 0.3), "slots": ["weapon_melee"]},
+		{"label": "🏹 Ranged",  "color": Color(0.4, 0.9, 0.5), "slots": ["weapon_ranged"]},
+		{"label": "✦ Magic",   "color": Color(0.6, 0.4, 1.0), "slots": ["weapon_magic"]},
+		{"label": "🛡 Armor",   "color": Color(0.5, 0.7, 1.0), "slots": ["helmet", "breastplate", "pants", "shoes", "gauntlets"]},
+	]
+	var has_equipped := false
+	for grp in sell_groups:
+		var grp_items := []
+		for slot in grp["slots"]:
+			var item: Dictionary = equipped.get(slot, {})
+			if not item.is_empty():
+				grp_items.append({"item": item, "slot": slot})
+		if grp_items.is_empty():
 			continue
 		has_equipped = true
-		_add_sell_row(sell_equipped_vbox, item, slot, true)
+		_add_sell_sub_header(sell_equipped_vbox, grp["label"], grp["color"])
+		for entry in grp_items:
+			_add_sell_row(sell_equipped_vbox, entry["item"], entry["slot"], true)
 
 	if not has_equipped:
 		var empty := Label.new()
@@ -480,14 +493,39 @@ func _rebuild_sell_panel() -> void:
 		empty.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 		sell_equipped_vbox.add_child(empty)
 
+	# Bank items — grouped by weapon type then armor then other
 	var bank_items_arr: Array = inv.get("bank_items")
-	var has_bank := false
-	for i in range(bank_items_arr.size()):
-		var item: Dictionary = bank_items_arr[i]
+	var bank_groups := {
+		"weapon_melee": [], "weapon_ranged": [], "weapon_magic": [],
+		"armor": [], "other": []
+	}
+	for item in bank_items_arr:
 		if item.get("category", "") == "potion":
 			continue
+		var s: String = item.get("slot", "")
+		if s == "weapon_melee" or s == "weapon_ranged" or s == "weapon_magic":
+			bank_groups[s].append(item)
+		elif item.get("category", "") == "armor":
+			bank_groups["armor"].append(item)
+		else:
+			bank_groups["other"].append(item)
+
+	var bank_group_cfg := [
+		{"key": "weapon_melee",   "label": "⚔ Melee",  "color": Color(1.0, 0.5, 0.3)},
+		{"key": "weapon_ranged",  "label": "🏹 Ranged", "color": Color(0.4, 0.9, 0.5)},
+		{"key": "weapon_magic",   "label": "✦ Magic",  "color": Color(0.6, 0.4, 1.0)},
+		{"key": "armor",          "label": "🛡 Armor",  "color": Color(0.5, 0.7, 1.0)},
+		{"key": "other",          "label": "Other",     "color": Color(0.8, 0.8, 0.8)},
+	]
+	var has_bank := false
+	for cfg in bank_group_cfg:
+		var grp_arr: Array = bank_groups[cfg["key"]]
+		if grp_arr.is_empty():
+			continue
 		has_bank = true
-		_add_sell_row(sell_bank_vbox, item, "", false)
+		_add_sell_sub_header(sell_bank_vbox, cfg["label"], cfg["color"])
+		for item in grp_arr:
+			_add_sell_row(sell_bank_vbox, item, "", false)
 
 	if not has_bank:
 		var empty := Label.new()
@@ -555,6 +593,13 @@ func _sell_potion(potion_id: String, sell_price: int) -> void:
 	inv.inventory_changed.emit()
 	_rebuild_sell_panel()
 	_rebuild_shop_item_list()
+
+func _add_sell_sub_header(parent: VBoxContainer, text: String, color: Color) -> void:
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.add_theme_color_override("font_color", color)
+	parent.add_child(lbl)
 
 func _add_sell_row(parent: VBoxContainer, item: Dictionary, slot: String, is_equipped: bool) -> void:
 	var row := VBoxContainer.new()
@@ -868,15 +913,22 @@ func _rebuild_items_list() -> void:
 			cat = "other"
 		categories[cat].append(item)
 
+	# Split weapons into melee/ranged/magic sub-groups
+	var weapon_melee: Array = categories["weapon"].filter(func(i): return i.get("slot") == "weapon_melee")
+	var weapon_ranged: Array = categories["weapon"].filter(func(i): return i.get("slot") == "weapon_ranged")
+	var weapon_magic: Array = categories["weapon"].filter(func(i): return i.get("slot") == "weapon_magic")
+
 	var cat_config := [
-		{"key": "weapon", "label": "Weapons",  "color": Color(0.9, 0.6, 0.4)},
-		{"key": "armor",  "label": "Armor",    "color": Color(0.5, 0.8, 1.0)},
-		{"key": "potion", "label": "Potions",  "color": Color(0.5, 1.0, 0.6)},
-		{"key": "other",  "label": "Other",    "color": Color(0.8, 0.8, 0.8)},
+		{"items": weapon_melee,          "label": "⚔ Melee",   "color": Color(1.0, 0.5, 0.3)},
+		{"items": weapon_ranged,         "label": "🏹 Ranged",  "color": Color(0.4, 0.9, 0.5)},
+		{"items": weapon_magic,          "label": "✦ Magic",   "color": Color(0.6, 0.4, 1.0)},
+		{"items": categories["armor"],   "label": "🛡 Armor",   "color": Color(0.5, 0.8, 1.0)},
+		{"items": categories["potion"],  "label": "Potions",   "color": Color(0.5, 1.0, 0.6)},
+		{"items": categories["other"],   "label": "Other",     "color": Color(0.8, 0.8, 0.8)},
 	]
 
 	for cfg in cat_config:
-		var items_in_cat: Array = categories[cfg["key"]]
+		var items_in_cat: Array = cfg["items"]
 		if items_in_cat.size() == 0:
 			continue
 		_add_inv_category_header(cfg["label"], cfg["color"])
