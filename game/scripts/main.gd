@@ -68,7 +68,7 @@ func _on_modifier_selected(_modifier_id: String) -> void:
 	# Now actually start the run
 	_begin_run(pending_run_ring, pending_run_seed)
 
-func _begin_run(ring_id: String, seed: int) -> void:
+func _begin_run(ring_id: String, _seed: int) -> void:
 	current_run_ring = ring_id
 	# M28 — Ring enter SFX + combat music by ring
 	if AudioManager:
@@ -80,7 +80,7 @@ func _begin_run(ring_id: String, seed: int) -> void:
 	var entry_text := NarrativeManager.get_ring_text(ring_id, "entry")
 	if entry_text != "":
 		flow_ui.show_narrative_text(entry_text)
-	GameState.start_run(seed, ring_id)
+	GameState.start_run(_seed, ring_id)
 	# Get contract target from ring data
 	var ring_data := DataStore.get_ring(ring_id)
 	var contract_target := int(ring_data.get("contract_target", 3))
@@ -91,7 +91,7 @@ func _begin_run(ring_id: String, seed: int) -> void:
 	var contract := contract_system.start_contract(contract_id, ring_id, contract_target)
 	flow_ui.on_objective_started(contract)
 	active_encounter = ring_director.generate_encounter(
-		seed,
+		_seed,
 		ring_id,
 		DataStore.enemies,
 		DataStore.encounter_templates
@@ -103,7 +103,7 @@ func _begin_run(ring_id: String, seed: int) -> void:
 	# M31 — time_pressure: start ring timer
 	_start_challenge_timer(ring_id)
 	_ensure_combat_arena()
-	combat_arena.set_context(ring_id, seed, int(active_encounter.get("enemy_count", 1)))
+	combat_arena.set_context(ring_id, _seed, int(active_encounter.get("enemy_count", 1)))
 	combat_arena.set_equipped_weapons(equipped_melee, equipped_ranged, equipped_magic)
 	combat_arena.set_arena_active(true)
 	flow_ui.set_current_loadout(equipped_melee, equipped_ranged, equipped_magic)

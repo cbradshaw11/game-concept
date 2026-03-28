@@ -1,7 +1,7 @@
 extends Node
 # class_name omitted — autoload singleton accessed via "GameState" globally
 
-const Telemetry = preload("res://scripts/systems/telemetry.gd")
+const TelemetryScript = preload("res://scripts/systems/telemetry.gd")
 
 signal run_started(seed: int)
 signal encounter_completed(reward_xp: int, reward_loot: int)
@@ -18,7 +18,7 @@ var banked_xp: int = 0
 var banked_loot: int = 0
 var unbanked_xp: int = 0
 var unbanked_loot: int = 0
-var telemetry := Telemetry.new()
+var telemetry := TelemetryScript.new()
 
 # Permanent progression — persists across runs
 # extractions_by_ring: { "inner": 2, "mid": 0, ... }
@@ -183,8 +183,8 @@ func apply_save_state(data: Dictionary) -> void:
 	equipped_ranged = str(data.get("equipped_ranged", "bow_iron"))
 	equipped_magic = str(data.get("equipped_magic", "resonance_staff"))
 
-func start_run(seed: int, ring_id: String) -> void:
-	active_seed = seed
+func start_run(_seed: int, ring_id: String) -> void:
+	active_seed = _seed
 	current_ring = ring_id
 	unbanked_xp = 0
 	unbanked_loot = 0

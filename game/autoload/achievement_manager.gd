@@ -213,7 +213,7 @@ func _on_artifact_retrieved() -> void:
 func _on_fragment_collected(_fragment_id: String) -> void:
 	check_after_lore_collection()
 
-func _on_run_started(seed: int) -> void:
+func _on_run_started(_seed: int) -> void:
 	# Check ring-based achievements after run starts
 	check_after_run_start(GameState.current_ring)
 
