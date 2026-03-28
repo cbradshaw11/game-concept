@@ -41,20 +41,19 @@ func _ready() -> void:
 		inv.bank_changed.connect(_refresh)
 
 func _build_ui() -> void:
-	# Full-screen backdrop so the panel is centered correctly
+	# Full-screen dimmed backdrop
 	var backdrop := ColorRect.new()
-	backdrop.color = Color(0, 0, 0, 0.55)
+	backdrop.color = Color(0, 0, 0, 0.6)
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(backdrop)
 
-	# Centering container
-	var screen_fill := Control.new()
-	screen_fill.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(screen_fill)
+	# Full-screen CenterContainer so the panel is truly centered
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(center)
 
 	main_panel = PanelContainer.new()
-	main_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	main_panel.custom_minimum_size = Vector2(920, 520)
+	main_panel.custom_minimum_size = Vector2(920, 540)
 
 	# Solid opaque background
 	var style := StyleBoxFlat.new()
@@ -67,7 +66,7 @@ func _build_ui() -> void:
 	style.content_margin_top = 12
 	style.content_margin_bottom = 12
 	main_panel.add_theme_stylebox_override("panel", style)
-	screen_fill.add_child(main_panel)
+	center.add_child(main_panel)
 
 	var root_vbox := VBoxContainer.new()
 	root_vbox.add_theme_constant_override("separation", 8)

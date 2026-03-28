@@ -18,10 +18,31 @@ func _ready() -> void:
 	_show_category("weapon")
 
 func _build_ui() -> void:
+	# Dimmed backdrop
+	var backdrop := ColorRect.new()
+	backdrop.color = Color(0, 0, 0, 0.6)
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(backdrop)
+
+	# CenterContainer for true screen-center placement
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(center)
+
 	main_panel = PanelContainer.new()
-	main_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	main_panel.custom_minimum_size = Vector2(520, 480)
-	add_child(main_panel)
+	main_panel.custom_minimum_size = Vector2(560, 500)
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.11, 0.12, 0.16, 1.0)
+	style.set_border_width_all(2)
+	style.border_color = Color(0.3, 0.35, 0.5, 1.0)
+	style.set_corner_radius_all(6)
+	style.content_margin_left = 16
+	style.content_margin_right = 16
+	style.content_margin_top = 12
+	style.content_margin_bottom = 12
+	main_panel.add_theme_stylebox_override("panel", style)
+	center.add_child(main_panel)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 10)
@@ -227,8 +248,12 @@ func _buy_item(item: Dictionary) -> void:
 	if carried < cost:
 		return
 	inv.carried_gold -= cost
-	inv.bank_items.append(item.duplicate())
-	inv.bank_changed.emit()
+	var bought_item: Dictionary = item.duplicate()
+	if bought_item.get("category", "") == "potion":
+		inv.add_potion(bought_item)
+	else:
+		inv.bank_items.append(bought_item)
+		inv.bank_changed.emit()
 	inv.inventory_changed.emit()
 	confirm_row_parent = null
 	_rebuild_item_list()
