@@ -53,8 +53,11 @@ func _ready() -> void:
 	current_bg_color = target_bg_color
 	player.position = HOME_POS
 
+var attack_cooldown: float = 0.0
+
 func _process(delta: float) -> void:
 	_handle_input(delta)
+	_handle_attack(delta)
 	_update_background(delta)
 	_update_enemies(delta)
 	_check_enemy_damage(delta)
@@ -66,6 +69,86 @@ func _process(delta: float) -> void:
 	var dist: float = player.position.distance_to(HOME_POS)
 	WorldManager.player_distance = dist
 	_update_hud()
+
+func _handle_attack(delta: float) -> void:
+	attack_cooldown -= delta
+	if attack_cooldown > 0.0:
+		return
+	var did_attack := false
+	if Input.is_action_just_pressed("attack_melee"):
+		# Melee — hit enemies within 80px
+		for enemy in enemies:
+			if not is_instance_valid(enemy) or not enemy.get_meta("alive", false):
+				continue
+			if player.position.distance_to(enemy.position) <= 80.0:
+				_deal_damage_to_enemy(enemy, 15)
+		did_attack = true
+		attack_cooldown = 0.5
+	elif Input.is_action_just_pressed("attack_ranged"):
+		# Ranged — hit nearest enemy within 400px
+		var nearest: Node2D = null
+		var nearest_dist := 400.0
+		for enemy in enemies:
+			if not is_instance_valid(enemy) or not enemy.get_meta("alive", false):
+				continue
+			var d: float = player.position.distance_to(enemy.position)
+			if d < nearest_dist:
+				nearest_dist = d
+				nearest = enemy
+		if nearest != null:
+			_deal_damage_to_enemy(nearest, 20)
+		did_attack = true
+		attack_cooldown = 0.8
+
+func _deal_damage_to_enemy(enemy: Node2D, dmg: int) -> void:
+	var hp: int = enemy.get_meta("hp", 0)
+	hp -= dmg
+	enemy.set_meta("hp", hp)
+	# Flash red briefly
+	var sprite: ColorRect = enemy.get_child(0) if enemy.get_child_count() > 0 else null
+	if sprite and sprite is ColorRect:
+		var orig: Color = sprite.color
+		sprite.color = Color(1, 0.3, 0.3)
+		var tw := create_tween()
+		tw.tween_interval(0.12)
+		tw.tween_callback(func(): if is_instance_valid(sprite): sprite.color = orig)
+	# Show damage number
+	var lbl := Label.new()
+	lbl.text = "-%d" % dmg
+	lbl.position = enemy.position + Vector2(-10, -30)
+	lbl.add_theme_color_override("font_color", Color(1, 0.8, 0.2))
+	lbl.add_theme_font_size_override("font_size", 12)
+	add_child(lbl)
+	var tw2 := create_tween()
+	tw2.tween_property(lbl, "position", lbl.position + Vector2(0, -30), 0.5)
+	tw2.parallel().tween_property(lbl, "modulate:a", 0.0, 0.5)
+	tw2.tween_callback(lbl.queue_free)
+	if hp <= 0:
+		_on_enemy_killed(enemy)
+
+func _on_enemy_killed(enemy: Node2D) -> void:
+	enemy.set_meta("alive", false)
+	# Drop loot
+	var gold: int = randi_range(5, 20)
+	var loot := Node2D.new()
+	loot.position = enemy.position
+	loot.set_meta("gold", gold)
+	var rect := ColorRect.new()
+	rect.size = Vector2(16, 16)
+	rect.position = Vector2(-8, -8)
+	rect.color = Color(0.9, 0.8, 0.2)
+	loot.add_child(rect)
+	var lbl := Label.new()
+	lbl.text = str(gold) + "g"
+	lbl.position = Vector2(-10, -28)
+	lbl.add_theme_font_size_override("font_size", 10)
+	loot.add_child(lbl)
+	loot_container.add_child(loot)
+	loot_drops.append(loot)
+	# Fade out and remove enemy
+	var tw := create_tween()
+	tw.tween_property(enemy, "modulate:a", 0.0, 0.3)
+	tw.tween_callback(enemy.queue_free)
 
 func _handle_input(delta: float) -> void:
 	var dir := Vector2.ZERO
@@ -256,4 +339,4 @@ func _update_hud() -> void:
 	zone_label.text = "Zone: %s" % WorldManager.current_zone.capitalize()
 	gold_label.text = "Carried: %dg" % InventorySystem.carried_gold
 	bank_label.text = "Bank: %dg" % InventorySystem.bank_gold
-	distance_label.text = "Distance: %d" % int(WorldManager.player_distance)
+	distance_label.text = "Move: WASD  |  Melee: Z/Click  |  Ranged: Q  |  Distance: %d" % int(WorldManager.player_distance)
