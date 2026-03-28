@@ -42,12 +42,24 @@ var target_bg_color: Color = Color(0.102, 0.165, 0.227)
 @onready var loot_container: Node2D = $LootContainer
 @onready var zone_markers: Node2D = $ZoneMarkers
 
+# Autoload accessors — safe fallback if autoloads aren't cached yet
+var _world_manager: Node = null
+var _inventory: Node = null
+func _wm() -> Node:
+	if _world_manager == null:
+		_world_manager = get_node_or_null("/root/WorldManager")
+	return _world_manager
+func _inv() -> Node:
+	if _inventory == null:
+		_inventory = get_node_or_null("/root/InventorySystem")
+	return _inventory
+
 func _ready() -> void:
 	_setup_zone_markers()
-	WorldManager.zone_changed.connect(_on_zone_changed)
-	InventorySystem.inventory_dropped.connect(_on_inventory_dropped)
-	InventorySystem.inventory_changed.connect(_update_hud)
-	InventorySystem.bank_changed.connect(_update_hud)
+	_wm().zone_changed.connect(_on_zone_changed)
+	_inv().inventory_dropped.connect(_on_inventory_dropped)
+	_inv().inventory_changed.connect(_update_hud)
+	_inv().bank_changed.connect(_update_hud)
 	_update_hud()
 	target_bg_color = zone_colors["sanctuary"]
 	current_bg_color = target_bg_color
@@ -67,7 +79,7 @@ func _process(delta: float) -> void:
 	_handle_hub_interaction()
 	# Update distance as 2D from home
 	var dist: float = player.position.distance_to(HOME_POS)
-	WorldManager.player_distance = dist
+	_wm().player_distance = dist
 	_update_hud()
 
 func _handle_attack(delta: float) -> void:
@@ -199,7 +211,7 @@ func _update_enemies(delta: float) -> void:
 			continue
 		var spd: float = enemy.get_meta("speed", 80.0)
 		var zone: String = enemy.get_meta("zone", "inner")
-		var boundary_radius: float = WorldManager.get_zone_boundary(zone)
+		var boundary_radius: float = _wm().get_zone_boundary(zone)
 
 		# Move toward player in 2D
 		var to_player: Vector2 = player.position - enemy.position
@@ -250,16 +262,16 @@ func _check_loot_pickup() -> void:
 			continue
 		if player.position.distance_to(loot.position) < 40.0:
 			var gold: int = loot.get_meta("gold", 0)
-			InventorySystem.add_carried_gold(gold)
+			_inv().add_carried_gold(gold)
 			loot.queue_free()
 			loot_drops.remove_at(i)
 
 func _handle_sanctuary_regen(delta: float) -> void:
-	if WorldManager.current_zone == "sanctuary" and player_health < player_max_health:
+	if _wm().current_zone == "sanctuary" and player_health < player_max_health:
 		player_health = minf(player_health + player_max_health * 0.05 * delta, player_max_health)
 
 func _handle_spawning(delta: float) -> void:
-	var zone := WorldManager.current_zone
+	var zone := _wm().current_zone
 	if zone == "sanctuary":
 		return
 	spawn_timer -= delta
@@ -286,10 +298,10 @@ func _count_zone_enemies(zone: String) -> int:
 	return count
 
 func _on_player_death() -> void:
-	InventorySystem.on_player_death(player.position)
+	_inv().on_player_death(player.position)
 	player.position = HOME_POS
 	player_health = player_max_health
-	WorldManager.player_distance = 0.0
+	_wm().player_distance = 0.0
 	damage_timers.clear()
 
 func _on_inventory_dropped(gold: int, _items: Array, drop_position: Vector2) -> void:
@@ -312,7 +324,7 @@ func _on_inventory_dropped(gold: int, _items: Array, drop_position: Vector2) -> 
 	loot_drops.append(loot)
 
 func _handle_hub_interaction() -> void:
-	if WorldManager.current_zone == "sanctuary":
+	if _wm().current_zone == "sanctuary":
 		if Input.is_action_just_pressed("interact") and home_hub == null:
 			_open_home_hub()
 
@@ -328,9 +340,9 @@ func _on_hub_closed() -> void:
 
 func _setup_zone_markers() -> void:
 	# Draw concentric circle markers for each zone boundary
-	_add_circle_marker(WorldManager.INNER_START, "INNER", Color(0.4, 0.8, 0.4, 0.4))
-	_add_circle_marker(WorldManager.MID_START, "MID", Color(0.8, 0.6, 0.2, 0.4))
-	_add_circle_marker(WorldManager.OUTER_START, "OUTER", Color(0.8, 0.2, 0.2, 0.4))
+	_add_circle_marker(200.0, "INNER", Color(0.4, 0.8, 0.4, 0.4))
+	_add_circle_marker(500.0, "MID", Color(0.8, 0.6, 0.2, 0.4))
+	_add_circle_marker(900.0, "OUTER", Color(0.8, 0.2, 0.2, 0.4))
 
 func _add_circle_marker(radius: float, text: String, color: Color) -> void:
 	# Use a label at the right edge of the radius
@@ -353,7 +365,7 @@ func _update_hud() -> void:
 	var hp_ratio: float = player_health / player_max_health
 	health_bar.size.x = 200.0 * hp_ratio
 	health_bar.color = Color(0.2, 0.8, 0.2) if hp_ratio > 0.3 else Color(0.8, 0.2, 0.2)
-	zone_label.text = "Zone: %s" % WorldManager.current_zone.capitalize()
-	gold_label.text = "Carried: %dg" % InventorySystem.carried_gold
-	bank_label.text = "Bank: %dg" % InventorySystem.bank_gold
-	distance_label.text = "Move: WASD  |  Melee: Z/Click  |  Ranged: Q  |  Distance: %d" % int(WorldManager.player_distance)
+	zone_label.text = "Zone: %s" % _wm().current_zone.capitalize()
+	gold_label.text = "Carried: %dg" % _inv().carried_gold
+	bank_label.text = "Bank: %dg" % _inv().bank_gold
+	distance_label.text = "Move: WASD  |  Melee: Z/Click  |  Ranged: Q  |  Distance: %d" % int(_wm().player_distance)
