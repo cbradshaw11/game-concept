@@ -318,6 +318,27 @@ func _check_enemy_damage(delta: float) -> void:
 				player_health -= float(dmg)
 				damage_timers[key] = 1.0
 
+				# Enemy attack flash — orange glow on attacker
+				var e_sprite: Node = enemy.find_child("Sprite", false, false)
+				if e_sprite and e_sprite is Sprite2D:
+					(e_sprite as Sprite2D).modulate = Color(2.0, 0.6, 0.1)
+					var e_flash := create_tween()
+					e_flash.tween_property(e_sprite, "modulate", Color.WHITE, 0.2)
+
+				# Attack slash line from enemy toward player
+				var slash := Line2D.new()
+				slash.width = 4.0
+				slash.default_color = Color(1.0, 0.5, 0.1, 0.9)
+				var attack_dir: Vector2 = (player.position - enemy.position).normalized()
+				var perp_a: Vector2 = Vector2(-attack_dir.y, attack_dir.x)
+				slash.add_point(enemy.position + perp_a * 12.0)
+				slash.add_point(enemy.position + attack_dir * 38.0)
+				slash.add_point(enemy.position - perp_a * 12.0)
+				add_child(slash)
+				var slash_tw := create_tween()
+				slash_tw.tween_property(slash, "modulate:a", 0.0, 0.18)
+				slash_tw.tween_callback(slash.queue_free)
+
 				# Player hit flash — full red modulate
 				player.modulate = Color(2.0, 0.2, 0.2)
 				var flash_tw := create_tween()
