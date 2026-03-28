@@ -983,12 +983,25 @@ func _rebuild_items_list() -> void:
 			name_lbl.custom_minimum_size = Vector2(130, 0)
 			hbox.add_child(name_lbl)
 
-			var stat_lbl := Label.new()
-			stat_lbl.text = _get_stat_summary(item)
-			stat_lbl.add_theme_font_size_override("font_size", 11)
-			stat_lbl.add_theme_color_override("font_color", Color(0.6, 0.9, 0.6))
-			stat_lbl.custom_minimum_size = Vector2(100, 0)
-			hbox.add_child(stat_lbl)
+			var badge_lbl := Label.new()
+			badge_lbl.add_theme_font_size_override("font_size", 11)
+			badge_lbl.custom_minimum_size = Vector2(70, 0)
+			var cat: String = item.get("category", "")
+			if cat == "weapon":
+				var dmg: int = int(item.get("damage_bonus", 0))
+				badge_lbl.text = "+%d ATK" % dmg
+				badge_lbl.add_theme_color_override("font_color", Color(1.0, 0.6, 0.3))
+			elif cat == "armor":
+				var def: int = int(item.get("defense", 0))
+				badge_lbl.text = "+%d DEF" % def
+				badge_lbl.add_theme_color_override("font_color", Color(0.4, 0.7, 1.0))
+			elif cat == "potion":
+				var hp: int = int(item.get("heal_amount", 0))
+				badge_lbl.text = "+%d HP" % hp
+				badge_lbl.add_theme_color_override("font_color", Color(0.4, 1.0, 0.5))
+			else:
+				badge_lbl.text = ""
+			hbox.add_child(badge_lbl)
 
 			var item_ref := item
 			var equip_btn := Button.new()
