@@ -87,7 +87,7 @@ func _handle_attack(delta: float) -> void:
 	attack_cooldown -= delta
 	if attack_cooldown > 0.0:
 		return
-	if Input.is_action_just_pressed("attack_melee"):
+	if Input.is_action_just_pressed("attack_melee") and not _is_menu_open():
 		_do_melee_attack()
 		attack_cooldown = 0.5
 	elif Input.is_action_just_pressed("attack_ranged"):
@@ -105,19 +105,34 @@ func _do_melee_attack() -> void:
 	tw.tween_property(player, "position", origin + lunge_dir * 18.0, 0.07)
 	tw.tween_property(player, "position", origin, 0.1)
 
-	# Sword arc — white/yellow Line2D that fades out
-	var arc := Line2D.new()
-	arc.width = 3.0
-	arc.default_color = Color(1.0, 0.95, 0.5, 1.0)
-	var arc_origin: Vector2 = player.position + lunge_dir * 10.0
+	# Sword shape — blade + guard drawn as Polygon2D, swings and fades
+	var sword := Polygon2D.new()
 	var perp := Vector2(-lunge_dir.y, lunge_dir.x)
-	arc.add_point(arc_origin + perp * 20.0)
-	arc.add_point(arc_origin + lunge_dir * 40.0)
-	arc.add_point(arc_origin - perp * 20.0)
-	add_child(arc)
+	var base: Vector2 = player.position + lunge_dir * 12.0
+	# Blade: long thin diamond pointing in lunge_dir
+	sword.polygon = PackedVector2Array([
+		base + perp * 4.0,                    # guard left
+		base - perp * 4.0,                    # guard right
+		base + lunge_dir * 44.0 + perp * 2.0, # blade mid-left
+		base + lunge_dir * 60.0,              # tip
+		base + lunge_dir * 44.0 - perp * 2.0  # blade mid-right
+	])
+	sword.color = Color(0.85, 0.92, 1.0, 0.95)  # steel blue-white
+	# Guard crosspiece
+	var guard := Polygon2D.new()
+	guard.polygon = PackedVector2Array([
+		base + perp * 10.0 - lunge_dir * 3.0,
+		base + perp * 10.0 + lunge_dir * 3.0,
+		base - perp * 10.0 + lunge_dir * 3.0,
+		base - perp * 10.0 - lunge_dir * 3.0,
+	])
+	guard.color = Color(0.7, 0.6, 0.3)  # gold guard
+	add_child(sword)
+	add_child(guard)
 	var arc_tw := create_tween()
-	arc_tw.tween_property(arc, "modulate:a", 0.0, 0.15)
-	arc_tw.tween_callback(arc.queue_free)
+	arc_tw.tween_property(sword, "modulate:a", 0.0, 0.2)
+	arc_tw.parallel().tween_property(guard, "modulate:a", 0.0, 0.2)
+	arc_tw.tween_callback(func(): sword.queue_free(); guard.queue_free())
 
 	# Deal damage to enemies in range
 	for enemy in enemies:
@@ -143,6 +158,9 @@ func _do_ranged_attack() -> void:
 		if is_instance_valid(nearest) and nearest.get_meta("alive", false):
 			_deal_damage_to_enemy(nearest, 20)
 	)
+
+func _is_menu_open() -> bool:
+	return home_hub != null
 
 func _get_nearest_enemy(max_dist: float) -> Node2D:
 	var nearest: Node2D = null
