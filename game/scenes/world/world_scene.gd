@@ -11,6 +11,7 @@ var max_enemies_per_zone := { "inner": 3, "mid": 4, "outer": 5 }
 var enemies: Array[Node2D] = []
 var loot_drops: Array[Node2D] = []
 var damage_timers: Dictionary = {}
+var _enemy_state_timers: Dictionary = {}
 var player_health := 100.0
 var player_max_health := 100.0
 var unified_menu: Node = null
@@ -101,6 +102,8 @@ func _process(delta: float) -> void:
 	_handle_attack(delta)
 	_update_background(delta)
 	_update_enemies(delta)
+	_update_archer_attacks(delta)
+	_update_caster_attacks(delta)
 	_check_enemy_damage(delta)
 	_check_loot_pickup()
 	_handle_sanctuary_regen(delta)
@@ -129,6 +132,8 @@ func _process(delta: float) -> void:
 func _handle_attack(delta: float) -> void:
 	attack_cooldown -= delta
 	if attack_cooldown > 0.0:
+		return
+	if _wm().current_zone == "sanctuary":
 		return
 	if Input.is_action_just_pressed("attack_melee") and not _is_menu_open():
 		_do_melee_attack()
@@ -368,10 +373,12 @@ func _on_zone_changed(old_zone: String, new_zone: String) -> void:
 		for enemy in enemies:
 			if is_instance_valid(enemy):
 				enemy.set_meta("paused", true)
+				enemy.visible = false
 	elif old_zone == "sanctuary":
 		for enemy in enemies:
 			if is_instance_valid(enemy):
 				enemy.set_meta("paused", false)
+				enemy.visible = true
 
 func _update_enemies(delta: float) -> void:
 	for enemy in enemies:
@@ -384,20 +391,229 @@ func _update_enemies(delta: float) -> void:
 		var spd: float = enemy.get_meta("speed", 80.0)
 		var zone: String = enemy.get_meta("zone", "inner")
 		var boundary_radius: float = _wm().get_zone_boundary(zone)
-
-		# Move toward player in 2D
+		var enemy_id: String = enemy.get_meta("enemy_id", "scavenger_grunt")
 		var to_player: Vector2 = player.position - enemy.position
-		if to_player.length() > 1.0:
-			enemy.position += to_player.normalized() * spd * delta
+		var eid: int = enemy.get_instance_id()
+		if not _enemy_state_timers.has(eid):
+			_enemy_state_timers[eid] = {}
+
+		match enemy_id:
+			"shieldbearer":
+				# Slow advance (0.6x), block timer before damage
+				if to_player.length() > 90.0:
+					enemy.position += to_player.normalized() * spd * 0.6 * delta
+					_enemy_state_timers[eid]["block_timer"] = 0.7
+				else:
+					# Within 90px — count down block timer
+					if not _enemy_state_timers[eid].has("block_timer"):
+						_enemy_state_timers[eid]["block_timer"] = 0.7
+					_enemy_state_timers[eid]["block_timer"] -= delta
+
+			"ash_flanker":
+				# Zigzag approach with sine offset
+				var t: float = Time.get_ticks_msec() / 1000.0
+				var dir_norm: Vector2 = to_player.normalized()
+				var perp := Vector2(-dir_norm.y, dir_norm.x) * sin(t * 3.0 + eid % 7) * 60.0
+				if to_player.length() > 1.0:
+					enemy.position += (to_player.normalized() * spd + perp) * delta
+
+			"ridge_archer":
+				# Keep 200-350px distance
+				var dist_to_player: float = to_player.length()
+				if dist_to_player < 200.0:
+					# Retreat
+					enemy.position -= to_player.normalized() * spd * delta
+				elif dist_to_player > 350.0:
+					# Advance
+					enemy.position += to_player.normalized() * spd * delta
+				# else hold position
+
+			"rift_caster":
+				# Circle player at ~250px
+				var dist_to_player: float = to_player.length()
+				var orbit_angle: float = atan2(to_player.y, to_player.x) + PI / 2.0
+				var tangent_dir := Vector2(cos(orbit_angle), sin(orbit_angle))
+				# Drift toward 250px orbit distance
+				var radial_correction: Vector2 = Vector2.ZERO
+				if dist_to_player < 230.0:
+					radial_correction = -to_player.normalized() * spd * 0.3
+				elif dist_to_player > 270.0:
+					radial_correction = to_player.normalized() * spd * 0.3
+				enemy.position += (tangent_dir * spd * 0.7 + radial_correction) * delta
+
+			"berserker":
+				# Sprint 1.5x with stutter-charge
+				if not _enemy_state_timers[eid].has("stutter"):
+					_enemy_state_timers[eid]["stutter"] = 0.0
+				_enemy_state_timers[eid]["stutter"] -= delta
+				if _enemy_state_timers[eid]["stutter"] <= -0.5:
+					# Pause for 0.12s
+					_enemy_state_timers[eid]["stutter"] = 0.12
+				elif _enemy_state_timers[eid]["stutter"] <= 0.0:
+					# Moving phase
+					if to_player.length() > 1.0:
+						enemy.position += to_player.normalized() * spd * 1.5 * delta
+				# else pausing (stutter > 0)
+
+			"shield_wall":
+				# Barely moves (0.3x), only if player > 300px away
+				if to_player.length() > 300.0:
+					enemy.position += to_player.normalized() * spd * 0.3 * delta
+
+			"warden_hunter":
+				# Normal chase, reposition after dealing damage
+				if not _enemy_state_timers[eid].has("reposition"):
+					_enemy_state_timers[eid]["reposition"] = 0.0
+				if _enemy_state_timers[eid]["reposition"] > 0.0:
+					# Moving perpendicular
+					var perp_dir := Vector2(-to_player.normalized().y, to_player.normalized().x)
+					enemy.position += perp_dir * spd * delta
+					_enemy_state_timers[eid]["reposition"] -= delta
+				else:
+					if to_player.length() > 1.0:
+						enemy.position += to_player.normalized() * spd * delta
+
+			"resonance_wraith":
+				# Teleport every 2.0s
+				if not _enemy_state_timers[eid].has("teleport"):
+					_enemy_state_timers[eid]["teleport"] = 2.0
+					_enemy_state_timers[eid]["tp_cooldown"] = 0.0
+				_enemy_state_timers[eid]["teleport"] -= delta
+				_enemy_state_timers[eid]["tp_cooldown"] -= delta
+				if _enemy_state_timers[eid]["teleport"] <= 0.0:
+					# Teleport to random position near player
+					var angle: float = randf() * TAU
+					var dist_tp: float = randf_range(180.0, 260.0)
+					enemy.position = player.position + Vector2(cos(angle), sin(angle)) * dist_tp
+					_enemy_state_timers[eid]["teleport"] = 2.0
+					_enemy_state_timers[eid]["tp_cooldown"] = 0.5
+					# Flash white
+					var sprite: Node = enemy.find_child("Sprite", false, false)
+					if sprite and sprite is Sprite2D:
+						(sprite as Sprite2D).modulate = Color(3.0, 3.0, 3.0)
+						var tw := create_tween()
+						tw.tween_property(sprite, "modulate", Color.WHITE, 0.3)
+				else:
+					# Drift toward player slowly
+					if to_player.length() > 1.0:
+						enemy.position += to_player.normalized() * spd * 0.4 * delta
+
+			_:
+				# scavenger_grunt and default — beeline toward player
+				if to_player.length() > 1.0:
+					enemy.position += to_player.normalized() * spd * delta
 
 		# Enforce zone boundary — enemy can't go closer to home than its zone start
 		var enemy_dist: float = enemy.position.distance_to(HOME_POS)
 		if enemy_dist < boundary_radius:
-			# Push back out to boundary edge
 			var push_dir: Vector2 = (enemy.position - HOME_POS).normalized()
 			if push_dir == Vector2.ZERO:
 				push_dir = Vector2.RIGHT
 			enemy.position = HOME_POS + push_dir * (boundary_radius + 10.0)
+
+func _update_archer_attacks(delta: float) -> void:
+	for enemy in enemies:
+		if not is_instance_valid(enemy):
+			continue
+		if not enemy.get_meta("alive", false):
+			continue
+		if enemy.get_meta("paused", false):
+			continue
+		if enemy.get_meta("enemy_id", "") != "ridge_archer":
+			continue
+		var eid: int = enemy.get_instance_id()
+		if not _enemy_state_timers.has(eid):
+			_enemy_state_timers[eid] = {}
+		if not _enemy_state_timers[eid].has("archer_cooldown"):
+			_enemy_state_timers[eid]["archer_cooldown"] = 2.5
+		_enemy_state_timers[eid]["archer_cooldown"] -= delta
+		if _enemy_state_timers[eid]["archer_cooldown"] <= 0.0:
+			var dist_to_player: float = player.position.distance_to(enemy.position)
+			if dist_to_player <= 350.0:
+				_enemy_state_timers[eid]["archer_cooldown"] = 2.5
+				# Fire orange-yellow projectile
+				var proj := ColorRect.new()
+				proj.size = Vector2(8, 8)
+				proj.color = Color(1.0, 0.7, 0.15)
+				proj.position = enemy.position - Vector2(4, 4)
+				add_child(proj)
+				var dmg_val: int = enemy.get_meta("damage", 10)
+				var target_pos: Vector2 = player.position
+				var tw := create_tween()
+				tw.tween_property(proj, "position", target_pos - Vector2(4, 4), 0.4)
+				tw.tween_callback(func():
+					proj.queue_free()
+					if player.position.distance_to(target_pos) < 50.0:
+						var inv: Node = _inv()
+						if inv:
+							dmg_val = maxi(1, dmg_val - int(inv.get("total_defense")))
+						player_health -= float(dmg_val)
+						_flash_player_hit(dmg_val)
+						if player_health <= 0.0:
+							_on_player_death()
+				)
+
+func _update_caster_attacks(delta: float) -> void:
+	for enemy in enemies:
+		if not is_instance_valid(enemy):
+			continue
+		if not enemy.get_meta("alive", false):
+			continue
+		if enemy.get_meta("paused", false):
+			continue
+		if enemy.get_meta("enemy_id", "") != "rift_caster":
+			continue
+		var eid: int = enemy.get_instance_id()
+		if not _enemy_state_timers.has(eid):
+			_enemy_state_timers[eid] = {}
+		if not _enemy_state_timers[eid].has("caster_cooldown"):
+			_enemy_state_timers[eid]["caster_cooldown"] = 3.5
+		_enemy_state_timers[eid]["caster_cooldown"] -= delta
+		if _enemy_state_timers[eid]["caster_cooldown"] <= 0.0:
+			var dist_to_player: float = player.position.distance_to(enemy.position)
+			if dist_to_player <= 280.0:
+				_enemy_state_timers[eid]["caster_cooldown"] = 3.5
+				# Fire purple magic orb
+				var proj := ColorRect.new()
+				proj.size = Vector2(14, 14)
+				proj.color = Color(0.6, 0.15, 0.9)
+				proj.position = enemy.position - Vector2(7, 7)
+				add_child(proj)
+				var dmg_val: int = enemy.get_meta("damage", 10)
+				var target_pos: Vector2 = player.position
+				var tw := create_tween()
+				tw.tween_property(proj, "position", target_pos - Vector2(7, 7), 0.7)
+				tw.tween_callback(func():
+					proj.queue_free()
+					if player.position.distance_to(target_pos) < 50.0:
+						var inv: Node = _inv()
+						if inv:
+							dmg_val = maxi(1, dmg_val - int(inv.get("total_defense")))
+						player_health -= float(dmg_val)
+						_flash_player_hit(dmg_val)
+						if player_health <= 0.0:
+							_on_player_death()
+				)
+
+func _flash_player_hit(dmg: int) -> void:
+	player.modulate = Color(2.0, 0.2, 0.2)
+	var flash_tw := create_tween()
+	flash_tw.tween_property(player, "modulate", Color.WHITE, 0.25)
+	var cam: Camera2D = $Player/Camera2D
+	var shake_origin: Vector2 = cam.offset
+	var shake_tw := create_tween()
+	shake_tw.tween_property(cam, "offset", shake_origin + Vector2(randf_range(-8, 8), randf_range(-6, 6)), 0.04)
+	shake_tw.tween_property(cam, "offset", shake_origin, 0.1)
+	var hit_lbl := Label.new()
+	hit_lbl.text = "-%d" % dmg
+	hit_lbl.position = player.position + Vector2(-10, -50)
+	hit_lbl.add_theme_color_override("font_color", Color(1.0, 0.25, 0.25))
+	hit_lbl.add_theme_font_size_override("font_size", 14)
+	add_child(hit_lbl)
+	var hl_tw := create_tween()
+	hl_tw.tween_property(hit_lbl, "position", hit_lbl.position + Vector2(0, -28), 0.5)
+	hl_tw.parallel().tween_property(hit_lbl, "modulate:a", 0.0, 0.5)
+	hl_tw.tween_callback(hit_lbl.queue_free)
 
 func _check_enemy_damage(delta: float) -> void:
 	for enemy in enemies:
@@ -407,6 +623,10 @@ func _check_enemy_damage(delta: float) -> void:
 			continue
 		if enemy.get_meta("paused", false):
 			continue
+		var enemy_id: String = enemy.get_meta("enemy_id", "scavenger_grunt")
+		# Ranged enemies don't deal contact damage
+		if enemy_id == "ridge_archer" or enemy_id == "rift_caster":
+			continue
 		var dist: float = player.position.distance_to(enemy.position)
 		if dist < 40.0:
 			var key: int = enemy.get_instance_id()
@@ -414,13 +634,30 @@ func _check_enemy_damage(delta: float) -> void:
 				damage_timers[key] = 0.0
 			damage_timers[key] -= delta
 			if damage_timers[key] <= 0.0:
+				# Shieldbearer block timer check
+				if enemy_id == "shieldbearer":
+					if _enemy_state_timers.has(key) and _enemy_state_timers[key].get("block_timer", 0.0) > 0.0:
+						continue
+				# Resonance wraith teleport cooldown
+				if enemy_id == "resonance_wraith":
+					if _enemy_state_timers.has(key) and _enemy_state_timers[key].get("tp_cooldown", 0.0) > 0.0:
+						continue
 				var dmg: int = enemy.get_meta("damage", 10)
+				# Damage multipliers for special types
+				if enemy_id == "shield_wall":
+					dmg = int(dmg * 1.5)
+				elif enemy_id == "warden_hunter":
+					dmg = int(dmg * 1.2)
 				# Subtract total_defense from equipment (min 1 damage)
 				var inv: Node = _inv()
 				if inv:
 					dmg = maxi(1, dmg - int(inv.get("total_defense")))
 				player_health -= float(dmg)
 				damage_timers[key] = 1.0
+				# Warden hunter reposition after dealing damage
+				if enemy_id == "warden_hunter":
+					if _enemy_state_timers.has(key):
+						_enemy_state_timers[key]["reposition"] = 0.4
 
 				# Enemy attack flash — orange glow on attacker
 				var e_sprite: Node = enemy.find_child("Sprite", false, false)
