@@ -399,23 +399,39 @@ func _update_enemies(delta: float) -> void:
 
 		match enemy_id:
 			"shieldbearer":
-				# Slow advance (0.6x), block timer before damage
-				if to_player.length() > 90.0:
+				# Slow advance, stop at 110px, "raise shield" pause, then lunge to strike
+				if not _enemy_state_timers[eid].has("block_timer"):
+					_enemy_state_timers[eid]["block_timer"] = 0.7
+				if not _enemy_state_timers[eid].has("lunging"):
+					_enemy_state_timers[eid]["lunging"] = false
+				var dist_sb: float = to_player.length()
+				if dist_sb > 110.0:
+					# Approach slowly, reset block timer while closing
 					enemy.position += to_player.normalized() * spd * 0.6 * delta
 					_enemy_state_timers[eid]["block_timer"] = 0.7
+					_enemy_state_timers[eid]["lunging"] = false
+				elif _enemy_state_timers[eid]["lunging"]:
+					# After wind-up: lunge forward fast to close distance and strike
+					if dist_sb > 1.0:
+						enemy.position += to_player.normalized() * spd * 1.4 * delta
 				else:
-					# Within 90px — count down block timer
-					if not _enemy_state_timers[eid].has("block_timer"):
-						_enemy_state_timers[eid]["block_timer"] = 0.7
+					# Wind-up pause (shield raise)
 					_enemy_state_timers[eid]["block_timer"] -= delta
+					if _enemy_state_timers[eid]["block_timer"] <= 0.0:
+						_enemy_state_timers[eid]["lunging"] = true
 
 			"ash_flanker":
-				# Zigzag approach with sine offset
+				# Wide zigzag strafe — cuts laterally before closing
 				var t: float = Time.get_ticks_msec() / 1000.0
 				var dir_norm: Vector2 = to_player.normalized()
-				var perp := Vector2(-dir_norm.y, dir_norm.x) * sin(t * 3.0 + eid % 7) * 60.0
-				if to_player.length() > 1.0:
-					enemy.position += (to_player.normalized() * spd + perp) * delta
+				# Large amplitude strafe — 120px swing, unique phase per enemy
+				var strafe_phase: float = float(eid % 13) * 0.8
+				var strafe := Vector2(-dir_norm.y, dir_norm.x) * sin(t * 2.5 + strafe_phase) * 120.0
+				# Strafe weight drops off when very close (so it actually closes in)
+				var dist_fl: float = to_player.length()
+				var strafe_weight: float = clampf(dist_fl / 150.0, 0.0, 1.0)
+				if dist_fl > 1.0:
+					enemy.position += (to_player.normalized() * spd + strafe * strafe_weight) * delta
 
 			"ridge_archer":
 				# Keep 200-350px distance
@@ -442,23 +458,25 @@ func _update_enemies(delta: float) -> void:
 				enemy.position += (tangent_dir * spd * 0.7 + radial_correction) * delta
 
 			"berserker":
-				# Sprint 1.5x with stutter-charge
-				if not _enemy_state_timers[eid].has("stutter"):
-					_enemy_state_timers[eid]["stutter"] = 0.0
-				_enemy_state_timers[eid]["stutter"] -= delta
-				if _enemy_state_timers[eid]["stutter"] <= -0.5:
-					# Pause for 0.12s
-					_enemy_state_timers[eid]["stutter"] = 0.12
-				elif _enemy_state_timers[eid]["stutter"] <= 0.0:
-					# Moving phase
-					if to_player.length() > 1.0:
-						enemy.position += to_player.normalized() * spd * 1.5 * delta
-				# else pausing (stutter > 0)
+				# Erratic burst-charge: full sprint → hard stop → sprint again
+				if not _enemy_state_timers[eid].has("burst"):
+					_enemy_state_timers[eid]["burst"] = randf_range(0.3, 0.6)
+					_enemy_state_timers[eid]["burst_moving"] = true
+				_enemy_state_timers[eid]["burst"] -= delta
+				if _enemy_state_timers[eid]["burst"] <= 0.0:
+					var was_moving: bool = _enemy_state_timers[eid]["burst_moving"]
+					_enemy_state_timers[eid]["burst_moving"] = not was_moving
+					# Move phase longer, stop phase shorter
+					_enemy_state_timers[eid]["burst"] = randf_range(0.3, 0.55) if not was_moving else randf_range(0.08, 0.15)
+				if _enemy_state_timers[eid]["burst_moving"] and to_player.length() > 1.0:
+					enemy.position += to_player.normalized() * spd * 1.8 * delta
 
 			"shield_wall":
-				# Barely moves (0.3x), only if player > 300px away
-				if to_player.length() > 300.0:
-					enemy.position += to_player.normalized() * spd * 0.3 * delta
+				# Slow advance until within 55px, then plant and hammer
+				# Only pursues if player is far; once within striking range it stays put
+				var dist_sw: float = to_player.length()
+				if dist_sw > 55.0:
+					enemy.position += to_player.normalized() * spd * 0.35 * delta
 
 			"warden_hunter":
 				# Normal chase, reposition after dealing damage
@@ -627,16 +645,22 @@ func _check_enemy_damage(delta: float) -> void:
 		# Ranged enemies don't deal contact damage
 		if enemy_id == "ridge_archer" or enemy_id == "rift_caster":
 			continue
+		# Wider contact range for heavy melee types
+		var contact_range: float = 40.0
+		if enemy_id == "shield_wall":
+			contact_range = 60.0
+		elif enemy_id == "shieldbearer":
+			contact_range = 55.0
 		var dist: float = player.position.distance_to(enemy.position)
-		if dist < 40.0:
+		if dist < contact_range:
 			var key: int = enemy.get_instance_id()
 			if not damage_timers.has(key):
 				damage_timers[key] = 0.0
 			damage_timers[key] -= delta
 			if damage_timers[key] <= 0.0:
-				# Shieldbearer block timer check
+				# Shieldbearer: only deal damage during lunge phase (not wind-up)
 				if enemy_id == "shieldbearer":
-					if _enemy_state_timers.has(key) and _enemy_state_timers[key].get("block_timer", 0.0) > 0.0:
+					if _enemy_state_timers.has(key) and not _enemy_state_timers[key].get("lunging", false):
 						continue
 				# Resonance wraith teleport cooldown
 				if enemy_id == "resonance_wraith":
