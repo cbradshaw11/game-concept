@@ -645,9 +645,6 @@ func _animate_enemies(_delta: float) -> void:
 		if sprite == null or not sprite is Sprite2D:
 			continue
 		var sp := sprite as Sprite2D
-		# Skip if currently flashing (hit/attack flash active)
-		if sp.modulate != Color.WHITE and sp.modulate != Color(1.5, 1.5, 1.5):
-			continue
 		var enemy_id: String = enemy.get_meta("enemy_id", "scavenger_grunt")
 		var eid: int = enemy.get_instance_id()
 		# Phase offset per enemy so they don't all bob in sync
@@ -657,12 +654,14 @@ func _animate_enemies(_delta: float) -> void:
 		if enemy.get_meta("paused", false):
 			is_moving = false
 		elif enemy_id == "shieldbearer":
-			# During wind-up pause, show "bracing" — no bob, slight crouch
+			# During wind-up: visible brace pose — squat down, widen
 			var not_lunging: bool = not _enemy_state_timers.get(eid, {}).get("lunging", false)
 			var close_enough: bool = (player.position - enemy.position).length() < 115.0
 			if not_lunging and close_enough:
-				sp.position.y = 2.0  # slight crouch
-				sp.scale.x = sign(sp.scale.x) * abs(sp.scale.x)  # no squish
+				var facing: float = 1.0 if (player.position - enemy.position).x > 0.0 else -1.0
+				sp.position.y = 8.0          # drop down visibly
+				sp.scale = Vector2(facing * 1.85, 1.2)   # widen + squash
+				sp.rotation = 0.0
 				continue
 		elif enemy_id == "berserker":
 			# Check burst_moving state
@@ -729,12 +728,10 @@ func _check_enemy_damage(delta: float) -> void:
 		# Ranged enemies don't deal contact damage
 		if enemy_id == "ridge_archer" or enemy_id == "rift_caster":
 			continue
-		# Contact range — all enemies hit on touch, not just overlap
-		var contact_range: float = 52.0
-		if enemy_id == "shield_wall":
-			contact_range = 64.0
-		elif enemy_id == "shieldbearer":
-			contact_range = 60.0
+		# Contact range — sprites are ~48px visual, so centers within 72px = touching
+		var contact_range: float = 72.0
+		if enemy_id == "shield_wall" or enemy_id == "shieldbearer":
+			contact_range = 80.0
 		var dist: float = player.position.distance_to(enemy.position)
 		if dist < contact_range:
 			var key: int = enemy.get_instance_id()
