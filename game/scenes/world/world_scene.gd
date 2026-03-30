@@ -104,6 +104,7 @@ func _process(delta: float) -> void:
 	_update_enemies(delta)
 	_update_archer_attacks(delta)
 	_update_caster_attacks(delta)
+	_animate_enemies(delta)
 	_check_enemy_damage(delta)
 	_check_loot_pickup()
 	_handle_sanctuary_regen(delta)
@@ -633,6 +634,89 @@ func _flash_player_hit(dmg: int) -> void:
 	hl_tw.parallel().tween_property(hit_lbl, "modulate:a", 0.0, 0.5)
 	hl_tw.tween_callback(hit_lbl.queue_free)
 
+func _animate_enemies(_delta: float) -> void:
+	var t: float = Time.get_ticks_msec() / 1000.0
+	for enemy in enemies:
+		if not is_instance_valid(enemy):
+			continue
+		if not enemy.get_meta("alive", false):
+			continue
+		var sprite: Node = enemy.find_child("Sprite", false, false)
+		if sprite == null or not sprite is Sprite2D:
+			continue
+		var sp := sprite as Sprite2D
+		# Skip if currently flashing (hit/attack flash active)
+		if sp.modulate != Color.WHITE and sp.modulate != Color(1.5, 1.5, 1.5):
+			continue
+		var enemy_id: String = enemy.get_meta("enemy_id", "scavenger_grunt")
+		var eid: int = enemy.get_instance_id()
+		# Phase offset per enemy so they don't all bob in sync
+		var phase: float = float(eid % 17) * 0.6
+		# Is this enemy moving toward player?
+		var is_moving: bool = true
+		if enemy.get_meta("paused", false):
+			is_moving = false
+		elif enemy_id == "shieldbearer":
+			# During wind-up pause, show "bracing" — no bob, slight crouch
+			var not_lunging: bool = not _enemy_state_timers.get(eid, {}).get("lunging", false)
+			var close_enough: bool = (player.position - enemy.position).length() < 115.0
+			if not_lunging and close_enough:
+				sp.position.y = 2.0  # slight crouch
+				sp.scale.x = sign(sp.scale.x) * abs(sp.scale.x)  # no squish
+				continue
+		elif enemy_id == "berserker":
+			# Check burst_moving state
+			is_moving = _enemy_state_timers.get(eid, {}).get("burst_moving", true)
+		elif enemy_id == "shield_wall":
+			# Only bobs if actually advancing
+			is_moving = (player.position - enemy.position).length() > 55.0
+
+		if is_moving:
+			match enemy_id:
+				"berserker":
+					# Fast aggressive bob — big vertical + horizontal squish
+					var bob_freq := 9.0
+					var bob_amp := 5.0
+					sp.position.y = sin(t * bob_freq + phase) * bob_amp
+					# Squish: compress on down-beat
+					var squish := 1.0 + sin(t * bob_freq + phase) * 0.12
+					sp.scale = Vector2(sign(sp.scale.x) * abs(sp.scale.x) * (1.0 / squish), abs(sp.scale.y) * squish)
+				"ash_flanker":
+					# Quick side-to-side lean with slight tilt
+					var lean_freq := 7.0
+					sp.position.y = sin(t * lean_freq + phase) * 3.5
+					sp.rotation = sin(t * lean_freq * 0.5 + phase) * 0.1
+				"shieldbearer", "shield_wall":
+					# Heavy lumbering plod — slow, big
+					var plod_freq := 3.5
+					sp.position.y = abs(sin(t * plod_freq + phase)) * -4.0
+					sp.scale = Vector2(sign(sp.scale.x) * 1.5, 1.5)
+				"warden_hunter":
+					# Fluid, predatory stride
+					var stride_freq := 5.5
+					sp.position.y = sin(t * stride_freq + phase) * 3.0
+					sp.rotation = sin(t * stride_freq * 0.5 + phase) * 0.06
+				"resonance_wraith":
+					# Ethereal float — slow vertical drift + slight fade pulse
+					sp.position.y = sin(t * 2.0 + phase) * 6.0
+					sp.modulate = Color(1.0, 1.0, 1.0, 0.75 + sin(t * 3.0 + phase) * 0.2)
+				_:
+					# Generic walk bob — scavenger_grunt default
+					var walk_freq := 6.0
+					sp.position.y = sin(t * walk_freq + phase) * 3.0
+		else:
+			# Idle — very subtle breathing (tiny scale pulse)
+			sp.position.y = 0.0
+			sp.rotation = 0.0
+			var breathe := 1.5 + sin(t * 1.5 + phase) * 0.02
+			sp.scale = Vector2(sign(sp.scale.x) * breathe, breathe)
+
+		# Face player (flip sprite horizontally)
+		var to_player: Vector2 = player.position - enemy.position
+		if to_player.x != 0.0:
+			sp.scale.x = abs(sp.scale.x) * (1.0 if to_player.x > 0.0 else -1.0)
+
+
 func _check_enemy_damage(delta: float) -> void:
 	for enemy in enemies:
 		if not is_instance_valid(enemy):
@@ -645,12 +729,12 @@ func _check_enemy_damage(delta: float) -> void:
 		# Ranged enemies don't deal contact damage
 		if enemy_id == "ridge_archer" or enemy_id == "rift_caster":
 			continue
-		# Wider contact range for heavy melee types
-		var contact_range: float = 40.0
+		# Contact range — all enemies hit on touch, not just overlap
+		var contact_range: float = 52.0
 		if enemy_id == "shield_wall":
-			contact_range = 60.0
+			contact_range = 64.0
 		elif enemy_id == "shieldbearer":
-			contact_range = 55.0
+			contact_range = 60.0
 		var dist: float = player.position.distance_to(enemy.position)
 		if dist < contact_range:
 			var key: int = enemy.get_instance_id()
@@ -658,9 +742,25 @@ func _check_enemy_damage(delta: float) -> void:
 				damage_timers[key] = 0.0
 			damage_timers[key] -= delta
 			if damage_timers[key] <= 0.0:
-				# Shieldbearer: only deal damage during lunge phase (not wind-up)
+				# Shieldbearer: lunge = heavy hit, contact during wind-up = light shield bash
 				if enemy_id == "shieldbearer":
-					if _enemy_state_timers.has(key) and not _enemy_state_timers[key].get("lunging", false):
+					var is_lunging: bool = _enemy_state_timers.get(key, {}).get("lunging", false)
+					if not is_lunging:
+						# Shield bash — half damage, shorter cooldown
+						var shield_dmg: int = maxi(1, int(enemy.get_meta("damage", 10) * 0.5))
+						var inv_sb: Node = _inv()
+						if inv_sb:
+							shield_dmg = maxi(1, shield_dmg - int(inv_sb.get("total_defense")))
+						player_health -= float(shield_dmg)
+						damage_timers[key] = 0.6
+						var e_sp: Node = enemy.find_child("Sprite", false, false)
+						if e_sp and e_sp is Sprite2D:
+							(e_sp as Sprite2D).modulate = Color(1.5, 1.5, 2.0)
+							var sb_tw := create_tween()
+							sb_tw.tween_property(e_sp, "modulate", Color.WHITE, 0.15)
+						if player_health <= 0.0:
+							_on_player_death()
+							return
 						continue
 				# Resonance wraith teleport cooldown
 				if enemy_id == "resonance_wraith":
