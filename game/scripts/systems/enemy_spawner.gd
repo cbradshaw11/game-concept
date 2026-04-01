@@ -3,6 +3,7 @@ extends RefCounted
 const SPRITE_BASE := "res://assets/sprites/"
 const SPRITE_MAP := {
 	"scavenger_grunt": "enemy_grunt.png",
+	"cave_spider":     "enemy_grunt.png",
 	"shieldbearer":    "enemy_defender.png",
 	"ash_flanker":     "enemy_grunt.png",
 	"ridge_archer":    "enemy_ranged.png",
@@ -13,7 +14,7 @@ const SPRITE_MAP := {
 	"resonance_wraith":"enemy_warden.png",
 }
 const SPEED_MAP := {
-	"scavenger_grunt": 75, "shieldbearer": 60, "ash_flanker": 110,
+	"scavenger_grunt": 75, "cave_spider": 95, "shieldbearer": 60, "ash_flanker": 110,
 	"ridge_archer": 85, "rift_caster": 70, "warden_hunter": 95,
 	"berserker": 130, "shield_wall": 50, "resonance_wraith": 90
 }
@@ -56,6 +57,18 @@ func spawn_enemy(zone: String, spawn_position: Vector2, parent: Node) -> Node2D:
 		sprite.texture = load(tex_path)
 	sprite.scale = Vector2(1.5, 1.5)
 	sprite.name = "Sprite"
+	# Per-enemy tint so they read differently at a glance
+	match enemy_id:
+		"cave_spider":
+			sprite.modulate = Color(0.55, 0.3, 0.65)   # dark purple
+		"shieldbearer", "shield_wall":
+			sprite.modulate = Color(0.75, 0.8, 0.9)     # steel blue-gray
+		"berserker":
+			sprite.modulate = Color(0.95, 0.35, 0.2)    # angry red-orange
+		"ash_flanker":
+			sprite.modulate = Color(0.6, 0.65, 0.5)     # ash gray-green
+		"resonance_wraith":
+			sprite.modulate = Color(0.5, 0.8, 1.0, 0.8) # cyan ghost
 	node.add_child(sprite)
 
 	# Name label above sprite

@@ -77,6 +77,8 @@ var _phase_flash_overlay: ColorRect = null
 # Bow heavy charge state
 # _bow_suppress_ticks[enemy_index] = remaining suppression ticks
 var _enemy_suppress_ticks: Array[int] = []
+# M39 — Per-enemy movement timers (for stutter-dash etc.)
+var _enemy_move_timers: Array[float] = []
 
 # M36 — Player attack flash timer (negative = hold phase, positive = lerp phase)
 var _player_attack_flash_timer: float = 0.0
@@ -145,6 +147,22 @@ const ENEMY_LUNGE_DURATION := 0.1
 const ENEMY_SNAP_BACK_DURATION := 0.1
 const PROJECTILE_TRAVEL_DURATION := 0.2
 const MISS_LABEL_DURATION := 0.6
+# M39 — Per-profile speed multipliers
+const PROFILE_SPEED_MULT := {
+	"frontline_basic": 1.0,
+	"flank_aggressive": 1.4,
+	"glass_cannon_aggro": 1.6,
+	"guard_counter": 0.75,
+	"kite_volley": 1.0,
+	"poise_gate_tank": 0.6,
+	"elite_pressure": 1.1,
+	"zone_control": 1.0,
+	"phase_phantom": 1.0,
+}
+# flank_aggressive stutter-dash timing
+const FLANK_DASH_INTERVAL := 0.6
+const FLANK_PAUSE_DURATION := 0.15
+
 const TELEGRAPH_READINESS_THRESHOLD := 0.85
 const TELEGRAPH_COLOR := Color(1.0, 0.6, 0.1, 1.0)  # orange
 const DEFAULT_MELEE_RANGE := 1.5  # zones
@@ -266,8 +284,19 @@ func _process(delta: float) -> void:
 			var ex: float = enode.position.x
 			var espeed: float = float(enemy.get_meta("speed", 80.0))
 			if enemy.state == EnemyController.EnemyState.CHASE:
-				var dir: Vector2 = (player.position - enode.position).normalized()
-				enode.position += dir * espeed * delta
+				var prof: String = enemy.behavior_profile
+				var speed_mult: float = PROFILE_SPEED_MULT.get(prof, 1.0)
+				var move_this_frame := true
+				# flank_aggressive: stutter-dash (sprint then brief pause)
+				if prof == Profiles.FLANK_AGGRESSIVE and index < _enemy_move_timers.size():
+					_enemy_move_timers[index] += delta
+					var cycle := FLANK_DASH_INTERVAL + FLANK_PAUSE_DURATION
+					var phase := fmod(_enemy_move_timers[index], cycle)
+					if phase > FLANK_DASH_INTERVAL:
+						move_this_frame = false  # pause phase
+				if move_this_frame:
+					var dir: Vector2 = (player.position - enode.position).normalized()
+					enode.position += dir * espeed * speed_mult * delta
 			elif enemy.state == EnemyController.EnemyState.RETREAT:
 				var retreat_dir: float = 1.0 if ex >= px else -1.0
 				enode.position.x = clampf(ex + retreat_dir * espeed * delta, 0.0, 960.0)
@@ -275,6 +304,10 @@ func _process(delta: float) -> void:
 		if did_attack:
 			# M39 — Enemy lunge animation on every attack attempt
 			_animate_enemy_attack(index)
+			# kite_volley: fire a projectile instead of melee contact check
+			if enemy.behavior_profile == Profiles.KITE_VOLLEY:
+				_fire_enemy_projectile(index)
+				continue
 			# Only deal damage if sprites are physically overlapping (~64px contact distance)
 			var pixel_dist: float = enemy_nodes[index].position.distance_to(player.position) if index < enemy_nodes.size() else 9999.0
 			if pixel_dist > 64.0:
@@ -540,6 +573,7 @@ func _spawn_enemies(count: int) -> void:
 	_hit_flash_timers.clear()
 	_hit_flash_types.clear()
 	_enemy_suppress_ticks.clear()
+	_enemy_move_timers.clear()
 
 	for node in enemy_nodes:
 		if is_instance_valid(node):
@@ -563,18 +597,20 @@ func _spawn_enemies(count: int) -> void:
 		var ec := EnemyController.new(hp, 3.5, 1.2, dmg)
 		ec.set_meta("speed", float(enemy_data.get("speed", 80)))
 		ec.enemy_display_name = str(enemy_data.get("id", "Enemy")).replace("_", " ").capitalize()
-		# Grunts only for now — all enemies use frontline_basic melee profile
-		var profile := Profiles.FRONTLINE_BASIC
+		# Read behavior profile from data, fallback to frontline_basic
+		var profile: String = str(enemy_data.get("behavior_profile", Profiles.FRONTLINE_BASIC))
+		if profile.is_empty() or not profile in Profiles.ALL_PROFILES:
+			profile = Profiles.FRONTLINE_BASIC
 		ec.apply_profile(profile)
 		# Use data poise as threshold if profile didn't set a higher one
 		var data_poise := int(enemy_data.get("poise", 20))
 		if data_poise > ec.poise_threshold:
 			ec.poise_threshold = data_poise
-		# glass_cannon_aggro: wire death explosion
-		if profile == Profiles.GLASS_CANNON_AGGRO:
+		# glass_cannon_aggro: wire death explosion (based on actual profile)
+		if ec.behavior_profile == Profiles.GLASS_CANNON_AGGRO:
 			ec.death_explosion.connect(_on_death_explosion.bind(i))
 		# phase_phantom: wire phase signals + configure durations from data
-		if profile == Profiles.PHASE_PHANTOM:
+		if ec.behavior_profile == Profiles.PHASE_PHANTOM:
 			var p_dur := float(enemy_data.get("phase_duration", 2.5))
 			var v_dur := float(enemy_data.get("vulnerable_duration", 1.8))
 			ec.set_phase_durations(p_dur, v_dur)
@@ -585,6 +621,7 @@ func _spawn_enemies(count: int) -> void:
 		_hit_flash_timers.append(0.0)
 		_hit_flash_types.append("hit")
 		_enemy_suppress_ticks.append(0)
+		_enemy_move_timers.append(0.0)
 
 		var archetype := "grunt"
 		if count == 1 and ring_id == "outer":
@@ -636,6 +673,7 @@ func _spawn_boss() -> void:
 	_hit_flash_timers.clear()
 	_hit_flash_types.clear()
 	_enemy_suppress_ticks.clear()
+	_enemy_move_timers.clear()
 	_last_boss_phase = 1
 
 	for node in enemy_nodes:
@@ -1050,6 +1088,42 @@ func _spawn_projectile(from_pos: Vector2, to_pos: Vector2, color: Color, size: f
 	tween.tween_property(proj, "position", to_pos - Vector2(size / 2.0, size / 2.0), PROJECTILE_TRAVEL_DURATION)
 	tween.tween_callback(on_hit)
 	tween.tween_callback(proj.queue_free)
+
+func _fire_enemy_projectile(enemy_index: int) -> void:
+	if enemy_index >= enemy_nodes.size() or enemy_index >= enemies.size():
+		return
+	var from_pos := enemy_nodes[enemy_index].position
+	var to_pos := player.position
+	var proj := ColorRect.new()
+	proj.size = Vector2(6, 6)
+	proj.color = Color(1.0, 0.7, 0.2, 1.0)  # orange/yellow
+	proj.position = from_pos - Vector2(3, 3)
+	add_child(proj)
+	var idx := enemy_index
+	var tween := create_tween()
+	tween.tween_property(proj, "position", to_pos - Vector2(3, 3), 0.35)
+	tween.tween_callback(func():
+		# On arrival, deal damage using same logic as melee contact
+		if encounter_completed:
+			proj.queue_free()
+			return
+		var dmg := enemies[idx].damage if idx < enemies.size() else 8
+		var _cm_proj := _cm()
+		if _cm_proj and _cm_proj.has_challenge("cursed_ground"):
+			dmg = int(ceil(float(dmg) * 1.25))
+		if player.guarding:
+			dmg = max(1, dmg / 2)
+		player_health = max(0, player_health - dmg)
+		if _gs(): _gs().record_damage_taken(dmg)
+		_trigger_hit_stop()
+		trigger_screen_shake(SHAKE_MAGNITUDE_SMALL, SHAKE_DURATION_DEFAULT)
+		if _am():
+			_am().play_sfx("hit_player")
+		if player_health <= 0:
+			_on_player_died()
+		_update_hud()
+		proj.queue_free()
+	)
 
 func _spawn_miss_label(pos: Vector2) -> void:
 	var label := Label.new()
