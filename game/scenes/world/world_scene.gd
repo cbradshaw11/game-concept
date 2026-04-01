@@ -371,15 +371,15 @@ func _update_background(delta: float) -> void:
 func _on_zone_changed(old_zone: String, new_zone: String) -> void:
 	target_bg_color = zone_colors.get(new_zone, zone_colors["sanctuary"])
 	if new_zone == "sanctuary":
+		# Despawn all enemies when entering home — they'll respawn fresh on exit
 		for enemy in enemies:
 			if is_instance_valid(enemy):
-				enemy.set_meta("paused", true)
-				enemy.visible = false
-	elif old_zone == "sanctuary":
-		for enemy in enemies:
-			if is_instance_valid(enemy):
-				enemy.set_meta("paused", false)
-				enemy.visible = true
+				enemy.queue_free()
+		enemies.clear()
+		damage_timers.clear()
+		_enemy_state_timers.clear()
+		spawn_timer = 0.0
+	# No else needed — spawner handles fresh spawns once player leaves sanctuary
 
 func _update_enemies(delta: float) -> void:
 	for enemy in enemies:
@@ -517,6 +517,40 @@ func _update_enemies(delta: float) -> void:
 					if to_player.length() > 1.0:
 						enemy.position += to_player.normalized() * spd * 0.4 * delta
 
+			"cave_spider":
+				# Skittery movement — fast erratic scurry, stops to fire web
+				if not _enemy_state_timers[eid].has("web_cooldown"):
+					_enemy_state_timers[eid]["web_cooldown"] = randf_range(1.5, 2.5)
+				if not _enemy_state_timers[eid].has("firing"):
+					_enemy_state_timers[eid]["firing"] = false
+				_enemy_state_timers[eid]["web_cooldown"] -= delta
+				var dist_sp: float = to_player.length()
+				if _enemy_state_timers[eid]["web_cooldown"] <= 0.0 and dist_sp < 320.0:
+					# Enter firing state — stop and shoot
+					_enemy_state_timers[eid]["firing"] = true
+					_enemy_state_timers[eid]["web_cooldown"] = randf_range(2.0, 3.5)
+					_fire_web_projectile(enemy)
+					# Brief pause after firing
+					_enemy_state_timers[eid]["fire_pause"] = 0.55
+				if _enemy_state_timers[eid].get("fire_pause", 0.0) > 0.0:
+					_enemy_state_timers[eid]["fire_pause"] -= delta
+					# Frozen while firing — legs twitch animation done in _animate_enemies
+				else:
+					_enemy_state_timers[eid]["firing"] = false
+					# Scurry — fast with random direction jitter
+					if not _enemy_state_timers[eid].has("scurry_dir"):
+						_enemy_state_timers[eid]["scurry_dir"] = randf() * TAU
+					if not _enemy_state_timers[eid].has("scurry_timer"):
+						_enemy_state_timers[eid]["scurry_timer"] = randf_range(0.2, 0.5)
+					_enemy_state_timers[eid]["scurry_timer"] -= delta
+					if _enemy_state_timers[eid]["scurry_timer"] <= 0.0:
+						# Pick a new angle — biased toward player but with jitter
+						var base_angle: float = atan2(to_player.y, to_player.x)
+						_enemy_state_timers[eid]["scurry_dir"] = base_angle + randf_range(-0.9, 0.9)
+						_enemy_state_timers[eid]["scurry_timer"] = randf_range(0.15, 0.4)
+					var scurry_angle: float = _enemy_state_timers[eid]["scurry_dir"]
+					var scurry_vec := Vector2(cos(scurry_angle), sin(scurry_angle))
+					enemy.position += scurry_vec * spd * delta
 			_:
 				# scavenger_grunt and default — beeline toward player
 				if to_player.length() > 1.0:
@@ -634,6 +668,35 @@ func _flash_player_hit(dmg: int) -> void:
 	hl_tw.parallel().tween_property(hit_lbl, "modulate:a", 0.0, 0.5)
 	hl_tw.tween_callback(hit_lbl.queue_free)
 
+func _fire_web_projectile(spider: Node2D) -> void:
+	# Slow white-gray blob that travels toward player position at time of firing
+	var proj := ColorRect.new()
+	proj.size = Vector2(10, 10)
+	proj.color = Color(0.85, 0.85, 0.78, 0.9)
+	proj.position = spider.position - Vector2(5, 5)
+	add_child(proj)
+	var target_pos: Vector2 = player.position
+	var dmg: int = spider.get_meta("damage", 9)
+	var tw := create_tween()
+	# Very slow — 1.4 seconds to reach target
+	tw.tween_property(proj, "position", target_pos - Vector2(5, 5), 1.4)
+	tw.tween_callback(func():
+		proj.queue_free()
+		# Only deal damage if player is still near where the web landed
+		if player.position.distance_to(target_pos) < 55.0:
+			var web_dmg: int = maxi(1, dmg)
+			var inv: Node = _inv()
+			if inv:
+				web_dmg = maxi(1, web_dmg - int(inv.get("total_defense")))
+			player_health -= float(web_dmg)
+			# Slow the player briefly (visual — white flash)
+			player.modulate = Color(0.8, 0.8, 1.0)
+			var flash_tw := create_tween()
+			flash_tw.tween_property(player, "modulate", Color.WHITE, 0.4)
+			if player_health <= 0.0:
+				_on_player_death()
+	)
+
 func _animate_enemies(_delta: float) -> void:
 	var t: float = Time.get_ticks_msec() / 1000.0
 	for enemy in enemies:
@@ -680,6 +743,18 @@ func _animate_enemies(_delta: float) -> void:
 					# Squish: compress on down-beat
 					var squish := 1.0 + sin(t * bob_freq + phase) * 0.12
 					sp.scale = Vector2(sign(sp.scale.x) * abs(sp.scale.x) * (1.0 / squish), abs(sp.scale.y) * squish)
+				"cave_spider":
+					var is_firing: bool = _enemy_state_timers.get(eid, {}).get("firing", false)
+					if is_firing:
+						# Freeze + pulse while firing web
+						sp.position.y = 4.0
+						sp.scale = Vector2(sign(sp.scale.x) * 1.7, 1.2)
+						sp.rotation = sin(t * 20.0 + phase) * 0.04  # tiny vibration
+					else:
+						# Frantic scurry — fast twitchy bob, low to ground
+						sp.position.y = abs(sin(t * 12.0 + phase)) * 3.0
+						sp.scale = Vector2(sign(sp.scale.x) * 1.6, 1.3)
+						sp.rotation = sin(t * 12.0 + phase) * 0.12
 				"ash_flanker":
 					# Quick side-to-side lean with slight tilt
 					var lean_freq := 7.0

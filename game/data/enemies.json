@@ -11,12 +11,22 @@
       "behavior_profile": "frontline_basic"
     },
     {
+      "id": "cave_spider",
+      "role": "crawler",
+      "rings": ["inner"],
+      "health": 38,
+      "poise": 10,
+      "damage": 9,
+      "speed": 95,
+      "behavior_profile": "kite_volley"
+    },
+    {
       "id": "shieldbearer",
       "role": "defender",
-      "rings": ["inner", "mid"],
-      "health": 75,
-      "poise": 40,
-      "damage": 7,
+      "rings": ["mid"],
+      "health": 85,
+      "poise": 50,
+      "damage": 10,
       "speed": 60,
       "behavior_profile": "guard_counter"
     },
@@ -73,7 +83,7 @@
     {
       "id": "shield_wall",
       "role": "tank",
-      "rings": ["mid", "outer"],
+      "rings": ["mid"],
       "health": 80,
       "poise": 40,
       "damage": 8,
