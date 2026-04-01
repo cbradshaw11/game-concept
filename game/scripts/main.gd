@@ -347,6 +347,7 @@ func _show_title_screen() -> void:
 	title_screen.begin_pressed.connect(_on_title_begin)
 	title_screen.continue_pressed.connect(_on_title_continue)
 	title_screen.settings_pressed.connect(_open_settings)
+	title_screen.dev_arena_pressed.connect(_on_dev_arena_pressed)
 
 func _on_title_begin() -> void:
 	_dismiss_title_screen()
@@ -368,6 +369,10 @@ func _on_title_continue() -> void:
 func _open_settings() -> void:
 	var settings := SettingsScreenScene.instantiate()
 	add_child(settings)
+
+func _on_dev_arena_pressed() -> void:
+	_dismiss_title_screen()
+	get_tree().change_scene_to_file("res://scenes/dev/dev_arena.tscn")
 
 func _dismiss_title_screen() -> void:
 	if title_screen != null:
