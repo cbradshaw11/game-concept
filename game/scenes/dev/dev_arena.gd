@@ -3,6 +3,7 @@ extends Node2D
 # ── Dev Enemy Test Arena ─────────────────────────────────────────────────────
 # Standalone developer tool for spawning and testing enemies.
 # Built entirely in code — no .tscn dependencies beyond player sprite.
+# Uses DataStore autoload for enemy data.
 
 const SPRITE_BASE := "res://assets/sprites/"
 const SPRITE_MAP := {
@@ -31,36 +32,29 @@ const TINT_MAP := {
 	"resonance_wraith": Color(0.5, 0.8, 1.0, 0.8),
 }
 
-# Hardcoded enemy data (self-contained — no DataStore dependency)
-const ENEMY_DATA := {
-	"cave_spider":      { "hp": 40,  "damage": 9,  "zone": "inner", "desc": "Scurries erratically, stops to fire slow web projectiles" },
-	"scavenger_grunt":  { "hp": 50,  "damage": 10, "zone": "inner", "desc": "Basic melee, steady charge toward player" },
-	"shieldbearer":     { "hp": 80,  "damage": 18, "zone": "mid",   "desc": "Slow advance, wind-up brace, then lunges to strike" },
-	"shield_wall":      { "hp": 120, "damage": 22, "zone": "mid",   "desc": "Barely moves, forces you to engage, hits very hard" },
-	"ash_flanker":      { "hp": 55,  "damage": 12, "zone": "mid",   "desc": "Wide zigzag strafe, quick strikes" },
-	"berserker":        { "hp": 65,  "damage": 16, "zone": "mid",   "desc": "Burst-sprint with hard stops, erratic timing" },
-	"ridge_archer":     { "hp": 45,  "damage": 14, "zone": "mid",   "desc": "Keeps distance, fires orange projectiles" },
-	"rift_caster":      { "hp": 50,  "damage": 15, "zone": "outer", "desc": "Orbits player, lobs slow purple orbs" },
-	"warden_hunter":    { "hp": 90,  "damage": 20, "zone": "outer", "desc": "Normal chase, repositions after each hit" },
-	"resonance_wraith": { "hp": 70,  "damage": 17, "zone": "outer", "desc": "Teleports every 2s, ethereal drift between blinks" },
+const FLAVOR_TEXT := {
+	"scavenger_grunt": "Basic melee scrapper. Rushes the player directly.",
+	"cave_spider": "Erratic crawler. Stops to fire slow web projectiles.",
+	"shieldbearer": "Armored soldier. Wind-up lunge attack, shield bash on contact.",
+	"ash_flanker": "Fast flanker. Wide zigzag approach, hard to track.",
+	"ridge_archer": "Ranged kiter. Keeps distance, fires arrows.",
+	"rift_caster": "Orbiting caster. Circles player, fires magic orbs.",
+	"berserker": "Glass cannon. Burst-sprint charges, hits hard.",
+	"shield_wall": "Slow tank. Forces you to engage it, punishing hits.",
+	"warden_hunter": "Elite hunter. Repositions after every hit.",
+	"resonance_wraith": "Phase phantom. Teleports every 2s, ethereal strikes.",
 }
 
-# Ordered list for menu display
-const ENEMY_ORDER := [
-	"cave_spider", "scavenger_grunt",
-	"shieldbearer", "shield_wall", "ash_flanker", "berserker", "ridge_archer",
-	"rift_caster", "warden_hunter", "resonance_wraith",
-]
-
-var player_speed := 200.0
-var player_health := 200.0
-var player_max_health := 200.0
+var player_speed := 220.0
+var player_health := 500.0
+var player_max_health := 500.0
 var enemies: Array[Node2D] = []
 var damage_timers: Dictionary = {}
 var _enemy_state_timers: Dictionary = {}
 var attack_cooldown: float = 0.0
 var _last_move_dir: Vector2 = Vector2.RIGHT
 var _menu_open: bool = false
+var kill_count: int = 0
 
 # Scene nodes (built in _ready)
 var player: Node2D = null
@@ -70,8 +64,9 @@ var enemy_container: Node2D = null
 var hud_layer: CanvasLayer = null
 var health_bar: ColorRect = null
 var hp_label: Label = null
-var enemy_count_label: Label = null
+var kill_count_label: Label = null
 var menu_panel: Panel = null
+var grid_node: Node2D = null
 
 func _ready() -> void:
 	_build_scene()
@@ -85,6 +80,13 @@ func _build_scene() -> void:
 	background.size = Vector2(4000, 4000)
 	background.position = Vector2(-2000, -2000)
 	add_child(background)
+
+	# Grid lines node
+	grid_node = Node2D.new()
+	grid_node.name = "GridLines"
+	grid_node.z_index = -1
+	add_child(grid_node)
+	grid_node.draw.connect(_draw_grid.bind(grid_node))
 
 	# Player
 	player = Node2D.new()
@@ -113,14 +115,30 @@ func _build_scene() -> void:
 	hud_layer.name = "HUD"
 	add_child(hud_layer)
 
-	# Hint label (top center)
+	# Controls hint (top left below HP)
 	var hint := Label.new()
-	hint.text = "TAB \u2014 Enemy Menu  |  ESC \u2014 Back to Title  |  WASD \u2014 Move  |  Z/Click \u2014 Melee  |  Q \u2014 Ranged"
-	hint.add_theme_font_size_override("font_size", 12)
-	hint.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 0.7))
-	hint.position = Vector2(200, 8)
+	hint.text = "Tab \u2014 Enemy Codex | WASD Move | Z/Click Attack | Q Ranged"
+	hint.add_theme_font_size_override("font_size", 11)
+	hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 0.7))
+	hint.position = Vector2(10, 70)
 	hint.name = "HintLabel"
 	hud_layer.add_child(hint)
+
+	# "Dev Arena — Enemy Test Mode" label top right
+	var mode_label := Label.new()
+	mode_label.text = "Dev Arena \u2014 Enemy Test Mode"
+	mode_label.add_theme_font_size_override("font_size", 13)
+	mode_label.add_theme_color_override("font_color", Color(0.7, 0.65, 0.85))
+	mode_label.position = Vector2(700, 8)
+	mode_label.name = "ModeLabel"
+	hud_layer.add_child(mode_label)
+
+	# Back to Title button (top left)
+	var back_btn := Button.new()
+	back_btn.text = "\u2190 Back to Title"
+	back_btn.position = Vector2(10, 4)
+	back_btn.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/main.tscn"))
+	hud_layer.add_child(back_btn)
 
 	# Health bar BG
 	var hb_bg := ColorRect.new()
@@ -140,21 +158,41 @@ func _build_scene() -> void:
 
 	# HP label
 	hp_label = Label.new()
-	hp_label.text = "HP: 200 / 200"
+	hp_label.text = "HP: 500 / 500"
 	hp_label.add_theme_font_size_override("font_size", 11)
 	hp_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
 	hp_label.position = Vector2(220, 32)
 	hp_label.name = "HPLabel"
 	hud_layer.add_child(hp_label)
 
-	# Enemy count label
-	enemy_count_label = Label.new()
-	enemy_count_label.text = "Enemies: 0"
-	enemy_count_label.add_theme_font_size_override("font_size", 11)
-	enemy_count_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
-	enemy_count_label.position = Vector2(10, 52)
-	enemy_count_label.name = "EnemyCount"
-	hud_layer.add_child(enemy_count_label)
+	# Kill count label (bottom center)
+	kill_count_label = Label.new()
+	kill_count_label.text = "Enemies killed: 0"
+	kill_count_label.add_theme_font_size_override("font_size", 13)
+	kill_count_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
+	kill_count_label.position = Vector2(400, 510)
+	kill_count_label.name = "KillCount"
+	hud_layer.add_child(kill_count_label)
+
+	# Clear Enemies button (bottom right, always visible)
+	var clear_btn := Button.new()
+	clear_btn.text = "Clear Enemies"
+	clear_btn.position = Vector2(800, 510)
+	clear_btn.pressed.connect(_on_clear_all)
+	hud_layer.add_child(clear_btn)
+
+func _draw_grid(node: Node2D) -> void:
+	var spacing := 80.0
+	var extent := 2000.0
+	var col := Color(0.15, 0.15, 0.15)
+	var x := -extent
+	while x <= extent:
+		node.draw_line(Vector2(x, -extent), Vector2(x, extent), col, 1.0)
+		x += spacing
+	var y := -extent
+	while y <= extent:
+		node.draw_line(Vector2(-extent, y), Vector2(extent, y), col, 1.0)
+		y += spacing
 
 func _process(delta: float) -> void:
 	_handle_global_input()
@@ -170,6 +208,10 @@ func _process(delta: float) -> void:
 	_clean_dead_enemies()
 	# Keep background centered on player
 	background.position = player.position - Vector2(2000, 2000)
+	# Keep grid centered
+	if grid_node:
+		grid_node.position = Vector2(snapped(player.position.x, 80.0), snapped(player.position.y, 80.0))
+		grid_node.queue_redraw()
 
 func _handle_global_input() -> void:
 	if Input.is_action_just_pressed("ui_cancel"):
@@ -177,9 +219,6 @@ func _handle_global_input() -> void:
 			_close_menu()
 		else:
 			get_tree().change_scene_to_file("res://scenes/main.tscn")
-	if Input.is_key_pressed(KEY_TAB) and not Input.is_key_pressed(KEY_SHIFT):
-		# Only toggle on press, not hold
-		pass
 	if Input.is_action_just_pressed("ui_focus_next"):
 		# TAB — toggle menu
 		if _menu_open:
@@ -257,7 +296,7 @@ func _do_melee_attack() -> void:
 	trail_tw.tween_property(trail, "modulate:a", 0.0, 0.18)
 	trail_tw.tween_callback(trail.queue_free)
 
-	var base_dmg: int = 15
+	var base_dmg: int = 20
 	for enemy in enemies:
 		if not is_instance_valid(enemy) or not enemy.get_meta("alive", false):
 			continue
@@ -267,7 +306,7 @@ func _do_melee_attack() -> void:
 # ── Ranged Attack ────────────────────────────────────────────────────────────
 
 func _do_ranged_attack() -> void:
-	var nearest: Node2D = _get_nearest_enemy(500.0)
+	var nearest: Node2D = _get_nearest_enemy(600.0)
 	if nearest == null:
 		return
 	var proj := ColorRect.new()
@@ -275,10 +314,10 @@ func _do_ranged_attack() -> void:
 	proj.color = Color(0.9, 0.95, 1.0)
 	proj.position = player.position - Vector2(5, 5)
 	add_child(proj)
-	var base_dmg: int = 20
+	var base_dmg: int = 25
 	var dmg_val := base_dmg
 	var tw := create_tween()
-	tw.tween_property(proj, "position", nearest.position - Vector2(5, 5), 0.25)
+	tw.tween_property(proj, "position", nearest.position - Vector2(5, 5), 0.3)
 	tw.tween_callback(func():
 		proj.queue_free()
 		if is_instance_valid(nearest) and nearest.get_meta("alive", false):
@@ -334,6 +373,7 @@ func _deal_damage_to_enemy(enemy: Node2D, dmg: int) -> void:
 
 func _on_enemy_killed(enemy: Node2D) -> void:
 	enemy.set_meta("alive", false)
+	kill_count += 1
 	var tw := create_tween()
 	tw.tween_property(enemy, "modulate:a", 0.0, 0.3)
 	tw.tween_callback(enemy.queue_free)
@@ -348,17 +388,25 @@ func _clean_dead_enemies() -> void:
 # ── Enemy Spawning ───────────────────────────────────────────────────────────
 
 func _spawn_specific_enemy(enemy_id: String) -> void:
-	var data: Dictionary = ENEMY_DATA.get(enemy_id, {})
+	# Pull stats from DataStore
+	var all_enemies: Array = DataStore.enemies.get("enemies", [])
+	var data: Dictionary = {}
+	for e in all_enemies:
+		if e.get("id", "") == enemy_id:
+			data = e
+			break
 	if data.is_empty():
 		return
-	var max_hp: int = data["hp"]
-	var dmg: int = data["damage"]
-	var zone: String = data["zone"]
-	var spd: int = SPEED_MAP.get(enemy_id, 80)
 
-	# Random position 200-300px from player
+	var max_hp: int = int(data.get("health", 50))
+	var dmg: int = int(data.get("damage", 10))
+	var spd: int = SPEED_MAP.get(enemy_id, 80)
+	var rings: Array = data.get("rings", [])
+	var zone: String = rings[0] if rings.size() > 0 else "inner"
+
+	# Random position 150-200px from player
 	var angle: float = randf() * TAU
-	var dist: float = randf_range(200.0, 300.0)
+	var dist: float = randf_range(150.0, 200.0)
 	var spawn_pos: Vector2 = player.position + Vector2(cos(angle), sin(angle)) * dist
 
 	var node := Node2D.new()
@@ -416,8 +464,8 @@ func _update_hud() -> void:
 		health_bar.color = Color(0.2, 0.8, 0.2) if ratio > 0.35 else Color(0.85, 0.2, 0.2)
 	if hp_label:
 		hp_label.text = "HP: %d / %d" % [int(player_health), int(player_max_health)]
-	if enemy_count_label:
-		enemy_count_label.text = "Enemies: %d" % enemies.size()
+	if kill_count_label:
+		kill_count_label.text = "Enemies killed: %d" % kill_count
 
 # ── Player Death (reset) ────────────────────────────────────────────────────
 
@@ -865,6 +913,13 @@ func _check_enemy_damage(delta: float) -> void:
 
 # ── Spawn Menu ───────────────────────────────────────────────────────────────
 
+func _get_ring_label(rings: Array) -> String:
+	if "outer" in rings:
+		return "Outer Ring"
+	elif "mid" in rings:
+		return "Mid Ring"
+	return "Inner Ring"
+
 func _open_menu() -> void:
 	if _menu_open:
 		return
@@ -878,13 +933,13 @@ func _open_menu() -> void:
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(6)
 	menu_panel.add_theme_stylebox_override("panel", style)
-	menu_panel.position = Vector2(80, 40)
-	menu_panel.size = Vector2(600, 520)
+	menu_panel.position = Vector2(130, 20)
+	menu_panel.size = Vector2(700, 500)
 	hud_layer.add_child(menu_panel)
 
 	var margin := MarginContainer.new()
 	margin.position = Vector2(0, 0)
-	margin.size = Vector2(600, 520)
+	margin.size = Vector2(700, 500)
 	margin.add_theme_constant_override("margin_left", 16)
 	margin.add_theme_constant_override("margin_right", 16)
 	margin.add_theme_constant_override("margin_top", 12)
@@ -898,14 +953,14 @@ func _open_menu() -> void:
 
 	# Title
 	var title_lbl := Label.new()
-	title_lbl.text = "ENEMY TEST ARENA"
+	title_lbl.text = "Enemy Codex \u2014 Dev Arena"
 	title_lbl.add_theme_font_size_override("font_size", 22)
 	title_lbl.add_theme_color_override("font_color", Color(0.9, 0.85, 1.0))
 	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	outer_vbox.add_child(title_lbl)
 
 	var subtitle_lbl := Label.new()
-	subtitle_lbl.text = "Spawn enemies to test their behavior. Click an enemy to spawn one."
+	subtitle_lbl.text = "Spawn enemies to test their behavior. Click Spawn to deploy."
 	subtitle_lbl.add_theme_font_size_override("font_size", 11)
 	subtitle_lbl.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
 	subtitle_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -926,35 +981,50 @@ func _open_menu() -> void:
 	list_vbox.add_theme_constant_override("separation", 4)
 	scroll.add_child(list_vbox)
 
-	var zone_labels := { "inner": "Zone 1 \u2014 Inner", "mid": "Zone 2 \u2014 Mid", "outer": "Zone 3 \u2014 Outer" }
-	var zone_colors := { "inner": Color(0.3, 0.8, 0.3), "mid": Color(0.9, 0.8, 0.2), "outer": Color(0.9, 0.3, 0.3) }
+	var zone_colors := { "Inner Ring": Color(0.3, 0.8, 0.3), "Mid Ring": Color(0.9, 0.8, 0.2), "Outer Ring": Color(0.9, 0.3, 0.3) }
 
-	for enemy_id in ENEMY_ORDER:
-		var data: Dictionary = ENEMY_DATA[enemy_id]
+	# Build enemy list from DataStore
+	var all_enemies: Array = DataStore.enemies.get("enemies", [])
+	for edata in all_enemies:
+		var enemy_id: String = edata.get("id", "")
+		var rings: Array = edata.get("rings", [])
+		var hp: int = int(edata.get("health", 50))
+		var dmg: int = int(edata.get("damage", 10))
+		var spd: int = SPEED_MAP.get(enemy_id, 80)
+		var ring_label: String = _get_ring_label(rings)
+
 		var row := HBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_theme_constant_override("separation", 8)
 		list_vbox.add_child(row)
 
-		# Enemy name
+		# Enemy name (bold via font size)
 		var name_lbl := Label.new()
 		name_lbl.text = enemy_id.replace("_", " ").capitalize()
 		name_lbl.add_theme_font_size_override("font_size", 13)
 		name_lbl.add_theme_color_override("font_color", Color(0.95, 0.92, 1.0))
-		name_lbl.custom_minimum_size = Vector2(130, 0)
+		name_lbl.custom_minimum_size = Vector2(120, 0)
 		row.add_child(name_lbl)
 
 		# Zone badge
 		var zone_lbl := Label.new()
-		zone_lbl.text = zone_labels.get(data["zone"], data["zone"])
+		zone_lbl.text = ring_label
 		zone_lbl.add_theme_font_size_override("font_size", 10)
-		zone_lbl.add_theme_color_override("font_color", zone_colors.get(data["zone"], Color.WHITE))
-		zone_lbl.custom_minimum_size = Vector2(95, 0)
+		zone_lbl.add_theme_color_override("font_color", zone_colors.get(ring_label, Color.WHITE))
+		zone_lbl.custom_minimum_size = Vector2(70, 0)
 		row.add_child(zone_lbl)
 
-		# Description
+		# Stats: HP, DMG, SPD
+		var stats_lbl := Label.new()
+		stats_lbl.text = "HP:%d  DMG:%d  SPD:%d" % [hp, dmg, spd]
+		stats_lbl.add_theme_font_size_override("font_size", 10)
+		stats_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75))
+		stats_lbl.custom_minimum_size = Vector2(140, 0)
+		row.add_child(stats_lbl)
+
+		# Flavor description
 		var desc_lbl := Label.new()
-		desc_lbl.text = data["desc"]
+		desc_lbl.text = FLAVOR_TEXT.get(enemy_id, "")
 		desc_lbl.add_theme_font_size_override("font_size", 10)
 		desc_lbl.add_theme_color_override("font_color", Color(0.55, 0.55, 0.6))
 		desc_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -964,7 +1034,7 @@ func _open_menu() -> void:
 		var spawn_btn := Button.new()
 		spawn_btn.text = "Spawn"
 		spawn_btn.custom_minimum_size = Vector2(60, 0)
-		var eid: String = enemy_id  # capture for lambda
+		var eid: String = enemy_id
 		spawn_btn.pressed.connect(func(): _on_spawn_pressed(eid))
 		row.add_child(spawn_btn)
 
@@ -1005,4 +1075,3 @@ func _on_clear_all() -> void:
 	enemies.clear()
 	damage_timers.clear()
 	_enemy_state_timers.clear()
-	_close_menu()
