@@ -75,6 +75,8 @@ func _inv() -> Node:
 	return _inventory
 
 func _ready() -> void:
+	_update_camera_zoom()
+	get_viewport().size_changed.connect(_update_camera_zoom)
 	_setup_zone_markers()
 	_setup_home_icon()
 	_setup_minimap()
@@ -91,6 +93,20 @@ func _ready() -> void:
 	target_bg_color = zone_colors["sanctuary"]
 	current_bg_color = target_bg_color
 	player.position = HOME_POS
+
+func _update_camera_zoom() -> void:
+	var vp_size := get_viewport().get_visible_rect().size
+	# Base resolution 1280x720 at zoom 1.5 — scale zoom proportionally
+	var base_w := 1280.0
+	var base_h := 720.0
+	var scale_x := vp_size.x / base_w
+	var scale_y := vp_size.y / base_h
+	var scale := minf(scale_x, scale_y)
+	camera.zoom = Vector2(1.5 * scale, 1.5 * scale)
+	# Also resize the background to always cover the visible area
+	if background:
+		var margin := 800.0
+		background.size = Vector2(vp_size.x + margin * 2.0, vp_size.y + margin * 2.0)
 
 var attack_cooldown: float = 0.0
 var _e_was_pressed: bool = false
@@ -366,7 +382,8 @@ func _handle_input(delta: float) -> void:
 func _update_background(delta: float) -> void:
 	current_bg_color = current_bg_color.lerp(target_bg_color, delta * 3.0)
 	background.color = current_bg_color
-	background.position = player.position - Vector2(700, 400)
+	# Center background on player, accounting for dynamic size
+	background.position = player.position - background.size * 0.5
 
 func _on_zone_changed(old_zone: String, new_zone: String) -> void:
 	target_bg_color = zone_colors.get(new_zone, zone_colors["sanctuary"])
