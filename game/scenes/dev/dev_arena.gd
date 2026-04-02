@@ -70,7 +70,9 @@ var menu_panel: Panel = null
 var grid_node: Node2D = null
 
 func _ready() -> void:
+	print("DEV ARENA: _ready() called")
 	_build_scene()
+	print("DEV ARENA: _build_scene() complete")
 
 # ── Scene Construction ───────────────────────────────────────────────────────
 
@@ -926,6 +928,7 @@ func _open_menu() -> void:
 	if _menu_open:
 		return
 	_menu_open = true
+	print("DEV ARENA: opening menu")
 
 	menu_panel = Panel.new()
 	menu_panel.name = "SpawnMenu"
