@@ -30,7 +30,7 @@ window/size/window_height_override=900
 window/size/resizable=true
 window/size/borderless=false
 window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"
+window/stretch/aspect="keep"
 window/stretch/scale_mode="fractional"
 
 [input]
