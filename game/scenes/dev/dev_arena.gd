@@ -118,7 +118,7 @@ func _build_scene() -> void:
 
 	# Controls hint (top left below HP)
 	var hint := Label.new()
-	hint.text = "Tab \u2014 Enemy Codex | WASD Move | Z/Click Attack | Q Ranged"
+	hint.text = "Tab/M \u2014 Enemy Codex | WASD Move | Z/Click Attack | Q Ranged"
 	hint.add_theme_font_size_override("font_size", 11)
 	hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 0.7))
 	hint.position = Vector2(10, 70)
@@ -220,12 +220,13 @@ func _handle_global_input() -> void:
 			_close_menu()
 		else:
 			get_tree().change_scene_to_file("res://scenes/main.tscn")
-	if Input.is_key_pressed(KEY_TAB) and not _tab_was_pressed:
+	var tab_now := Input.is_key_pressed(KEY_TAB) or Input.is_key_pressed(KEY_M)
+	if tab_now and not _tab_was_pressed:
 		if _menu_open:
 			_close_menu()
 		else:
 			_open_menu()
-	_tab_was_pressed = Input.is_key_pressed(KEY_TAB)
+	_tab_was_pressed = tab_now
 
 func _handle_movement(delta: float) -> void:
 	var dir := Vector2.ZERO
