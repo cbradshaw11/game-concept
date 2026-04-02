@@ -54,6 +54,7 @@ var _enemy_state_timers: Dictionary = {}
 var attack_cooldown: float = 0.0
 var _last_move_dir: Vector2 = Vector2.RIGHT
 var _menu_open: bool = false
+var _tab_was_pressed: bool = false
 var kill_count: int = 0
 
 # Scene nodes (built in _ready)
@@ -219,12 +220,12 @@ func _handle_global_input() -> void:
 			_close_menu()
 		else:
 			get_tree().change_scene_to_file("res://scenes/main.tscn")
-	if Input.is_action_just_pressed("ui_focus_next"):
-		# TAB — toggle menu
+	if Input.is_key_pressed(KEY_TAB) and not _tab_was_pressed:
 		if _menu_open:
 			_close_menu()
 		else:
 			_open_menu()
+	_tab_was_pressed = Input.is_key_pressed(KEY_TAB)
 
 func _handle_movement(delta: float) -> void:
 	var dir := Vector2.ZERO
